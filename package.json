@@ -1,10 +1,33 @@
 {
+  "_comment": "Schema disabled to avoid network issues - 禁用远程schema避免网络连接错误",
+  "_description": "Enhanced Cursor Chat Memory Plugin - 增强型Cursor聊天记忆插件",
+  "_features": [
+    "智能选择性引用历史对话",
+    "自动分类和标签管理", 
+    "CLI工具支持跨平台使用",
+    "实时监听聊天文件变化",
+    "多种引用模板和自定义选择"
+  ],
   "name": "cursor-chat-memory",
   "displayName": "Cursor Chat Memory",
+  "description": "智能聊天记忆插件，自动记录和引用Cursor对话上下文",
   "version": "1.0.0",
+  "publisher": "cursor-memory",
   "engines": {
     "vscode": "^1.74.0"
   },
+  "categories": [
+    "Other",
+    "Machine Learning"
+  ],
+  "keywords": [
+    "cursor",
+    "chat",
+    "memory",
+    "ai",
+    "context",
+    "assistant"
+  ],
   "main": "./out/extension.js",
   "activationEvents": [
     "onStartupFinished"
@@ -13,13 +36,76 @@
     "commands": [
       {
         "command": "cursorChatMemory.enhanceInput",
-        "title": "Enhance Input",
+        "title": "🧠 增强输入",
+        "category": "Cursor Memory"
+      },
+      {
+        "command": "cursorChatMemory.quickReference",
+        "title": "⚡ 快速引用上下文",
+        "category": "Cursor Memory"
+      },
+      {
+        "command": "cursorChatMemory.showStatus",
+        "title": "📊 显示状态面板",
+        "category": "Cursor Memory"
+      },
+      {
+        "command": "cursorChatMemory.restartService",
+        "title": "🔄 重启记忆服务",
         "category": "Cursor Memory"
       }
-    ]
+    ],
+    "keybindings": [
+      {
+        "command": "cursorChatMemory.quickReference",
+        "key": "ctrl+shift+m",
+        "mac": "cmd+shift+m",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "cursorChatMemory.enhanceInput",
+        "key": "ctrl+alt+m",
+        "mac": "cmd+alt+m"
+      }
+    ],
+    "configuration": {
+      "title": "Cursor Chat Memory",
+      "properties": {
+        "cursorChatMemory.showUpdateNotifications": {
+          "type": "boolean",
+          "default": false,
+          "description": "显示上下文更新通知"
+        },
+        "cursorChatMemory.maxContextItems": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 50,
+          "description": "最大保存的上下文条目数"
+        },
+        "cursorChatMemory.autoRefreshInterval": {
+          "type": "number",
+          "default": 30,
+          "minimum": 10,
+          "maximum": 300,
+          "description": "自动刷新间隔（秒）"
+        },
+        "cursorChatMemory.summaryMaxLines": {
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "摘要最大行数"
+        }
+      }
+    }
   },
   "scripts": {
-    "compile": "tsc -p ./"
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/runTest.js",
+    "vscode:prepublish": "npm run compile"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
