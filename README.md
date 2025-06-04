@@ -415,22 +415,3 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 ---
 
 **让 AI 助手的记忆更智能，让你的开发更高效！** 🚀 
-
-# Test React Project
-
-这是一个测试React项目，用于验证 Cursor Chat Memory 插件的项目特定功能。
-
-## 技术栈
-- React 18
-- TypeScript
-- Vite
-- Tailwind CSS
-
-## 开发说明
-- 项目使用现代React开发模式
-- 支持热重载和快速构建
-
-## 特性
-- 组件化架构
-- 状态管理
-- 性能优化 
