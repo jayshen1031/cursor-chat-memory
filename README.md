@@ -410,7 +410,7 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 
 - 🐛 [报告 Bug](../../issues)
 - 💡 [功能建议](../../discussions)
-- 📧 邮件支持: your-email@domain.com
+- 📧 邮件支持: jayshen1031@gmail.com
 
 ---
 

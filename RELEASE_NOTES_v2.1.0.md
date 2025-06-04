@@ -161,4 +161,4 @@ cursor-memory light-reference 1500 | pbcopy
 
 - 🐛 [报告问题](../../issues)
 - 💡 [功能建议](../../discussions)
-- 📧 技术支持: cursor-memory@example.com 
+- 📧 技术支持: jayshen1031@gmail.com 
