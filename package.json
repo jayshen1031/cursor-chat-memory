@@ -11,8 +11,11 @@
   "name": "cursor-chat-memory",
   "displayName": "Cursor Chat Memory",
   "description": "智能聊天记忆插件，自动记录和引用Cursor对话上下文",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "publisher": "cursor-memory",
+  "bin": {
+    "cursor-memory": "./out/cli.js"
+  },
   "engines": {
     "vscode": "^1.74.0"
   },

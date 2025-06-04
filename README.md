@@ -63,31 +63,76 @@ cursor-memory project-reference recent
 
 ## 📦 安装
 
-### 方式一：VS Code 插件安装
+### 🚀 方式一：一键安装（推荐）
+
 ```bash
 # 克隆项目
 git clone <repository-url>
 cd cursor-chat-memory
 
-# 安装依赖
+# 一键安装（包含依赖、编译、CLI工具、环境配置）
+./quick-install.sh
+```
+
+一键安装脚本会自动：
+- ✅ 安装npm依赖
+- ✅ 编译TypeScript代码
+- ✅ 安装CLI工具到 `~/.local/bin/cursor-memory`
+- ✅ 配置PATH环境变量
+- ✅ 提供使用指南
+
+### 📋 方式二：分步安装
+
+```bash
+# 1. 克隆并安装依赖
+git clone <repository-url>
+cd cursor-chat-memory
 npm install
 
-# 编译项目
+# 2. 编译项目
+npm run compile
+
+# 3. 安装CLI工具
+./install-cli.sh
+
+# 4. 配置环境（如果需要）
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### 🔧 方式三：VS Code 插件开发模式
+
+```bash
+# 克隆项目
+git clone <repository-url>
+cd cursor-chat-memory
+
+# 安装依赖并编译
+npm install
 npm run compile
 
 # 启动插件（开发模式）
 ./start_ext.sh
 ```
 
-### 方式二：独立 CLI 工具
-```bash
-# 全局安装
-npm install -g cursor-chat-memory
+### ✅ 验证安装
 
-# 或者本地编译使用
-npm run compile
-alias cursor-memory="node $(pwd)/out/cli.js"
+```bash
+# 测试CLI工具
+cursor-memory help
+
+# 如果命令不可用，使用完整路径
+~/.local/bin/cursor-memory help
 ```
+
+### 🔧 故障排除
+
+如果遇到 "cursor-memory 命令未找到" 错误，请查看详细的 [安装指南](INSTALL_GUIDE.md)。
+
+常见解决方案：
+1. 确保PATH配置正确：`echo $PATH | grep "$HOME/.local/bin"`
+2. 重新加载shell配置：`source ~/.zshrc` 或重启终端
+3. 使用完整路径：`~/.local/bin/cursor-memory help`
 
 ## 🎮 使用方法
 
@@ -100,13 +145,8 @@ alias cursor-memory="node $(pwd)/out/cli.js"
 # 进入你的项目目录
 cd /path/to/your-cursor-project
 
-# 下载并运行初始化脚本
-curl -s https://raw.githubusercontent.com/jayshen1031/cursor-chat-memory/master/init-project.sh | bash
-
-# 或者手动下载
-wget https://raw.githubusercontent.com/jayshen1031/cursor-chat-memory/master/init-project.sh
-chmod +x init-project.sh
-./init-project.sh
+# 运行初始化脚本
+/path/to/cursor-chat-memory/init-project.sh
 ```
 
 初始化完成后，你的项目会自动生成：
@@ -193,7 +233,7 @@ my-react-app/
 ```bash
 # 在新的Vue项目中
 cd /path/to/vue-project
-./init-project.sh
+/path/to/cursor-chat-memory/init-project.sh
 
 # 搜索所有项目中的相关经验
 cursor-memory search "组件通信" --global
