@@ -59,7 +59,17 @@ export class ChatMemoryService extends EventEmitter {
   private cacheDir: string;
   private watcher: fs.FSWatcher | null = null;
   private contextCache: ContextCache;
+  private currentProject?: string;  // 当前项目路径
   
+  // 上下文控制配置
+  private readonly contextLimits = {
+    maxTotalTokens: 8000,        // 总token限制 (留给用户输入空间)
+    maxSessionsPerTemplate: 10,   // 每个模板最大会话数
+    maxSummaryLength: 200,        // 摘要最大长度
+    maxTitleLength: 50,           // 标题最大长度
+    tokenBuffer: 2000             // 为用户输入预留的token缓冲
+  };
+
   // 预定义分类和关键词
   private readonly categoryKeywords = new Map<string, string[]>([
     ['JavaScript', ['javascript', 'js', 'node', 'npm', 'react', 'vue', 'angular', 'typescript', 'es6']],
@@ -108,10 +118,20 @@ export class ChatMemoryService extends EventEmitter {
     }
   ];
 
-  constructor() {
+  constructor(projectPath?: string) {
     super();
+    this.currentProject = projectPath;
     this.chatDir = path.join(os.homedir(), '.cursor', 'chat');
-    this.cacheDir = path.join(os.homedir(), '.cursor-memory');
+    
+    // 项目特定的缓存目录
+    if (projectPath) {
+      const projectName = path.basename(projectPath);
+      this.cacheDir = path.join(os.homedir(), '.cursor-memory', 'projects', projectName);
+      console.log(`📁 使用项目特定缓存: ${projectName}`);
+    } else {
+      this.cacheDir = path.join(os.homedir(), '.cursor-memory');
+    }
+    
     this.contextCache = {
       sessions: new Map(),
       categories: new Map(),
@@ -226,7 +246,7 @@ export class ChatMemoryService extends EventEmitter {
   }
 
   /**
-   * 根据模板获取引用内容
+   * 根据模板获取引用内容 (增强版 - 智能上下文控制)
    */
   public getReferenceByTemplate(templateId: string, inputText?: string): string {
     const template = this.referenceTemplates.find(t => t.id === templateId);
@@ -254,10 +274,37 @@ export class ChatMemoryService extends EventEmitter {
     if (templateId === 'current-topic' && inputText) {
       sessions = this.getRecommendedSessions(inputText, template.filters.maxSessions || 5);
     } else {
-      sessions = sessions.slice(0, template.filters.maxSessions || 10);
+      // 应用上下文限制
+      const maxSessions = Math.min(
+        template.filters.maxSessions || this.contextLimits.maxSessionsPerTemplate,
+        this.contextLimits.maxSessionsPerTemplate
+      );
+      sessions = sessions.slice(0, maxSessions);
     }
 
     return this.formatReferenceContent(sessions, template.name);
+  }
+
+  /**
+   * 获取轻量级引用 (用于上下文敏感场景)
+   */
+  public getLightweightReference(maxTokens: number = 3000): string {
+    const sessions = this.getAllSessions()
+      .filter(s => s.importance >= 0.5)  // 只选择重要会话
+      .slice(0, 3);  // 最多3个会话
+    
+    // 临时调整限制
+    const originalLimits = { ...this.contextLimits };
+    this.contextLimits.maxTotalTokens = maxTokens;
+    this.contextLimits.maxSummaryLength = 100;  // 更短的摘要
+    this.contextLimits.maxTitleLength = 30;     // 更短的标题
+    
+    const result = this.formatReferenceContent(sessions, '精简引用');
+    
+    // 恢复原始限制
+    Object.assign(this.contextLimits, originalLimits);
+    
+    return result;
   }
 
   /**
@@ -527,7 +574,7 @@ export class ChatMemoryService extends EventEmitter {
   }
 
   /**
-   * 格式化引用内容
+   * 格式化引用内容 (增强版 - 控制上下文长度)
    */
   private formatReferenceContent(sessions: ChatSession[], title: string): string {
     if (sessions.length === 0) {
@@ -535,16 +582,58 @@ export class ChatMemoryService extends EventEmitter {
     }
 
     let content = `💡 **${title}** (${sessions.length}个会话)\n\n`;
+    let estimatedTokens = this.estimateTokens(content);
+    const maxTokensForSessions = this.contextLimits.maxTotalTokens - this.contextLimits.tokenBuffer;
     
-    sessions.forEach((session, index) => {
+    const validSessions: ChatSession[] = [];
+    
+    for (const session of sessions) {
       const tagsText = session.tags.map(tag => `#${tag.name}`).join(' ');
-      content += `**${index + 1}. ${session.title}** [${session.category}]\n`;
+      const sessionContent = `**${validSessions.length + 1}. ${this.truncateText(session.title, this.contextLimits.maxTitleLength)}** [${session.category}]\n${tagsText}\n📝 ${this.truncateText(session.summary, this.contextLimits.maxSummaryLength)}\n\n`;
+      
+      const sessionTokens = this.estimateTokens(sessionContent);
+      
+      if (estimatedTokens + sessionTokens <= maxTokensForSessions) {
+        validSessions.push(session);
+        estimatedTokens += sessionTokens;
+      } else {
+        console.log(`⚠️  上下文限制: 跳过会话 "${session.title}" (tokens: ${sessionTokens})`);
+        break;
+      }
+    }
+    
+    validSessions.forEach((session, index) => {
+      const tagsText = session.tags.map(tag => `#${tag.name}`).join(' ');
+      content += `**${index + 1}. ${this.truncateText(session.title, this.contextLimits.maxTitleLength)}** [${session.category}]\n`;
       content += `${tagsText}\n`;
-      content += `📝 ${session.summary}\n\n`;
+      content += `📝 ${this.truncateText(session.summary, this.contextLimits.maxSummaryLength)}\n\n`;
     });
     
-    content += `---\n\n`;
+    // 添加上下文使用情况提示
+    const finalTokens = this.estimateTokens(content);
+    content += `---\n`;
+    content += `📊 上下文使用: ~${finalTokens} tokens (${validSessions.length}/${sessions.length}个会话)\n\n`;
+    
     return content;
+  }
+
+  /**
+   * 估算文本的token数量 (简单估算: 1个中文字符≈1.5tokens, 英文单词≈1.3tokens)
+   */
+  private estimateTokens(text: string): number {
+    const chineseChars = (text.match(/[\u4e00-\u9fff]/g) || []).length;
+    const englishWords = (text.match(/[a-zA-Z]+/g) || []).length;
+    const otherChars = text.length - chineseChars - englishWords;
+    
+    return Math.ceil(chineseChars * 1.5 + englishWords * 1.3 + otherChars * 0.5);
+  }
+
+  /**
+   * 截断文本到指定长度
+   */
+  private truncateText(text: string, maxLength: number): string {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength - 3) + '...';
   }
 
   /**
@@ -691,5 +780,44 @@ export class ChatMemoryService extends EventEmitter {
     } catch (error) {
       console.error('❌ Error saving cache:', error);
     }
+  }
+
+  /**
+   * 根据项目过滤会话
+   */
+  public getProjectSessions(projectPath?: string): ChatSession[] {
+    const targetProject = projectPath || this.currentProject;
+    if (!targetProject) {
+      return this.getAllSessions();
+    }
+    
+    const projectName = path.basename(targetProject);
+    return this.getAllSessions().filter(session => {
+      // 检查会话内容是否与项目相关
+      const content = (session.title + ' ' + session.summary).toLowerCase();
+      return content.includes(projectName.toLowerCase()) || 
+             session.tags.some(tag => tag.name.toLowerCase().includes(projectName.toLowerCase()));
+    });
+  }
+
+  /**
+   * 设置当前项目上下文
+   */
+  public setCurrentProject(projectPath: string): void {
+    this.currentProject = projectPath;
+    const projectName = path.basename(projectPath);
+    console.log(`🎯 切换到项目: ${projectName}`);
+  }
+
+  /**
+   * 获取当前项目相关的引用
+   */
+  public getProjectReference(templateId: string = 'recent', projectPath?: string): string {
+    const sessions = this.getProjectSessions(projectPath);
+    const template = this.referenceTemplates.find(t => t.id === templateId);
+    const title = template ? `${template.name} (项目相关)` : '项目相关会话';
+    
+    const limitedSessions = sessions.slice(0, template?.filters.maxSessions || 5);
+    return this.formatReferenceContent(limitedSessions, title);
   }
 } 

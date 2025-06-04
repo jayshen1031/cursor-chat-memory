@@ -1,0 +1,28 @@
+{
+  "project": {
+    "name": "cursor-chat-memory",
+    "path": ".",
+    "description": "Cursor聊天记忆插件项目"
+  },
+  "memory": {
+    "enableProjectSpecific": true,
+    "maxProjectSessions": 20,
+    "projectKeywords": [
+      "cursor-memory",
+      "chat-memory",
+      "插件",
+      "vscode",
+      "typescript"
+    ]
+  },
+  "filters": {
+    "includeCategories": ["JavaScript", "TypeScript", "Web开发", "系统工具"],
+    "excludeKeywords": ["test", "测试"],
+    "minImportance": 0.3
+  },
+  "output": {
+    "format": "markdown",
+    "includeTimestamps": true,
+    "maxSummaryLength": 150
+  }
+} 

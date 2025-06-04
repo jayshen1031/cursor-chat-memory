@@ -6,13 +6,15 @@ import * as os from 'os';
 import { ChatMemoryService } from './chatMemoryService';
 
 /**
- * 增强CLI工具 - 支持智能选择性引用
+ * 增强CLI工具 - 支持智能选择性引用和项目特定上下文
  */
 class EnhancedChatMemoryCLI {
   private memoryService: ChatMemoryService;
 
   constructor() {
-    this.memoryService = new ChatMemoryService();
+    // 尝试从当前工作目录获取项目路径
+    const currentDir = process.cwd();
+    this.memoryService = new ChatMemoryService(currentDir);
   }
 
   /**
@@ -28,6 +30,10 @@ class EnhancedChatMemoryCLI {
           await this.listSessions(params[0]);
           break;
         case 'get-template':
+          if (params.length < 1) {
+            console.log('❌ 请指定模板ID: get-template <templateId> [inputText]');
+            process.exit(1);
+          }
           await this.getTemplate(params[0], params[1]);
           break;
         case 'recommend':
@@ -50,6 +56,24 @@ class EnhancedChatMemoryCLI {
           break;
         case 'status':
           await this.getStatus();
+          break;
+        case 'light-reference':
+          const maxTokens = params.length > 0 ? parseInt(params[0]) : 3000;
+          console.log(this.memoryService.getLightweightReference(maxTokens));
+          break;
+        case 'project-sessions':
+          await this.showProjectSessions(params[0]);
+          break;
+        case 'project-reference':
+          await this.getProjectReference(params[0], params[1]);
+          break;
+        case 'set-project':
+          if (params.length < 1) {
+            console.log('❌ 请指定项目路径: set-project <projectPath>');
+            process.exit(1);
+          }
+          this.memoryService.setCurrentProject(params[0]);
+          console.log(`✅ 项目上下文已设置`);
           break;
         case 'help':
         default:
@@ -310,49 +334,94 @@ class EnhancedChatMemoryCLI {
    */
   private showHelp(): void {
     console.log(`
-🧠 Enhanced Cursor Chat Memory CLI
+🧠 Enhanced Cursor Chat Memory CLI v1.0.0
 
-基础命令:
-  list-sessions [category]     列出所有会话或指定分类的会话
-  get-template <templateId> [input]  使用模板获取引用内容
-  recommend <text>             基于输入文本获取智能推荐
-  search <query>               搜索包含关键词的会话
-  categories                   显示分类统计信息
-  templates                    显示可用的引用模板
-  custom <id1> <id2> ...       自定义选择会话生成引用
-  refresh                      刷新缓存
-  status                       显示详细状态信息
-  help                         显示此帮助信息
+📋 基础命令:
+  list-sessions [category]     查看所有会话（可选：按分类筛选）
+  search <query>              搜索包含关键词的会话
+  categories                  查看分类统计信息
+  status                      显示系统状态
 
-使用示例:
-  # 列出所有会话
-  cursor-memory list-sessions
+🎯 引用生成:
+  get-template <id> [input]   使用预设模板生成引用
+  light-reference [tokens]    生成轻量级引用（默认3000 tokens）
+  custom <id1> <id2> ...      自定义选择会话生成引用
+  project-reference [id] [path]  获取项目相关引用
   
-  # 列出JavaScript相关会话
-  cursor-memory list-sessions JavaScript
-  
-  # 使用"最近会话"模板
+📝 可用模板:
+  recent                      最近重要会话（3个）
+  current-topic               当前主题相关（5个）
+  problem-solving             问题解决经验（4个）
+  optimization               性能优化相关（3个）
+  all-important              高重要性精选（10个）
+
+🏗️  项目功能:
+  project-sessions [path]     查看项目相关会话
+  set-project <path>          设置当前项目路径
+
+⚙️  管理操作:
+  templates                   查看所有可用模板
+  refresh                     刷新缓存
+  help                        显示帮助信息
+
+💡 上下文控制:
+  - 自动限制总token数 (~8000 tokens)
+  - 智能截断长标题和摘要
+  - 显示实际使用的tokens统计
+  - 支持轻量级引用模式
+
+📊 使用示例:
   cursor-memory get-template recent
-  
-  # 智能推荐与React相关的会话
-  cursor-memory recommend "React组件优化问题"
-  
-  # 搜索性能相关的会话
-  cursor-memory search "性能优化"
-  
-  # 查看所有可用模板
-  cursor-memory templates
-  
-  # 自定义引用指定会话
+  cursor-memory search "React优化"
+  cursor-memory light-reference 2000
   cursor-memory custom session1 session2
-  
-  # 复制到剪贴板 (macOS)
-  cursor-memory get-template recent | pbcopy
-
-集成示例:
-  Alfred Workflow: cursor-memory get-template current-topic {query} | pbcopy
-  Raycast Script: cursor-memory recommend {query}
+  cursor-memory project-sessions
+  cursor-memory project-reference recent ./my-project
     `);
+  }
+
+  /**
+   * 显示项目相关会话
+   */
+  private async showProjectSessions(projectPath?: string): Promise<void> {
+    await this.memoryService.start();
+    
+    const sessions = this.memoryService.getProjectSessions(projectPath);
+    const currentProject = projectPath || process.cwd();
+    const projectName = path.basename(currentProject);
+    
+    if (sessions.length === 0) {
+      console.log(`📭 没有找到与项目 "${projectName}" 相关的会话`);
+      this.memoryService.stop();
+      return;
+    }
+
+    console.log(`📋 项目 "${projectName}" 相关会话 (${sessions.length}个):\n`);
+    
+    sessions.forEach((session, index) => {
+      const tagsText = session.tags.map(tag => `#${tag.name}`).join(' ');
+      const importanceStars = '⭐'.repeat(Math.floor(session.importance * 5));
+      
+      console.log(`${index + 1}. ${session.title}`);
+      console.log(`   ID: ${session.id}`);
+      console.log(`   分类: [${session.category}] ${tagsText}`);
+      console.log(`   重要性: ${importanceStars} (${session.importance.toFixed(2)})`);
+      console.log(`   摘要: ${session.summary}`);
+      console.log(`   时间: ${new Date(session.lastActivity).toLocaleString()}`);
+      console.log('');
+    });
+    
+    this.memoryService.stop();
+  }
+
+  /**
+   * 获取项目相关引用
+   */
+  private async getProjectReference(templateId: string = 'recent', projectPath?: string): Promise<void> {
+    await this.memoryService.start();
+    const reference = this.memoryService.getProjectReference(templateId, projectPath);
+    console.log(reference);
+    this.memoryService.stop();
   }
 }
 
