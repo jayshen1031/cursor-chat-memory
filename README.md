@@ -91,6 +91,128 @@ alias cursor-memory="node $(pwd)/out/cli.js"
 
 ## 🎮 使用方法
 
+### 🎯 在Cursor IDE中使用 (核心功能)
+
+#### 第一步：项目初始化
+在任何新的Cursor项目中，首先初始化聊天记忆功能：
+
+```bash
+# 进入你的项目目录
+cd /path/to/your-cursor-project
+
+# 下载并运行初始化脚本
+curl -s https://raw.githubusercontent.com/jayshen1031/cursor-chat-memory/master/init-project.sh | bash
+
+# 或者手动下载
+wget https://raw.githubusercontent.com/jayshen1031/cursor-chat-memory/master/init-project.sh
+chmod +x init-project.sh
+./init-project.sh
+```
+
+初始化完成后，你的项目会自动生成：
+- `cursor-memory.config.json` - 项目配置文件
+- `cursor-memory.sh` - 便捷使用脚本  
+- `.gitignore` 更新 - 忽略缓存文件
+
+#### 第二步：在Cursor中开始聊天
+正常使用Cursor IDE的聊天功能，系统会自动：
+- 📝 记录你的对话内容
+- 🏷️ 自动分类和标记
+- 💾 保存到项目特定的缓存
+
+#### 第三步：智能引用历史上下文
+
+**方法1: 使用便捷脚本**
+```bash
+# 获取项目相关的最近对话
+./cursor-memory.sh project-reference recent
+
+# 获取当前主题相关的对话
+./cursor-memory.sh project-reference current-topic
+
+# 查看项目相关的所有会话
+./cursor-memory.sh project-sessions
+```
+
+**方法2: 直接复制引用内容**
+```bash
+# 生成引用并复制到剪贴板 (macOS)
+./cursor-memory.sh project-reference recent | pbcopy
+
+# 然后在Cursor聊天中粘贴使用
+```
+
+**方法3: 轻量级引用（控制token数量）**
+```bash
+# 生成最多2000 tokens的精简引用
+./cursor-memory.sh light-reference 2000 | pbcopy
+```
+
+#### 第四步：在新聊天中引用上下文
+
+在Cursor的新聊天中，你可以这样开始：
+
+```
+## 上下文引用
+[粘贴通过cursor-memory获取的相关历史对话]
+
+## 当前问题
+基于上述上下文，我现在遇到了一个新问题...
+```
+
+### 🌟 实际使用场景演示
+
+#### 场景1：React项目开发
+```bash
+# 项目结构
+my-react-app/
+├── src/
+├── package.json
+├── cursor-memory.config.json  ← 自动生成
+└── cursor-memory.sh           ← 自动生成
+
+# 在Cursor中讨论React性能优化后
+./cursor-memory.sh project-reference optimization
+
+# 输出示例：
+## 💡 项目相关引用 (2个会话, ~156 tokens)
+
+### 🔧 React性能优化 (2024-01-05)
+**摘要**: 讨论了React.memo、useMemo优化策略
+**关键点**: 
+- 使用React.memo包装组件避免不必要渲染
+- useMemo缓存计算结果
+- 代码分割和懒加载
+
+### ⚡ 组件渲染优化 (2024-01-04)  
+**摘要**: 解决了列表渲染性能问题
+**解决方案**: 实现虚拟滚动和分页加载
+```
+
+#### 场景2：跨项目学习
+```bash
+# 在新的Vue项目中
+cd /path/to/vue-project
+./init-project.sh
+
+# 搜索所有项目中的相关经验
+cursor-memory search "组件通信" --global
+
+# 或只看当前项目相关
+./cursor-memory.sh project-sessions
+```
+
+#### 场景3：问题解决追踪
+```bash
+# 当遇到相似bug时
+./cursor-memory.sh search "API错误" 
+
+# 获取问题解决相关的历史对话
+./cursor-memory.sh project-reference problem-solving
+
+# 在Cursor中粘贴引用，继续深入讨论解决方案
+```
+
 ### VS Code 插件操作
 
 #### 快捷键
@@ -104,6 +226,59 @@ alias cursor-memory="node $(pwd)/out/cli.js"
 - **Quick Reference**: 快速引用最近重要对话
 - **Browse Categories**: 按分类浏览历史对话
 - **Search Sessions**: 搜索特定关键词的对话
+
+### 🔄 多项目管理和切换
+
+#### 项目间独立记忆
+每个项目的聊天记忆完全独立，互不干扰：
+
+```bash
+# 项目A - React应用
+cd ~/projects/react-app
+./cursor-memory.sh project-sessions
+# 显示: React相关的3个会话
+
+# 项目B - Python API  
+cd ~/projects/python-api
+./cursor-memory.sh project-sessions  
+# 显示: Python相关的5个会话
+```
+
+#### 全局vs项目特定命令对比
+
+| 功能 | 全局命令 | 项目特定命令 |
+|------|----------|-------------|
+| 查看会话 | `cursor-memory list-sessions` | `./cursor-memory.sh project-sessions` |
+| 生成引用 | `cursor-memory get-template recent` | `./cursor-memory.sh project-reference recent` |
+| 搜索对话 | `cursor-memory search "关键词"` | `./cursor-memory.sh search "关键词"` |
+| 设置项目 | `cursor-memory set-project $(pwd)` | 自动检测当前项目 |
+
+#### 项目配置管理
+```bash
+# 查看当前项目配置
+cat cursor-memory.config.json
+
+# 示例配置内容:
+{
+  "projectName": "my-react-app",
+  "projectPath": "/Users/jay/projects/my-react-app", 
+  "cacheDir": "~/.cursor-memory/projects/my-react-app",
+  "maxSessions": 50,
+  "tokenLimit": 8000
+}
+```
+
+#### 批量项目管理
+```bash
+# 为多个现有项目批量初始化
+for dir in ~/projects/*/; do
+  cd "$dir"
+  if [ -f "package.json" ] || [ -f "requirements.txt" ]; then
+    echo "初始化项目: $(basename "$dir")"
+    curl -s https://raw.githubusercontent.com/jayshen1031/cursor-chat-memory/master/init-project.sh | bash
+  fi
+done
+```
 
 ### CLI 工具操作
 
