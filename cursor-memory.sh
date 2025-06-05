@@ -1,23 +1,17 @@
 #!/bin/bash
-# Cursor Chat Memory 便捷脚本
+# Cursor Chat Memory 便捷脚本 - 完整版 v2.1.0
 
-# 检查本地CLI文件
-LOCAL_CLI="./cursor-memory-cli.js"
-if [ -f "$LOCAL_CLI" ]; then
-    echo "🎯 使用本地CLI工具"
-    # 设置项目上下文
-    node "$LOCAL_CLI" set-project "$(pwd)"
-    # 执行命令
-    node "$LOCAL_CLI" "$@"
-elif command -v cursor-memory &> /dev/null; then
-    echo "🌐 使用全局CLI工具"
-    # 设置项目上下文
-    cursor-memory set-project "$(pwd)"
-    # 执行命令
-    cursor-memory "$@"
-else
-    echo "❌ cursor-memory CLI 未安装且本地文件不存在"
-    echo "💡 请运行: npm install -g cursor-chat-memory"
-    echo "💡 或确保 cursor-memory-cli.js 文件存在"
+CLI_TOOL="cursor-memory"
+
+# 检查CLI工具是否可用
+if ! command -v "$CLI_TOOL" &> /dev/null && [ ! -x "$CLI_TOOL" ]; then
+    echo "❌ cursor-memory CLI 工具不可用: $CLI_TOOL"
+    echo "💡 请重新运行项目初始化或检查CLI安装"
     exit 1
 fi
+
+# 设置项目上下文
+"$CLI_TOOL" set-project "$(pwd)" 2>/dev/null
+
+# 执行命令
+"$CLI_TOOL" "$@"
