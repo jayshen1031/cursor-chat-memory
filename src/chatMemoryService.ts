@@ -20,12 +20,14 @@ interface ChatSession {
   id: string;
   title: string;
   messages: ChatMessage[];
+  rawMessages?: ChatMessage[];  // 🆕 原始完整消息备份
   summary: string;
   tags: SessionTag[];
   category: string;
   lastActivity: number;
   tokenCount?: number;
   importance: number; // 重要性评分 0-1
+  compressionRatio?: number; // 🆕 压缩比例统计
 }
 
 interface ContextCache {
@@ -67,7 +69,9 @@ export class ChatMemoryService extends EventEmitter {
     maxSessionsPerTemplate: 10,   // 每个模板最大会话数
     maxSummaryLength: 200,        // 摘要最大长度
     maxTitleLength: 50,           // 标题最大长度
-    tokenBuffer: 2000             // 为用户输入预留的token缓冲
+    tokenBuffer: 2000,            // 为用户输入预留的token缓冲
+    enableRawBackup: true,        // 🆕 启用原始内容备份
+    compressionThreshold: 5000    // 🆕 超过此token数时才压缩
   };
 
   // 预定义分类和关键词
@@ -392,6 +396,10 @@ export class ChatMemoryService extends EventEmitter {
       
       if (assistantMessages.length === 0) return;
 
+      // 计算原始内容的token数量
+      const rawTokenCount = this.estimateTokens(messages.map(m => m.content).join(' '));
+      const shouldCompress = rawTokenCount > this.contextLimits.compressionThreshold;
+
       // 生成会话摘要和标题
       const summary = this.generateEnhancedSummary(messages);
       const title = this.generateSessionTitle(messages);
@@ -399,22 +407,42 @@ export class ChatMemoryService extends EventEmitter {
       const tags = this.generateTags(summary, category);
       const importance = this.calculateImportance(messages, summary);
 
+      // 🆕 智能压缩决策
+      let finalMessages = messages;
+      let rawMessages: ChatMessage[] | undefined;
+      let compressionRatio = 1.0;
+
+      if (shouldCompress && this.contextLimits.enableRawBackup) {
+        // 保留原始完整内容
+        rawMessages = [...messages];
+        
+        // 生成压缩版本
+        finalMessages = this.compressMessages(messages);
+        const compressedTokens = this.estimateTokens(finalMessages.map(m => m.content).join(' '));
+        compressionRatio = compressedTokens / rawTokenCount;
+        
+        console.log(`🗜️  压缩会话 "${title}": ${rawTokenCount} → ${compressedTokens} tokens (${(compressionRatio * 100).toFixed(1)}%)`);
+      }
+
       const session: ChatSession = {
         id: sessionId,
         title,
-        messages,
+        messages: finalMessages,
+        rawMessages,
         summary,
         tags,
         category,
         lastActivity: Date.now(),
-        importance
+        importance,
+        compressionRatio
       };
 
       this.contextCache.sessions.set(sessionId, session);
       this.updateCategoryStats();
       this.contextCache.lastUpdated = Date.now();
       
-      console.log(`📝 Processed session: ${title} [${category}] (${importance.toFixed(2)})`);
+      const compressInfo = shouldCompress ? ` (压缩${(compressionRatio * 100).toFixed(1)}%)` : '';
+      console.log(`📝 Processed session: ${title} [${category}] (${importance.toFixed(2)})${compressInfo}`);
       this.emit('sessionUpdated', session);
       this.saveCache();
       
@@ -634,6 +662,136 @@ export class ChatMemoryService extends EventEmitter {
   private truncateText(text: string, maxLength: number): string {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength - 3) + '...';
+  }
+
+  /**
+   * 🆕 智能压缩消息内容
+   */
+  private compressMessages(messages: ChatMessage[]): ChatMessage[] {
+    const compressed: ChatMessage[] = [];
+    
+    for (const message of messages) {
+      if (message.role === 'user') {
+        // 用户消息保持原样，通常较短
+        compressed.push(message);
+      } else {
+        // 助手消息进行智能压缩
+        const compressedContent = this.compressAssistantMessage(message.content);
+        compressed.push({
+          ...message,
+          content: compressedContent
+        });
+      }
+    }
+    
+    return compressed;
+  }
+
+  /**
+   * 🆕 压缩助手消息内容
+   */
+  private compressAssistantMessage(content: string): string {
+    const lines = content.split('\n');
+    const compressed: string[] = [];
+    
+    for (const line of lines) {
+      const trimmed = line.trim();
+      
+      // 保留重要的结构化内容
+      if (trimmed.startsWith('#') || 
+          trimmed.startsWith('**') || 
+          trimmed.startsWith('- ') ||
+          trimmed.startsWith('* ') ||
+          trimmed.startsWith('1.') ||
+          trimmed.startsWith('✅') ||
+          trimmed.startsWith('❌') ||
+          trimmed.includes('```')) {
+        compressed.push(line);
+      }
+      // 保留包含关键词的句子
+      else if (this.containsKeywords(trimmed)) {
+        compressed.push(line);
+      }
+      // 跳过空行和装饰性内容
+      else if (trimmed === '' || trimmed.match(/^[=\-_]{3,}$/)) {
+        // 跳过
+      }
+      // 对于普通文本，保留前50字符
+      else if (trimmed.length > 50) {
+        compressed.push(trimmed.substring(0, 50) + '...');
+      } else if (trimmed.length > 0) {
+        compressed.push(trimmed);
+      }
+    }
+    
+    return compressed.join('\n');
+  }
+
+  /**
+   * 🆕 检查是否包含关键词
+   */
+  private containsKeywords(text: string): boolean {
+    const keywords = ['解决方案', 'solution', 'error', 'fix', 'problem', 'issue', 
+                     'optimize', '优化', 'config', '配置', 'install', '安装'];
+    const lowerText = text.toLowerCase();
+    return keywords.some(keyword => lowerText.includes(keyword.toLowerCase()));
+  }
+
+  /**
+   * 🆕 获取会话的原始内容
+   */
+  public getSessionRawContent(sessionId: string): ChatMessage[] | null {
+    const session = this.contextCache.sessions.get(sessionId);
+    return session?.rawMessages || session?.messages || null;
+  }
+
+  /**
+   * 🆕 对比压缩前后的内容
+   */
+  public compareCompressionQuality(sessionId: string): {
+    original: string;
+    compressed: string;
+    ratio: number;
+    keyPointsPreserved: string[];
+  } | null {
+    const session = this.contextCache.sessions.get(sessionId);
+    if (!session || !session.rawMessages) return null;
+
+    const originalContent = session.rawMessages.map(m => m.content).join('\n\n');
+    const compressedContent = session.messages.map(m => m.content).join('\n\n');
+    
+    // 分析保留的关键点
+    const originalKeyPoints = this.extractKeyPoints(originalContent);
+    const compressedKeyPoints = this.extractKeyPoints(compressedContent);
+    const preservedKeyPoints = originalKeyPoints.filter(point => 
+      compressedKeyPoints.some(cp => cp.includes(point) || point.includes(cp))
+    );
+
+    return {
+      original: originalContent,
+      compressed: compressedContent,
+      ratio: session.compressionRatio || 1.0,
+      keyPointsPreserved: preservedKeyPoints
+    };
+  }
+
+  /**
+   * 🆕 提取关键点
+   */
+  private extractKeyPoints(content: string): string[] {
+    const lines = content.split('\n');
+    const keyPoints: string[] = [];
+    
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('##') || trimmed.startsWith('**') || 
+          trimmed.startsWith('- ') || trimmed.startsWith('* ') ||
+          trimmed.startsWith('✅') || trimmed.startsWith('❌')) {
+        keyPoints.push(trimmed.replace(/[#*\-✅❌]/g, '').trim());
+      }
+    }
+    
+    return keyPoints;
   }
 
   /**

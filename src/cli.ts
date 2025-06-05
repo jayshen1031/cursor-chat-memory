@@ -75,6 +75,23 @@ class EnhancedChatMemoryCLI {
           this.memoryService.setCurrentProject(params[0]);
           console.log(`✅ 项目上下文已设置`);
           break;
+        case 'view-raw':
+          if (params.length < 1) {
+            console.log('❌ 请指定会话ID: view-raw <sessionId>');
+            process.exit(1);
+          }
+          await this.viewRawContent(params[0]);
+          break;
+        case 'compare-compression':
+          if (params.length < 1) {
+            console.log('❌ 请指定会话ID: compare-compression <sessionId>');
+            process.exit(1);
+          }
+          await this.compareCompression(params[0]);
+          break;
+        case 'compression-stats':
+          await this.showCompressionStats();
+          break;
         case 'help':
         default:
           this.showHelp();
@@ -359,6 +376,11 @@ class EnhancedChatMemoryCLI {
   project-sessions [path]     查看项目相关会话
   set-project <path>          设置当前项目路径
 
+🔍 内容分析:
+  view-raw <sessionId>        查看会话的原始完整内容
+  compare-compression <id>    对比压缩前后的内容质量
+  compression-stats           显示整体压缩统计信息
+
 ⚙️  管理操作:
   templates                   查看所有可用模板
   refresh                     刷新缓存
@@ -421,6 +443,98 @@ class EnhancedChatMemoryCLI {
     await this.memoryService.start();
     const reference = this.memoryService.getProjectReference(templateId, projectPath);
     console.log(reference);
+    this.memoryService.stop();
+  }
+
+  /**
+   * 🆕 查看会话原始内容
+   */
+  private async viewRawContent(sessionId: string): Promise<void> {
+    await this.memoryService.start();
+    const rawContent = this.memoryService.getSessionRawContent(sessionId);
+    
+    if (rawContent) {
+      console.log(`📝 会话 ${sessionId} 的原始内容:\n`);
+      console.log('='.repeat(50));
+      rawContent.forEach((message, index) => {
+        console.log(`${index + 1}. [${message.role}]:`);
+        console.log(message.content);
+        console.log('-'.repeat(30));
+      });
+    } else {
+      console.log(`❌ 没有找到ID为 ${sessionId} 的会话或该会话无原始备份`);
+    }
+    this.memoryService.stop();
+  }
+
+  /**
+   * 🆕 对比压缩质量
+   */
+  private async compareCompression(sessionId: string): Promise<void> {
+    await this.memoryService.start();
+    const comparison = this.memoryService.compareCompressionQuality(sessionId);
+    
+    if (comparison) {
+      console.log(`📊 会话 ${sessionId} 压缩质量分析:\n`);
+      console.log(`📝 原始长度: ${comparison.original.length} 字符`);
+      console.log(`📝 压缩后长度: ${comparison.compressed.length} 字符`);
+      console.log(`📝 压缩比: ${(comparison.ratio * 100).toFixed(1)}%`);
+      console.log(`📝 保留关键点: ${comparison.keyPointsPreserved.length}个\n`);
+      
+      if (comparison.keyPointsPreserved.length > 0) {
+        console.log('🔍 保留的关键点:');
+        comparison.keyPointsPreserved.forEach((point, index) => {
+          console.log(`  ${index + 1}. ${point.substring(0, 80)}${point.length > 80 ? '...' : ''}`);
+        });
+      }
+      
+      console.log('\n📋 压缩预览对比:');
+      console.log('原始版本 (前200字符):');
+      console.log(comparison.original.substring(0, 200) + '...\n');
+      console.log('压缩版本 (前200字符):');
+      console.log(comparison.compressed.substring(0, 200) + '...');
+    } else {
+      console.log(`❌ 没有找到ID为 ${sessionId} 的会话或该会话无压缩信息`);
+    }
+    this.memoryService.stop();
+  }
+
+  /**
+   * 🆕 显示压缩统计信息
+   */
+  private async showCompressionStats(): Promise<void> {
+    await this.memoryService.start();
+    const sessions = this.memoryService.getAllSessions();
+    
+    let totalSessions = 0;
+    let compressedSessions = 0;
+    let totalOriginalTokens = 0;
+    let totalCompressedTokens = 0;
+    
+    sessions.forEach(session => {
+      totalSessions++;
+      if (session.rawMessages) {
+        compressedSessions++;
+        const originalContent = session.rawMessages.map(m => m.content).join(' ');
+        const compressedContent = session.messages.map(m => m.content).join(' ');
+        totalOriginalTokens += originalContent.length;
+        totalCompressedTokens += compressedContent.length;
+      }
+    });
+    
+    console.log('📊 系统压缩统计:\n');
+    console.log(`📁 总会话数: ${totalSessions}`);
+    console.log(`🗜️  已压缩会话: ${compressedSessions}`);
+    console.log(`💾 总原始内容: ${totalOriginalTokens} 字符`);
+    console.log(`📦 压缩后内容: ${totalCompressedTokens} 字符`);
+    
+    if (compressedSessions > 0) {
+      const overallRatio = (totalCompressedTokens / totalOriginalTokens * 100).toFixed(1);
+      const spaceSaved = totalOriginalTokens - totalCompressedTokens;
+      console.log(`📈 整体压缩比: ${overallRatio}%`);
+      console.log(`💰 节省空间: ${spaceSaved} 字符`);
+    }
+    
     this.memoryService.stop();
   }
 }
