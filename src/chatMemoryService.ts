@@ -63,15 +63,15 @@ export class ChatMemoryService extends EventEmitter {
   private contextCache: ContextCache;
   private currentProject?: string;  // 当前项目路径
   
-  // 上下文控制配置
+  // 上下文控制配置 - 🚀 优化到100K上下文
   private readonly contextLimits = {
-    maxTotalTokens: 8000,        // 总token限制 (留给用户输入空间)
-    maxSessionsPerTemplate: 10,   // 每个模板最大会话数
-    maxSummaryLength: 200,        // 摘要最大长度
-    maxTitleLength: 50,           // 标题最大长度
-    tokenBuffer: 2000,            // 为用户输入预留的token缓冲
+    maxTotalTokens: 80000,        // 总token限制 (留给用户输入空间) - 升级到80K
+    maxSessionsPerTemplate: 50,   // 每个模板最大会话数 - 从10增加到50
+    maxSummaryLength: 800,        // 摘要最大长度 - 从200增加到800字符
+    maxTitleLength: 100,          // 标题最大长度 - 从50增加到100字符
+    tokenBuffer: 20000,           // 为用户输入预留的token缓冲 - 从2K增加到20K
     enableRawBackup: true,        // 🆕 启用原始内容备份
-    compressionThreshold: 5000    // 🆕 超过此token数时才压缩
+    compressionThreshold: 15000   // 🆕 超过此token数时才压缩 - 从5K增加到15K
   };
 
   // 预定义分类和关键词
@@ -88,37 +88,37 @@ export class ChatMemoryService extends EventEmitter {
     ['其他', []]
   ]);
 
-  // 预设引用模板
+  // 预设引用模板 - 🚀 优化会话数量以利用100K上下文
   private readonly referenceTemplates: ReferenceTemplate[] = [
     {
       id: 'recent',
       name: '最近会话',
-      description: '最近3个重要会话',
-      filters: { maxSessions: 3, importance: 0.3 }
+      description: '最近15个重要会话',
+      filters: { maxSessions: 15, importance: 0.3 }
     },
     {
       id: 'current-topic',
       name: '当前主题',
       description: '与当前主题相关的会话',
-      filters: { maxSessions: 5, importance: 0.4 }
+      filters: { maxSessions: 20, importance: 0.4 }
     },
     {
       id: 'problem-solving',
       name: '问题解决',
       description: '问题解决相关的历史经验',
-      filters: { categories: ['问题解决'], maxSessions: 4 }
+      filters: { categories: ['问题解决'], maxSessions: 15 }
     },
     {
       id: 'optimization',
       name: '性能优化',
       description: '性能优化相关经验',
-      filters: { categories: ['性能优化'], maxSessions: 3 }
+      filters: { categories: ['性能优化'], maxSessions: 12 }
     },
     {
       id: 'all-important',
       name: '重要精选',
       description: '所有高重要性会话',
-      filters: { importance: 0.7, maxSessions: 10 }
+      filters: { importance: 0.7, maxSessions: 30 }
     }
   ];
 
@@ -126,18 +126,8 @@ export class ChatMemoryService extends EventEmitter {
     super();
     this.currentProject = projectPath;
     
-    // 检查是否在开发模式下运行
-    const isDevMode = process.env.VSCODE_EXTENSION_DEVELOPMENT_PATH !== undefined;
-    
-    if (isDevMode) {
-      // 开发模式下使用项目目录下的 .cursor/chat
-      this.chatDir = path.join(process.env.VSCODE_EXTENSION_DEVELOPMENT_PATH || '', '.cursor', 'chat');
-      console.log('🔧 开发模式: 使用项目目录下的聊天文件');
-    } else {
-      // 正常模式下使用全局目录
-      this.chatDir = path.join(os.homedir(), '.cursor', 'chat');
-      console.log('🔧 正常模式: 使用全局聊天文件');
-    }
+    // 🚀 增强版智能路径检测
+    this.chatDir = this.detectBestChatDirectory(projectPath);
     
     // 项目特定的缓存目录
     if (projectPath) {
@@ -157,6 +147,122 @@ export class ChatMemoryService extends EventEmitter {
     this.initializeCategories();
     this.ensureCacheDir();
     this.loadCache();
+  }
+
+  /**
+   * 🆕 智能检测最佳的聊天目录路径
+   * 优先级：
+   * 1. 开发模式下的项目目录
+   * 2. 当前项目目录下的 .cursor/chat
+   * 3. 同名项目的其他副本
+   * 4. 全局 ~/.cursor/chat
+   */
+  private detectBestChatDirectory(projectPath?: string): string {
+    const candidatePaths: string[] = [];
+    
+    // 检查是否在开发模式下运行
+    const isDevMode = process.env.VSCODE_EXTENSION_DEVELOPMENT_PATH !== undefined;
+    
+    if (isDevMode && process.env.VSCODE_EXTENSION_DEVELOPMENT_PATH) {
+      // 开发模式：优先使用开发路径下的 .cursor/chat
+      candidatePaths.push(path.join(process.env.VSCODE_EXTENSION_DEVELOPMENT_PATH, '.cursor', 'chat'));
+      console.log('🔧 开发模式检测');
+    }
+    
+    if (projectPath) {
+      const projectName = path.basename(projectPath);
+      
+      // 当前项目路径下的 .cursor/chat
+      candidatePaths.push(path.join(projectPath, '.cursor', 'chat'));
+      
+      // 🆕 搜索可能的项目副本位置
+      const possibleProjectPaths = this.findProjectCopies(projectName);
+      possibleProjectPaths.forEach(copyPath => {
+        candidatePaths.push(path.join(copyPath, '.cursor', 'chat'));
+      });
+    }
+    
+    // 全局目录作为备选
+    candidatePaths.push(path.join(os.homedir(), '.cursor', 'chat'));
+    
+    // 选择包含最多聊天文件的目录
+    let bestPath = candidatePaths[candidatePaths.length - 1]; // 默认使用全局目录
+    let maxFiles = 0;
+    let totalCandidates = 0;
+    let accessiblePaths = 0;
+    
+    for (const candidatePath of candidatePaths) {
+      totalCandidates++;
+      try {
+        if (fs.existsSync(candidatePath)) {
+          accessiblePaths++;
+          const files = fs.readdirSync(candidatePath).filter(f => f.endsWith('.json'));
+          console.log(`📂 检查路径: ${candidatePath} (${files.length}个文件)`);
+          
+          if (files.length > maxFiles) {
+            maxFiles = files.length;
+            bestPath = candidatePath;
+          }
+        } else {
+          console.log(`❌ 路径不存在: ${candidatePath}`);
+        }
+      } catch (error) {
+        console.log(`⚠️  无法访问路径: ${candidatePath} - ${error}`);
+      }
+    }
+    
+    // 🆕 详细的检测结果报告
+    console.log(`\n📊 路径检测总结:`);
+    console.log(`   - 检查的路径总数: ${totalCandidates}`);
+    console.log(`   - 可访问的路径: ${accessiblePaths}`);
+    console.log(`   - 找到的聊天文件总数: ${maxFiles}`);
+    
+    if (maxFiles > 0) {
+      console.log(`✅ 检测到chat目录: ${bestPath} (${maxFiles}个文件)`);
+    } else {
+      console.log(`⚠️  没有找到聊天文件，使用默认目录: ${bestPath}`);
+      console.log(`💡 提示: 请确保Cursor已经创建了一些聊天记录`);
+    }
+    
+    return bestPath;
+  }
+  
+  /**
+   * 🆕 查找可能的项目副本
+   * 在常见的项目目录中搜索同名项目
+   */
+  private findProjectCopies(projectName: string): string[] {
+    const copies: string[] = [];
+    const homeDir = os.homedir();
+    
+    // 常见的项目存放位置
+    const commonPaths = [
+      path.join(homeDir, 'Documents'),
+      path.join(homeDir, 'Documents', 'projects'),
+      path.join(homeDir, 'Documents', 'baidu', 'projects'),
+      path.join(homeDir, 'projects'),
+      path.join(homeDir, 'workspace'),
+      path.join(homeDir, 'dev'),
+      path.join(homeDir, 'code'),
+      path.join(homeDir, '同步空间', 'projects'), // 🆕 支持同步空间
+      path.join(homeDir, 'iCloud Drive', 'projects'),
+      path.join(homeDir, 'OneDrive', 'projects'),
+      path.join(homeDir, 'Dropbox', 'projects'),
+    ];
+    
+    for (const basePath of commonPaths) {
+      try {
+        const projectPath = path.join(basePath, projectName);
+        if (fs.existsSync(projectPath) && fs.statSync(projectPath).isDirectory()) {
+          copies.push(projectPath);
+          console.log(`🔍 发现项目副本: ${projectPath}`);
+        }
+      } catch (error) {
+        // 忽略无法访问的路径
+      }
+    }
+    
+    return copies;
   }
 
   /**
@@ -989,5 +1095,66 @@ export class ChatMemoryService extends EventEmitter {
     
     const limitedSessions = sessions.slice(0, template?.filters.maxSessions || 5);
     return this.formatReferenceContent(limitedSessions, title);
+  }
+
+  /**
+   * 获取包含特定解决方案的会话
+   */
+  public getSolutionSessions(solutionKeywords: string[]): ChatSession[] {
+    const sessions = this.getAllSessions();
+    return sessions.filter(session => {
+      // 检查会话内容是否包含解决方案关键词
+      const hasSolution = solutionKeywords.some(keyword => 
+        session.messages.some(msg => 
+          msg.content.toLowerCase().includes(keyword.toLowerCase())
+        )
+      );
+      
+      // 检查会话是否包含代码块或技术细节
+      const hasTechnicalDetails = session.messages.some(msg => 
+        msg.content.includes('```') || 
+        msg.content.includes('解决方案') ||
+        msg.content.includes('修复')
+      );
+      
+      return hasSolution && hasTechnicalDetails;
+    });
+  }
+
+  /**
+   * 获取解决方案引用
+   */
+  public getSolutionReference(solutionKeywords: string[]): string {
+    const sessions = this.getSolutionSessions(solutionKeywords);
+    if (sessions.length === 0) {
+      return '没有找到相关的解决方案';
+    }
+
+    // 按重要性排序
+    sessions.sort((a, b) => b.importance - a.importance);
+
+    // 生成引用内容
+    let reference = '## 相关解决方案\n\n';
+    sessions.forEach((session, index) => {
+      reference += `### ${index + 1}. ${session.title}\n\n`;
+      reference += `**分类**: ${session.category}\n`;
+      reference += `**标签**: ${session.tags.map(t => t.name).join(', ')}\n\n`;
+      reference += `**摘要**: ${session.summary}\n\n`;
+      
+      // 添加关键消息
+      const keyMessages = session.messages.filter(msg => 
+        solutionKeywords.some(keyword => 
+          msg.content.toLowerCase().includes(keyword.toLowerCase())
+        )
+      );
+      
+      keyMessages.forEach(msg => {
+        reference += `> ${msg.role === 'user' ? '👤' : '🤖'} ${msg.content}\n\n`;
+      });
+      
+      reference += '---\n\n';
+    });
+
+    return reference;
   }
 } 

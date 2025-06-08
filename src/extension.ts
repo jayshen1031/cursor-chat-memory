@@ -151,6 +151,40 @@ function registerCommands(context: vscode.ExtensionContext) {
     restartMemoryService();
   });
 
+  // 8. 解决方案引用命令
+  const solutionReferenceCmd = vscode.commands.registerCommand('cursorChatMemory.solutionReference', async () => {
+    if (!memoryService) {
+      vscode.window.showErrorMessage('Memory service not available');
+      return;
+    }
+
+    const inputText = await vscode.window.showInputBox({
+      prompt: '输入关键词搜索解决方案',
+      placeHolder: '例如: 路径问题、配置错误、性能优化...'
+    });
+
+    if (!inputText) return;
+
+    const keywords = inputText.split(/[,，\s]+/).filter(k => k);
+    const reference = memoryService.getSolutionReference(keywords);
+    
+    if (reference.includes('没有找到')) {
+      vscode.window.showInformationMessage('📭 没有找到相关的解决方案');
+      return;
+    }
+
+    await vscode.env.clipboard.writeText(reference);
+    
+    vscode.window.showInformationMessage(
+      '✅ 解决方案引用已复制! 现在可以在Cursor聊天中粘贴使用',
+      '🚀 打开Cursor聊天'
+    ).then((action) => {
+      if (action === '🚀 打开Cursor聊天') {
+        vscode.commands.executeCommand('workbench.panel.chat.view.focus');
+      }
+    });
+  });
+
   // 注册所有命令
   context.subscriptions.push(
     smartReferenceCmd,
@@ -160,6 +194,7 @@ function registerCommands(context: vscode.ExtensionContext) {
     templateReferenceCmd,
     browseCategoriesCmd,
     restartServiceCmd,
+    solutionReferenceCmd,
     statusBarItem
   );
 }

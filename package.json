@@ -33,7 +33,12 @@
   ],
   "main": "./out/extension.js",
   "activationEvents": [
-    "*"
+    "onStartupFinished",
+    "onCommand:cursorChatMemory.enhanceInput",
+    "onCommand:cursorChatMemory.quickReference",
+    "onCommand:cursorChatMemory.showStatus",
+    "onCommand:cursorChatMemory.restartService",
+    "onCommand:cursorChatMemory.solutionReference"
   ],
   "contributes": {
     "commands": [
@@ -56,6 +61,11 @@
         "command": "cursorChatMemory.restartService",
         "title": "🔄 重启记忆服务",
         "category": "Cursor Memory"
+      },
+      {
+        "command": "cursorChatMemory.solutionReference",
+        "title": "🔍 引用解决方案",
+        "category": "Cursor Memory"
       }
     ],
     "keybindings": [
@@ -69,6 +79,12 @@
         "command": "cursorChatMemory.enhanceInput",
         "key": "ctrl+alt+m",
         "mac": "cmd+alt+m"
+      },
+      {
+        "command": "cursorChatMemory.solutionReference",
+        "key": "ctrl+shift+s",
+        "mac": "cmd+shift+s",
+        "when": "editorTextFocus"
       }
     ],
     "configuration": {
