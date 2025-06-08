@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Cursor Chat Memory 智能聊天记忆管理中心">
+    <meta name="theme-color" content="#4299e1">
+    
+    <!-- 性能优化 - 预加载关键资源 -->
+    <link rel="preload" href="style.css" as="style">
+    <link rel="preload" href="script.js" as="script">
+    <link rel="dns-prefetch" href="//localhost">
+    
+    <!-- 关键CSS内联以减少渲染阻塞 -->
+    <style>
+        /* 关键路径CSS - 避免FOUC */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            margin: 0; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .app { min-height: 100vh; display: flex; flex-direction: column; }
+        .loading { 
+            position: fixed; 
+            top: 0; left: 0; right: 0; bottom: 0; 
+            background: rgba(255,255,255,0.9); 
+            display: none; z-index: 9999; 
+        }
+        .loading.show { display: flex; align-items: center; justify-content: center; }
+    </style>
+    
+    <title>🧠 Cursor Chat Memory - 管理中心</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- 头部导航 -->
+        <header class="header">
+            <div class="header-content">
+                <h1>🧠 Cursor Chat Memory 管理中心</h1>
+                <div class="header-actions">
+                    <button id="refreshBtn" class="btn btn-secondary">🔄 刷新</button>
+                    <div class="project-info">
+                        <span id="projectPath">项目: cursor-chat-memory</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主导航标签 -->
+        <nav class="nav-tabs">
+            <button class="tab-btn active" data-tab="sessions">📋 历史会话</button>
+            <button class="tab-btn" data-tab="prompts">🧠 提示词中心</button>
+            <button class="tab-btn" data-tab="reference">⚡ 引用生成</button>
+            <button class="tab-btn" data-tab="analytics">📊 统计分析</button>
+        </nav>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <!-- 历史会话管理 -->
+            <div id="sessions-tab" class="tab-content active">
+                <div class="tab-header">
+                    <h2>📋 历史会话管理</h2>
+                    <div class="toolbar">
+                        <input type="text" id="sessionSearch" placeholder="搜索会话..." class="search-input">
+                        <select id="categoryFilter" class="filter-select">
+                            <option value="">所有分类</option>
+                            <option value="JavaScript">JavaScript</option>
+                            <option value="Python">Python</option>
+                            <option value="数据库">数据库</option>
+                            <option value="其他">其他</option>
+                        </select>
+                        <button id="searchSessionsBtn" class="btn btn-primary">🔍 搜索</button>
+                    </div>
+                </div>
+                
+                <div class="content-grid">
+                    <div class="sessions-list">
+                        <div id="sessionsContainer" class="sessions-container">
+                            <!-- 会话列表将在这里动态生成 -->
+                        </div>
+                    </div>
+                    
+                    <div class="session-detail">
+                        <div id="sessionDetailContainer" class="detail-container">
+                            <div class="empty-state">
+                                <p>选择一个会话查看详细信息</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 提示词中心管理 -->
+            <div id="prompts-tab" class="tab-content">
+                <div class="tab-header">
+                    <h2>🧠 提示词中心</h2>
+                    <div class="toolbar">
+                        <input type="text" id="promptSearch" placeholder="搜索提示词..." class="search-input">
+                        <select id="typeFilter" class="filter-select">
+                            <option value="">所有类型</option>
+                            <option value="global">全局知识</option>
+                            <option value="project">项目经验</option>
+                            <option value="iteration">迭代记录</option>
+                        </select>
+                        <button id="searchPromptsBtn" class="btn btn-primary">🔍 搜索</button>
+                        <button id="createPromptBtn" class="btn btn-success">➕ 创建提示词</button>
+                    </div>
+                </div>
+                
+                <div class="content-grid">
+                    <div class="prompts-list">
+                        <div id="promptsContainer" class="prompts-container">
+                            <!-- 提示词列表将在这里动态生成 -->
+                        </div>
+                    </div>
+                    
+                    <div class="prompt-detail">
+                        <div id="promptDetailContainer" class="detail-container">
+                            <div class="empty-state">
+                                <p>选择一个提示词查看详细信息</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 引用生成 -->
+            <div id="reference-tab" class="tab-content">
+                <div class="tab-header">
+                    <h2>⚡ 智能引用生成</h2>
+                </div>
+                
+                <div class="reference-generator">
+                    <div class="input-section">
+                        <h3>输入您的问题或上下文</h3>
+                        <textarea id="contextInput" placeholder="例如: 如何优化React性能、数据库查询问题..." rows="4"></textarea>
+                        
+                        <div class="reference-options">
+                            <div class="option-group">
+                                <h4>引用模板</h4>
+                                <select id="templateSelect" class="template-select">
+                                    <option value="recent">最近会话</option>
+                                    <option value="current-topic">当前主题</option>
+                                    <option value="problem-solving">问题解决</option>
+                                    <option value="optimization">性能优化</option>
+                                    <option value="all-important">重要精选</option>
+                                </select>
+                            </div>
+                            
+                            <div class="option-group">
+                                <label>
+                                    <input type="checkbox" id="includePrompts" checked>
+                                    包含推荐提示词
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button id="generateReferenceBtn" class="btn btn-primary">🚀 生成引用</button>
+                            <button id="getRecommendationsBtn" class="btn btn-secondary">💡 获取推荐</button>
+                        </div>
+                    </div>
+                    
+                    <div class="output-section">
+                        <h3>生成的引用内容</h3>
+                        <div id="referenceOutput" class="reference-output">
+                            <!-- 引用内容将在这里显示 -->
+                        </div>
+                        <div class="output-actions">
+                            <button id="copyReferenceBtn" class="btn btn-success" style="display: none;">📋 复制到剪贴板</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计分析 -->
+            <div id="analytics-tab" class="tab-content">
+                <div class="tab-header">
+                    <h2>📊 统计分析</h2>
+                </div>
+                
+                <div class="analytics-dashboard">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>会话统计</h3>
+                            <div id="sessionStats" class="stat-content">
+                                <!-- 会话统计信息 -->
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <h3>提示词统计</h3>
+                            <div id="promptStats" class="stat-content">
+                                <!-- 提示词统计信息 -->
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <h3>分类分布</h3>
+                            <div id="categoryStats" class="stat-content">
+                                <!-- 分类统计信息 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 模态框 -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">标题</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- 模态框内容 -->
+            </div>
+            <div class="modal-footer">
+                <button id="modalCancel" class="btn btn-secondary">取消</button>
+                <button id="modalConfirm" class="btn btn-primary">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载指示器 -->
+    <div id="loading" class="loading">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>加载中...</p>
+        </div>
+    </div>
+
+    <!-- 通知容器 -->
+    <div id="notifications" class="notifications">
+        <!-- 通知消息将在这里显示 -->
+    </div>
+
+    <!-- 加载指示器 -->
+    <div id="loading" class="loading">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>加载中...</p>
+        </div>
+    </div>
+
+    <!-- 通知容器 -->
+    <div id="notifications" class="notifications"></div>
+
+    <!-- 异步加载非关键JS -->
+    <script defer src="script.js"></script>
+    
+    <!-- 初始化脚本 -->
+    <script>
+        // 性能监控
+        window.addEventListener('load', () => {
+            if ('performance' in window) {
+                const perfData = performance.getEntriesByType('navigation')[0];
+                console.log('页面加载时间：', perfData.loadEventEnd - perfData.fetchStart, 'ms');
+            }
+        });
+
+        // 启用懒加载
+        document.addEventListener('DOMContentLoaded', () => {
+            if ('IntersectionObserver' in window) {
+                PerformanceUtils?.lazyLoadImages();
+            }
+        });
+
+        // 离线检测
+        window.addEventListener('online', () => {
+            console.log('网络连接已恢复');
+        });
+        
+        window.addEventListener('offline', () => {
+            console.log('网络连接已断开');
+        });
+    </script>
+</body>
+</html> 

@@ -4,17 +4,20 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { ChatMemoryService } from './chatMemoryService';
+import { PromptCenter, PromptTemplate, IterationRecord } from './promptCenter';
 
 /**
  * 增强CLI工具 - 支持智能选择性引用和项目特定上下文
  */
 class EnhancedChatMemoryCLI {
   private memoryService: ChatMemoryService;
+  private promptCenter: PromptCenter;
 
   constructor() {
     // 尝试从当前工作目录获取项目路径
     const currentDir = process.cwd();
     this.memoryService = new ChatMemoryService(currentDir);
+    this.promptCenter = this.memoryService.getPromptCenter();
   }
 
   /**
@@ -91,6 +94,49 @@ class EnhancedChatMemoryCLI {
           break;
         case 'compression-stats':
           await this.showCompressionStats();
+          break;
+        // 🆕 提示词管理命令
+        case 'prompts':
+          await this.listPrompts(params[0]);
+          break;
+        case 'create-prompt':
+          await this.createPrompt(params);
+          break;
+        case 'search-prompts':
+          await this.searchPrompts(params.join(' '));
+          break;
+        case 'get-prompt':
+          if (params.length < 1) {
+            console.log('❌ 请指定提示词ID: get-prompt <promptId>');
+            process.exit(1);
+          }
+          await this.getPromptContent(params[0]);
+          break;
+        case 'prompt-reference':
+          await this.generatePromptReference(params);
+          break;
+        case 'extract-solutions':
+          if (params.length < 1) {
+            console.log('❌ 请指定会话ID: extract-solutions <sessionId>');
+            process.exit(1);
+          }
+          await this.extractSolutions(params[0]);
+          break;
+        case 'record-iteration':
+          await this.recordIteration(params);
+          break;
+        case 'enhanced-reference':
+          if (params.length < 1) {
+            console.log('❌ 请指定模板ID: enhanced-reference <templateId> [inputText]');
+            process.exit(1);
+          }
+          await this.getEnhancedReference(params[0], params[1]);
+          break;
+        case 'web':
+        case 'manager':
+          console.log('🚀 启动Web管理界面...');
+          const { startWebManager } = await import('./webManager');
+          await startWebManager();
           break;
         case 'help':
         default:
@@ -381,9 +427,20 @@ class EnhancedChatMemoryCLI {
   compare-compression <id>    对比压缩前后的内容质量
   compression-stats           显示整体压缩统计信息
 
+🧠 提示词管理:
+  prompts [type]               列出提示词模板（可选：global/project/iteration）
+  create-prompt <name> <type> <category> <description> [content]  创建提示词
+  search-prompts <query>       搜索提示词模板
+  get-prompt <id>              查看提示词详细内容
+  prompt-reference <id1> <id2> 使用多个提示词生成引用
+  extract-solutions <sessionId> 从会话提取解决方案
+  record-iteration <version> <description> <learnings> 记录项目迭代
+  enhanced-reference <templateId> [input] 生成增强引用内容
+
 ⚙️  管理操作:
   templates                   查看所有可用模板
   refresh                     刷新缓存
+  web / manager               启动Web管理界面
   help                        显示帮助信息
 
 💡 上下文控制:
@@ -393,6 +450,7 @@ class EnhancedChatMemoryCLI {
   - 支持轻量级引用模式
 
 📊 使用示例:
+  cursor-memory web                           启动Web管理界面
   cursor-memory get-template recent
   cursor-memory search "React优化"
   cursor-memory light-reference 2000
@@ -535,6 +593,191 @@ class EnhancedChatMemoryCLI {
       console.log(`💰 节省空间: ${spaceSaved} 字符`);
     }
     
+    this.memoryService.stop();
+  }
+
+  /**
+   * 🆕 列出提示词模板
+   */
+  private async listPrompts(type?: string): Promise<void> {
+    const filterType = type as 'global' | 'project' | 'iteration' | undefined;
+    const prompts = this.promptCenter.getAllPrompts(filterType);
+    
+    if (prompts.length === 0) {
+      console.log('📭 没有找到提示词模板');
+      return;
+    }
+
+    console.log(`🧠 ${type ? `[${type}] ` : ''}共找到 ${prompts.length} 个提示词模板:\n`);
+    
+    prompts.forEach((prompt, index) => {
+      const tagsText = prompt.tags.map(tag => `#${tag}`).join(' ');
+      const ratingStars = '⭐'.repeat(Math.floor(prompt.rating));
+      
+      console.log(`${index + 1}. ${prompt.name} [${prompt.type}]`);
+      console.log(`   ID: ${prompt.id}`);
+      console.log(`   分类: ${prompt.category} ${tagsText}`);
+      console.log(`   评分: ${ratingStars} (${prompt.rating.toFixed(1)}) | 使用: ${prompt.usage}次`);
+      console.log(`   描述: ${prompt.description}`);
+      console.log('');
+    });
+  }
+
+  /**
+   * 🆕 创建提示词模板
+   */
+  private async createPrompt(params: string[]): Promise<void> {
+    if (params.length < 4) {
+      console.log('❌ 用法: create-prompt <name> <type> <category> <description> [content]');
+      console.log('   类型: global | project | iteration');
+      return;
+    }
+
+    const [name, type, category, description, ...contentParts] = params;
+    
+    if (!['global', 'project', 'iteration'].includes(type)) {
+      console.log('❌ 类型必须是: global | project | iteration');
+      return;
+    }
+
+    const content = contentParts.length > 0 ? contentParts.join(' ') : 
+      `## ${name}\n\n### 描述\n${description}\n\n### 内容\n请补充具体内容...`;
+
+    const promptId = this.promptCenter.createPrompt({
+      name,
+      type: type as 'global' | 'project' | 'iteration',
+      category,
+      content,
+      description,
+      tags: category.split(' '),
+      version: '1.0.0'
+    });
+
+    console.log(`✅ 创建提示词模板成功! ID: ${promptId}`);
+  }
+
+  /**
+   * 🆕 搜索提示词模板
+   */
+  private async searchPrompts(query: string): Promise<void> {
+    if (!query.trim()) {
+      console.log('❌ 请提供搜索关键词');
+      return;
+    }
+
+    const results = this.promptCenter.searchPrompts(query);
+    
+    if (results.length === 0) {
+      console.log(`📭 没有找到包含 "${query}" 的提示词模板`);
+      return;
+    }
+
+    console.log(`🔍 搜索 "${query}" 的结果 (${results.length}个):\n`);
+    
+    results.forEach((prompt, index) => {
+      const tagsText = prompt.tags.map(tag => `#${tag}`).join(' ');
+      console.log(`${index + 1}. ${prompt.name} [${prompt.type}]`);
+      console.log(`   分类: ${prompt.category} ${tagsText}`);
+      console.log(`   📝 ${prompt.description}`);
+      console.log('');
+    });
+  }
+
+  /**
+   * 🆕 获取提示词内容
+   */
+  private async getPromptContent(promptId: string): Promise<void> {
+    const prompt = this.promptCenter.getPrompt(promptId);
+    
+    if (!prompt) {
+      console.log(`❌ 没有找到ID为 ${promptId} 的提示词模板`);
+      return;
+    }
+
+    console.log(`📝 提示词模板: ${prompt.name}\n`);
+    console.log('='.repeat(50));
+    console.log(prompt.content);
+    console.log('='.repeat(50));
+    console.log(`📊 统计: 评分 ${prompt.rating}/5 | 使用 ${prompt.usage}次 | 更新 ${new Date(prompt.updatedAt).toLocaleString()}`);
+  }
+
+  /**
+   * 🆕 生成提示词引用
+   */
+  private async generatePromptReference(promptIds: string[]): Promise<void> {
+    if (promptIds.length === 0) {
+      console.log('❌ 请指定至少一个提示词ID');
+      return;
+    }
+
+    const reference = this.promptCenter.generateReference(promptIds);
+    console.log(reference);
+  }
+
+  /**
+   * 🆕 从会话提取解决方案
+   */
+  private async extractSolutions(sessionId: string): Promise<void> {
+    await this.memoryService.start();
+    const extractedPrompts = this.memoryService.extractSolutionPrompts(sessionId);
+    
+    if (extractedPrompts.length === 0) {
+      console.log(`❌ 会话 ${sessionId} 中没有找到有价值的解决方案`);
+      this.memoryService.stop();
+      return;
+    }
+
+    console.log(`✅ 从会话 ${sessionId} 提取了 ${extractedPrompts.length} 个解决方案:\n`);
+    
+    extractedPrompts.forEach((prompt, index) => {
+      console.log(`${index + 1}. ${prompt.name}`);
+      console.log(`   ID: ${prompt.id}`);
+      console.log(`   描述: ${prompt.description}`);
+      console.log('');
+    });
+    
+    this.memoryService.stop();
+  }
+
+  /**
+   * 🆕 记录项目迭代
+   */
+  private async recordIteration(params: string[]): Promise<void> {
+    if (params.length < 2) {
+      console.log('❌ 用法: record-iteration <phase> <description> [keyChanges...] --lessons [lessons...] --next [nextSteps...]');
+      return;
+    }
+
+    const [phase, description, ...rest] = params;
+    
+    // 简单的参数解析（在实际应用中可能需要更复杂的解析）
+    const keyChanges = rest.filter(arg => !arg.startsWith('--'));
+    const lessons = ['从此次迭代中学到的经验']; // 简化实现
+    const nextSteps = ['下一阶段的计划']; // 简化实现
+
+    const iterationId = this.promptCenter.recordIteration({
+      phase,
+      description,
+      keyChanges,
+      codeEvolution: {
+        before: '// 变更前的代码',
+        after: '// 变更后的代码',
+        files: ['example.ts']
+      },
+      lessonsLearned: lessons,
+      nextSteps
+    });
+
+    console.log(`✅ 记录项目迭代成功! ID: ${iterationId}`);
+  }
+
+  /**
+   * 🆕 获取增强引用（包含提示词）
+   */
+  private async getEnhancedReference(templateId: string, inputText?: string): Promise<void> {
+    await this.memoryService.start();
+    const reference = this.memoryService.getEnhancedReference(templateId, inputText, true);
+    console.log(reference);
     this.memoryService.stop();
   }
 }

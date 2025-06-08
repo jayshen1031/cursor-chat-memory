@@ -185,18 +185,72 @@ function registerCommands(context: vscode.ExtensionContext) {
     });
   });
 
+  // 🆕 9. 提示词管理命令
+  const promptManagerCmd = vscode.commands.registerCommand('cursorChatMemory.promptManager', async () => {
+    if (!memoryService) {
+      vscode.window.showErrorMessage('Memory service not available');
+      return;
+    }
+
+    vscode.window.showInformationMessage('🧠 提示词管理功能开发中，敬请期待！');
+  });
+
+  // 🆕 10. 增强引用命令（包含提示词）
+  const enhancedReferenceCmd = vscode.commands.registerCommand('cursorChatMemory.enhancedReference', async () => {
+    if (!memoryService) {
+      vscode.window.showErrorMessage('Memory service not available');
+      return;
+    }
+
+    const inputText = await vscode.window.showInputBox({
+      prompt: '输入您的问题或上下文',
+      placeHolder: '例如: 如何优化React性能、数据库查询问题...'
+    });
+
+    if (!inputText) return;
+
+    const templates = memoryService.getAvailableTemplates();
+    const templateItems = templates.map(t => ({
+      label: `$(symbol-class) ${t.name}`,
+      description: t.description,
+      detail: `相关模板引用`,
+      templateId: t.id
+    }));
+
+    const selectedTemplate = await vscode.window.showQuickPick(templateItems, {
+      placeHolder: '选择引用模板'
+    });
+
+    if (!selectedTemplate) return;
+
+    const reference = memoryService.getEnhancedReference(selectedTemplate.templateId, inputText, true);
+    
+    await vscode.env.clipboard.writeText(reference);
+    
+    vscode.window.showInformationMessage(
+      '🧠 增强引用已复制! 包含相关历史对话和提示词模板',
+      '🚀 打开Cursor聊天'
+    ).then((action) => {
+      if (action === '🚀 打开Cursor聊天') {
+        vscode.commands.executeCommand('workbench.panel.chat.view.focus');
+      }
+    });
+  });
+
   // 注册所有命令
-  context.subscriptions.push(
-    smartReferenceCmd,
-    quickReferenceCmd,
-    showStatusCmd,
-    intelligentRecommendCmd,
-    templateReferenceCmd,
-    browseCategoriesCmd,
-    restartServiceCmd,
-    solutionReferenceCmd,
-    statusBarItem
-  );
+      context.subscriptions.push(
+      smartReferenceCmd,
+      quickReferenceCmd,
+      showStatusCmd,
+      intelligentRecommendCmd,
+      templateReferenceCmd,
+      browseCategoriesCmd,
+      restartServiceCmd,
+      solutionReferenceCmd,
+      promptManagerCmd,
+      enhancedReferenceCmd,
+      statusBarItem
+    );
 }
 
 /**

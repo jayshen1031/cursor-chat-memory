@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { EventEmitter } from 'events';
+import { PromptCenter, PromptTemplate } from './promptCenter';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -62,6 +63,7 @@ export class ChatMemoryService extends EventEmitter {
   private watcher: fs.FSWatcher | null = null;
   private contextCache: ContextCache;
   private currentProject?: string;  // 当前项目路径
+  private promptCenter: PromptCenter; // 🆕 提示词中心
   
   // 上下文控制配置 - 🚀 优化到100K上下文
   private readonly contextLimits = {
@@ -147,6 +149,9 @@ export class ChatMemoryService extends EventEmitter {
     this.initializeCategories();
     this.ensureCacheDir();
     this.loadCache();
+    
+    // 初始化提示词中心
+    this.promptCenter = new PromptCenter(projectPath);
   }
 
   /**
@@ -520,8 +525,10 @@ export class ChatMemoryService extends EventEmitter {
 
       // 生成会话摘要和标题
       const summary = this.generateEnhancedSummary(messages);
-      const title = this.generateSessionTitle(messages);
-      const category = this.detectCategory(summary);
+      // 🆕 优先使用文件中的title，如果没有则生成
+      const title = chatData.title || this.generateSessionTitle(messages);
+      // 🆕 检测分类时同时考虑标题和摘要
+      const category = this.detectCategory(title + ' ' + summary);
       const tags = this.generateTags(summary, category);
       const importance = this.calculateImportance(messages, summary);
 
@@ -650,6 +657,7 @@ export class ChatMemoryService extends EventEmitter {
   private detectCategory(content: string): string {
     const contentLower = content.toLowerCase();
     
+    // 🆕 增强分类检测，考虑标题和内容
     for (const [category, keywords] of this.categoryKeywords) {
       if (keywords.some(keyword => contentLower.includes(keyword))) {
         return category;
@@ -1119,6 +1127,104 @@ export class ChatMemoryService extends EventEmitter {
       
       return hasSolution && hasTechnicalDetails;
     });
+  }
+
+  /**
+   * 🆕 获取提示词中心实例
+   */
+  public getPromptCenter(): PromptCenter {
+    return this.promptCenter;
+  }
+
+  /**
+   * 🆕 获取增强引用内容（包含提示词）
+   */
+  public getEnhancedReference(templateId: string, inputText?: string, includePrompts: boolean = false): string {
+    let reference = this.getReferenceByTemplate(templateId, inputText);
+    
+    if (includePrompts && inputText) {
+      // 获取推荐的提示词模板
+      const recommendedPrompts = this.promptCenter.getRecommendedPrompts(inputText, 2);
+      
+      if (recommendedPrompts.length > 0) {
+        const promptIds = recommendedPrompts.map(p => p.id);
+        const promptReference = this.promptCenter.generateReference(promptIds, inputText);
+        
+        reference += '\n\n---\n\n' + promptReference;
+      }
+    }
+    
+    return reference;
+  }
+
+  /**
+   * 🆕 自动记录会话中的重要解决方案为提示词
+   */
+  public extractSolutionPrompts(sessionId: string): PromptTemplate[] {
+    const session = this.contextCache.sessions.get(sessionId);
+    if (!session || session.importance < 0.6) {
+      return [];
+    }
+
+    const extractedPrompts: PromptTemplate[] = [];
+    
+    // 查找包含解决方案的消息
+    const solutionMessages = session.messages.filter(msg => 
+      msg.role === 'assistant' && 
+      (msg.content.includes('```') || 
+       msg.content.includes('解决方案') ||
+       msg.content.includes('修复') ||
+       msg.content.includes('实现'))
+    );
+
+    solutionMessages.forEach((msg, index) => {
+      if (msg.content.length > 100) { // 只处理有实质内容的消息
+        const promptId = this.promptCenter.createPrompt({
+          name: `解决方案: ${session.title}`,
+          type: 'project',
+          category: session.category,
+          content: this.formatSolutionContent(msg.content, session),
+          description: `从会话"${session.title}"中提取的解决方案`,
+          tags: [...session.tags.map(t => t.name), '解决方案'],
+          version: '1.0.0',
+          metadata: {
+            projectPath: this.currentProject,
+            relatedSessions: [sessionId]
+          }
+        });
+        
+        const prompt = this.promptCenter.getPrompt(promptId);
+        if (prompt) {
+          extractedPrompts.push(prompt);
+        }
+      }
+    });
+
+    return extractedPrompts;
+  }
+
+  /**
+   * 🆕 格式化解决方案内容为提示词
+   */
+  private formatSolutionContent(content: string, session: ChatSession): string {
+    return `## 💡 解决方案记录
+
+### 📋 问题背景
+${session.summary}
+
+### 🎯 解决方案
+${content}
+
+### 🏷️ 相关标签
+${session.tags.map(tag => `#${tag.name}`).join(' ')}
+
+### 📊 应用场景
+- **分类**: ${session.category}
+- **重要性**: ${(session.importance * 5).toFixed(1)}/5.0
+- **记录时间**: ${new Date(session.lastActivity).toLocaleString()}
+
+---
+*此解决方案来自历史会话，已验证有效*`;
   }
 
   /**

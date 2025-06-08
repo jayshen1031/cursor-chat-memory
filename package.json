@@ -6,12 +6,15 @@
     "自动分类和标签管理", 
     "CLI工具支持跨平台使用",
     "实时监听聊天文件变化",
-    "多种引用模板和自定义选择"
+    "多种引用模板和自定义选择",
+    "提示词中心：全局工程知识库",
+    "项目迭代记录和代码演进追踪",
+    "智能解决方案提取和复用"
   ],
   "name": "cursor-chat-memory",
   "displayName": "Cursor Chat Memory",
   "description": "智能聊天记忆插件，自动记录和引用Cursor对话上下文",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "publisher": "cursor-memory",
   "bin": {
     "cursor-memory": "./out/cli.js"
