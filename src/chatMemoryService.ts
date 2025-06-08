@@ -125,7 +125,19 @@ export class ChatMemoryService extends EventEmitter {
   constructor(projectPath?: string) {
     super();
     this.currentProject = projectPath;
-    this.chatDir = path.join(os.homedir(), '.cursor', 'chat');
+    
+    // 检查是否在开发模式下运行
+    const isDevMode = process.env.VSCODE_EXTENSION_DEVELOPMENT_PATH !== undefined;
+    
+    if (isDevMode) {
+      // 开发模式下使用项目目录下的 .cursor/chat
+      this.chatDir = path.join(process.env.VSCODE_EXTENSION_DEVELOPMENT_PATH || '', '.cursor', 'chat');
+      console.log('🔧 开发模式: 使用项目目录下的聊天文件');
+    } else {
+      // 正常模式下使用全局目录
+      this.chatDir = path.join(os.homedir(), '.cursor', 'chat');
+      console.log('🔧 正常模式: 使用全局聊天文件');
+    }
     
     // 项目特定的缓存目录
     if (projectPath) {
