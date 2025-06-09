@@ -141,6 +141,37 @@ class EnhancedChatMemoryCLI {
         case 'debug-list-sessions':
           await this.debugListSessions(params[0]);
           break;
+        case 'smart-summarize':
+          if (params.length < 1) {
+            console.log('❌ 请指定会话ID: smart-summarize <sessionId>');
+            process.exit(1);
+          }
+          await this.smartSummarize(params[0]);
+          break;
+        case 'smart-integrate':
+          await this.smartIntegrate();
+          break;
+        case 'smart-integrate-local':
+          await this.smartIntegrate(true);
+          break;
+        case 'smart-integrate-openai':
+          await this.smartIntegrate(false);
+          break;
+        case 'project-knowledge':
+          await this.projectKnowledge();
+          break;
+        case 'project-knowledge-local':
+          await this.projectKnowledge(true);
+          break;
+        case 'project-knowledge-openai':
+          await this.projectKnowledge(false);
+          break;
+        case 'smart-reference':
+          await this.smartReference(params.join(' '));
+          break;
+        case 'batch-smart-summarize':
+          await this.batchSmartSummarize();
+          break;
         case 'help':
         default:
           this.showHelp();
@@ -478,6 +509,17 @@ class EnhancedChatMemoryCLI {
   record-iteration <version> <description> <learnings> 记录项目迭代
   enhanced-reference <templateId> [input] 生成增强引用内容
 
+🤖 AI智能提炼:
+  smart-summarize <sessionId>  智能提炼单个会话内容
+  batch-smart-summarize        批量智能提炼所有历史会话
+  smart-integrate              智能整合现有提示词模板 (默认本地Claude)
+  smart-integrate-local        使用本地Claude整合提示词模板
+  smart-integrate-openai       使用Azure OpenAI整合提示词模板
+  project-knowledge            生成项目整体知识图谱 (默认本地Claude)
+  project-knowledge-local      使用本地Claude生成知识图谱
+  project-knowledge-openai     使用Azure OpenAI生成知识图谱
+  smart-reference [context]    生成AI智能引用内容
+
 ⚙️  管理操作:
   templates                   查看所有可用模板
   refresh                     刷新缓存
@@ -489,9 +531,16 @@ class EnhancedChatMemoryCLI {
   - 智能截断长标题和摘要
   - 显示实际使用的tokens统计
   - 支持轻量级引用模式
+  - AI智能提炼和知识整合
 
 📊 使用示例:
   cursor-memory web                           启动Web管理界面
+  cursor-memory smart-integrate-local         使用本地Claude整合提示词
+  cursor-memory smart-integrate-openai        使用Azure OpenAI整合提示词
+  cursor-memory project-knowledge-local       使用本地Claude生成知识图谱
+  cursor-memory project-knowledge-openai      使用Azure OpenAI生成知识图谱
+  cursor-memory smart-reference "React开发"   生成智能引用
+  cursor-memory batch-smart-summarize         批量提炼历史会话
   cursor-memory get-template recent
   cursor-memory search "React优化"
   cursor-memory light-reference 2000
@@ -819,6 +868,145 @@ class EnhancedChatMemoryCLI {
     await this.memoryService.start();
     const reference = this.memoryService.getEnhancedReference(templateId, inputText, true);
     console.log(reference);
+    this.memoryService.stop();
+  }
+
+  /**
+   * 🆕 智能提炼单个会话内容
+   */
+  private async smartSummarize(sessionId: string): Promise<void> {
+    await this.memoryService.start();
+    const sessions = this.memoryService.getAllSessions();
+    const session = sessions.find(s => s.id.includes(sessionId) || s.title.includes(sessionId));
+    
+    if (!session) {
+      console.log(`❌ 未找到会话: ${sessionId}`);
+      this.memoryService.stop();
+      return;
+    }
+    
+         // 获取完整对话内容
+     const fullContent = session.summary || `Title: ${session.title}\nCategory: ${session.category}`;
+    
+    const promptCenter = this.memoryService.getPromptCenter();
+    const smartPrompt = await promptCenter.smartSummarizeSession(session, fullContent);
+    
+    console.log(`\n✅ 智能提炼完成:`);
+    console.log(`📝 标题: ${smartPrompt.name}`);
+    console.log(`🏷️ 分类: ${smartPrompt.category}`);
+    console.log(`📋 描述: ${smartPrompt.description}`);
+    console.log(`🏆 标签: ${smartPrompt.tags.join(', ')}`);
+    
+    this.memoryService.stop();
+  }
+
+  /**
+   * 🆕 智能整合现有提示词模板
+   */
+  private async smartIntegrate(useLocal: boolean = true): Promise<void> {
+    const analyzerType = useLocal ? '本地Claude' : 'Azure OpenAI';
+    console.log(`🧠 开始智能整合现有提示词模板... (${analyzerType})`);
+    
+    await this.memoryService.start();
+    const promptCenter = this.memoryService.getPromptCenter();
+    const result = await promptCenter.smartIntegratePrompts(useLocal);
+    
+    console.log(`\n✅ 智能整合完成 (${analyzerType}):`);
+    console.log(`📝 生成提示词: ${result.integrated.length} 个`);
+    console.log(`📚 知识库维度: ${Object.keys(result.knowledgeBase).length} 个`);
+    
+    result.integrated.forEach((prompt, index) => {
+      console.log(`\n${index + 1}. ${prompt.name}`);
+      console.log(`   分类: ${prompt.category} | 类型: ${prompt.type}`);
+      console.log(`   标签: ${prompt.tags.join(', ')}`);
+      console.log(`   分析器: ${analyzerType}`);
+    });
+    
+    this.memoryService.stop();
+  }
+
+  /**
+   * 🆕 生成项目整体知识图谱
+   */
+  private async projectKnowledge(useLocal: boolean = true): Promise<void> {
+    const analyzerType = useLocal ? '本地Claude' : 'Azure OpenAI';
+    console.log(`🧠 开始生成项目知识图谱... (${analyzerType})`);
+    
+    await this.memoryService.start();
+    const sessions = this.memoryService.getAllSessions();
+    const promptCenter = this.memoryService.getPromptCenter();
+    const knowledge = await promptCenter.generateProjectKnowledge(sessions, useLocal);
+    
+    console.log(`\n📚 项目知识图谱 (${analyzerType}):`);
+    console.log(`\n🎯 项目概述:`);
+    console.log(knowledge.projectOverview);
+    
+    console.log(`\n🏗️ 核心架构:`);
+    console.log(knowledge.coreArchitecture);
+    
+    console.log(`\n💻 关键技术:`);
+    knowledge.keyTechnologies.forEach((tech: string) => console.log(`  - ${tech}`));
+    
+    console.log(`\n❗ 主要挑战:`);
+    knowledge.mainChallenges.forEach((challenge: string) => console.log(`  - ${challenge}`));
+    
+    console.log(`\n💡 解决方案模式:`);
+    knowledge.solutionPatterns.forEach((pattern: string) => console.log(`  - ${pattern}`));
+    
+    console.log(`\n📈 演进时间线:`);
+    knowledge.evolutionTimeline.forEach((phase: any) => {
+      console.log(`  📅 ${phase.timestamp} - ${phase.phase}`);
+      console.log(`     ${phase.description}`);
+      phase.keyChanges.forEach((change: string) => console.log(`     • ${change}`));
+    });
+    
+    console.log(`\n🎯 建议:`);
+    knowledge.recommendations.forEach((rec: string) => console.log(`  - ${rec}`));
+    
+    console.log(`\n🤖 分析引擎: ${analyzerType}`);
+    
+    this.memoryService.stop();
+  }
+
+  /**
+   * 🆕 生成AI智能引用内容
+   */
+  private async smartReference(context: string): Promise<void> {
+    console.log(`🤖 开始生成智能引用内容 (上下文: ${context})...`);
+    
+    await this.memoryService.start();
+    const promptCenter = this.memoryService.getPromptCenter();
+    const prompts = promptCenter.getAllPrompts();
+    const promptIds = prompts.slice(0, 3).map(p => p.id); // 取前3个提示词
+    
+    const reference = await promptCenter.generateSmartReference([], promptIds, context);
+    
+    console.log(`\n${reference}`);
+    
+    this.memoryService.stop();
+  }
+
+  /**
+   * 🆕 批量智能提炼所有历史会话
+   */
+  private async batchSmartSummarize(): Promise<void> {
+    console.log('🤖 开始批量智能提炼历史会话...');
+    
+    await this.memoryService.start();
+    const sessions = this.memoryService.getAllSessions();
+    const promptCenter = this.memoryService.getPromptCenter();
+    const results = await promptCenter.batchSmartSummarize(sessions);
+    
+    console.log(`\n✅ 批量提炼完成:`);
+    console.log(`📊 处理会话: ${sessions.length} 个`);
+    console.log(`✅ 成功提炼: ${results.length} 个`);
+    
+    results.forEach((prompt, index) => {
+      console.log(`\n${index + 1}. ${prompt.name}`);
+      console.log(`   分类: ${prompt.category}`);
+      console.log(`   来源: ${prompt.sourceSession}`);
+    });
+    
     this.memoryService.stop();
   }
 }

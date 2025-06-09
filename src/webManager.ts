@@ -7,7 +7,9 @@ async function startWebManager() {
     console.log('🚀 启动 Cursor Chat Memory Web 管理界面...');
     
     const projectPath = process.cwd();
-    const port = parseInt(process.env.PORT || '3000');
+    // 支持命令行参数 --port
+    const portArg = process.argv.find(arg => arg.startsWith('--port'));
+    const port = portArg ? parseInt(portArg.split('=')[1] || process.argv[process.argv.indexOf(portArg) + 1]) : parseInt(process.env.PORT || '3000');
     
     console.log(`📁 项目路径: ${projectPath}`);
     console.log(`🌐 启动端口: ${port}`);

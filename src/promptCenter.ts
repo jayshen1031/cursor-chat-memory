@@ -2,6 +2,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { EventEmitter } from 'events';
+import { AISummarizer } from './aiSummarizer';
+import { LocalAnalyzer } from './localAnalyzer';
 
 // 提示词类型定义
 export interface PromptTemplate {
@@ -23,6 +25,8 @@ export interface PromptTemplate {
     codeFiles?: string[];
     dependencies?: string[];
   };
+  sourceSession?: string;
+  aiEnhanced?: boolean;
 }
 
 // 迭代记录
@@ -57,6 +61,8 @@ export class PromptCenter extends EventEmitter {
   private config: PromptCenterConfig;
   private templates: Map<string, PromptTemplate> = new Map();
   private iterations: Map<string, IterationRecord> = new Map();
+  private aiSummarizer?: AISummarizer;
+  private localAnalyzer: LocalAnalyzer;
 
   // 全局工程提示词模板
   private readonly globalPromptTemplates = [
@@ -140,6 +146,17 @@ export class PromptCenter extends EventEmitter {
     this.loadIterations();
     // 🚫 移除内置模板创建，只从真实对话中提取
     console.log('📋 提示词中心已初始化 - 专注于从项目对话中提取实际内容');
+
+    // Initialize analyzers
+    this.localAnalyzer = new LocalAnalyzer();
+    console.log('🧠 本地Claude分析器已初始化');
+    
+    try {
+      this.aiSummarizer = new AISummarizer();
+      console.log('🤖 Azure OpenAI分析器已初始化');
+    } catch (error) {
+      console.warn('⚠️ Azure OpenAI分析器初始化失败，将使用本地Claude分析器:', error);
+    }
   }
 
   /**
@@ -949,8 +966,6 @@ ${iteration.codeEvolution.after}
     }
   }
 
-
-
   /**
    * 提取解决方案
    */
@@ -1226,5 +1241,326 @@ ${iteration.codeEvolution.after}
     }
     
     return content;
+  }
+
+  /**
+   * 🆕 智能提炼历史会话内容 - 支持本地Claude和Azure OpenAI
+   */
+  async smartSummarizeSession(session: any, fullContent: string, useLocal: boolean = true): Promise<PromptTemplate> {
+    console.log(`🧠 正在智能分析会话内容... (使用${useLocal ? '本地Claude' : 'Azure OpenAI'}分析器)`);
+    
+    let aiSummary: any;
+    
+    if (useLocal) {
+      // 使用本地Claude分析器
+      aiSummary = this.localAnalyzer.analyzeSession({
+        id: session.id,
+        title: session.title,
+        category: session.category || 'general',
+        importance: session.importance || 3,
+        summary: session.summary || '',
+        tags: session.tags || [],
+        timestamp: session.timestamp || new Date().toISOString()
+      }, fullContent);
+    } else {
+      // 使用Azure OpenAI
+      if (!this.aiSummarizer) {
+        throw new Error('Azure OpenAI分析器未初始化，请使用本地分析器');
+      }
+      
+      aiSummary = await this.aiSummarizer.summarizeSession({
+        id: session.id,
+        title: session.title,
+        category: session.category || 'general',
+        importance: session.importance || 3,
+        summary: session.summary || '',
+        tags: session.tags || [],
+        timestamp: session.timestamp || new Date().toISOString()
+      }, fullContent);
+    }
+
+    // 创建智能提炼后的提示词
+    const promptTemplate: PromptTemplate = {
+      id: `${useLocal ? 'claude' : 'openai'}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: aiSummary.title,
+      type: 'project',
+      category: aiSummary.category,
+      content: this.formatSmartContent(aiSummary, useLocal),
+      description: aiSummary.summary,
+      tags: aiSummary.tags,
+      version: '1.0.0',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      usage: 0,
+      rating: 0,
+      sourceSession: session.id,
+      aiEnhanced: true
+    };
+
+    this.templates.set(promptTemplate.id, promptTemplate);
+    this.savePrompts();
+
+    console.log(`✅ 智能提炼完成: ${promptTemplate.name}`);
+    return promptTemplate;
+  }
+
+  private formatSmartContent(aiSummary: any, useLocal: boolean): string {
+    const analyzerType = useLocal ? '本地Claude分析器' : 'Azure OpenAI';
+    
+    return `# 🎯 ${aiSummary.title}
+
+> 🧠 **${analyzerType}智能提炼** | 重要性: ${aiSummary.importance}/5
+
+## 📋 核心摘要
+${aiSummary.summary}
+
+## 🔑 关键技术点
+${aiSummary.keyPoints.map((point: string) => `- ${point}`).join('\n')}
+
+## 💡 技术洞察
+${aiSummary.technicalInsights.map((insight: string) => `- ${insight}`).join('\n')}
+
+## ❓ 解决的问题
+${aiSummary.problemsSolved.map((problem: string) => `- ${problem}`).join('\n')}
+
+## 🔧 代码变更
+${aiSummary.codeChanges.map((change: string) => `- ${change}`).join('\n')}
+
+---
+*📅 提炼时间: ${new Date().toLocaleString('zh-CN')}*
+*🏷️ 标签: ${aiSummary.tags.join(', ')}*
+*🤖 分析引擎: ${analyzerType}*`;
+  }
+
+  /**
+   * 🆕 智能整合现有提示词模板 - 支持本地Claude和Azure OpenAI
+   */
+  async smartIntegratePrompts(useLocal: boolean = true): Promise<{
+    integrated: PromptTemplate[];
+    knowledgeBase: any;
+  }> {
+    console.log(`🧠 正在智能整合提示词模板... (使用${useLocal ? '本地Claude' : 'Azure OpenAI'}分析器)`);
+    
+    const existingPrompts = Array.from(this.templates.values());
+    if (existingPrompts.length === 0) {
+      console.log('📝 没有找到需要整合的提示词');
+      return { integrated: [], knowledgeBase: {} };
+    }
+
+    let result: any;
+    
+    if (useLocal) {
+      // 使用本地Claude分析器
+      result = this.localAnalyzer.integratePrompts(existingPrompts.map(p => ({
+        id: p.id,
+        name: p.name,
+        type: p.type,
+        category: p.category,
+        content: p.content,
+        description: p.description,
+        tags: p.tags
+      })));
+    } else {
+      // 使用Azure OpenAI
+      if (!this.aiSummarizer) {
+        throw new Error('Azure OpenAI分析器未初始化，请使用本地分析器');
+      }
+      
+      result = await this.aiSummarizer.integratePrompts(existingPrompts.map(p => ({
+        id: p.id,
+        name: p.name,
+        type: p.type,
+        category: p.category,
+        content: p.content,
+        description: p.description,
+        tags: p.tags
+      })));
+    }
+
+    // 备份原始提示词
+    const promptsFile = path.join(this.promptsDir, 'templates.json');
+    const backupFile = path.join(path.dirname(this.promptsDir), `templates_backup_${Date.now()}.json`);
+    if (fs.existsSync(promptsFile)) {
+      fs.copyFileSync(promptsFile, backupFile);
+      console.log(`💾 原始提示词已备份到: ${path.basename(backupFile)}`);
+    }
+
+    // 清除旧的提示词
+    this.templates.clear();
+
+    // 添加整合后的提示词
+    const integratedPrompts: PromptTemplate[] = [];
+    for (const integrated of result.integratedPrompts) {
+      const promptTemplate: PromptTemplate = {
+        id: integrated.id,
+        name: integrated.name,
+        type: integrated.type as 'global' | 'project' | 'iteration',
+        category: integrated.category,
+        content: integrated.content,
+        description: integrated.description,
+        tags: integrated.tags,
+        version: '1.0.0',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        usage: 0,
+        rating: 0,
+        aiEnhanced: true
+      };
+      
+      this.templates.set(promptTemplate.id, promptTemplate);
+      integratedPrompts.push(promptTemplate);
+    }
+
+    // 保存知识库
+    const knowledgeBaseFile = path.join(path.dirname(this.promptsDir), 'knowledge_base.json');
+    fs.writeFileSync(knowledgeBaseFile, JSON.stringify({
+      ...result.knowledgeBase,
+      generatedAt: new Date().toISOString(),
+      sourcePrompts: existingPrompts.length,
+      analyzer: useLocal ? '本地Claude' : 'Azure OpenAI'
+    }, null, 2));
+
+    this.savePrompts();
+    
+    console.log(`✅ 智能整合完成，生成 ${integratedPrompts.length} 个优化提示词`);
+    console.log(`📚 知识库已保存到: knowledge_base.json`);
+    
+    return {
+      integrated: integratedPrompts,
+      knowledgeBase: result.knowledgeBase
+    };
+  }
+
+  /**
+   * 🆕 生成智能项目知识总结 - 支持本地Claude和Azure OpenAI
+   */
+  async generateProjectKnowledge(sessions: any[], useLocal: boolean = true): Promise<any> {
+    console.log(`🧠 正在分析历史会话，生成项目知识图谱... (使用${useLocal ? '本地Claude' : 'Azure OpenAI'}分析器)`);
+    
+    let knowledge: any;
+    
+    if (useLocal) {
+      // 使用本地Claude分析器
+      knowledge = this.localAnalyzer.generateProjectKnowledge(
+        sessions.map(s => ({
+          id: s.id,
+          title: s.title,
+          category: s.category || 'general',
+          importance: s.importance || 3,
+          summary: s.summary || '',
+          tags: s.tags || [],
+          timestamp: s.timestamp || new Date().toISOString()
+        })),
+        this.currentProject || process.cwd()
+      );
+    } else {
+      // 使用Azure OpenAI
+      if (!this.aiSummarizer) {
+        throw new Error('Azure OpenAI分析器未初始化，请使用本地分析器');
+      }
+      
+      knowledge = await this.aiSummarizer.generateProjectKnowledge(
+        sessions.map(s => ({
+          id: s.id,
+          title: s.title,
+          category: s.category || 'general',
+          importance: s.importance || 3,
+          summary: s.summary || '',
+          tags: s.tags || [],
+          timestamp: s.timestamp || new Date().toISOString()
+        })),
+        this.currentProject || process.cwd()
+      );
+    }
+
+    // 保存项目知识
+    const projectKnowledgeFile = path.join(path.dirname(this.promptsDir), 'project_knowledge.json');
+    fs.writeFileSync(projectKnowledgeFile, JSON.stringify({
+      ...knowledge,
+      generatedAt: new Date().toISOString(),
+      projectPath: this.currentProject || process.cwd(),
+      sessionsAnalyzed: sessions.length,
+      analyzer: useLocal ? '本地Claude' : 'Azure OpenAI'
+    }, null, 2));
+
+    console.log(`📚 项目知识图谱已生成并保存到: project_knowledge.json`);
+    return knowledge;
+  }
+
+  /**
+   * 生成智能引用内容
+   */
+  async generateSmartReference(
+    sessionIds: string[] = [],
+    promptIds: string[] = [],
+    context: string = ''
+  ): Promise<string> {
+    if (!this.aiSummarizer) {
+      throw new Error('AI摘要器未初始化');
+    }
+
+    // 这里需要从外部获取sessions，暂时返回空数组
+    const sessions: any[] = [];
+    const prompts = promptIds.map(id => this.templates.get(id)).filter(Boolean) as PromptTemplate[];
+
+    console.log('🤖 正在生成智能引用内容...');
+    
+    const reference = await this.aiSummarizer.generateSmartReference(
+      sessions,
+      prompts.map(p => ({
+        id: p.id,
+        name: p.name,
+        type: p.type,
+        category: p.category,
+        content: p.content,
+        description: p.description,
+        tags: p.tags
+      })),
+      context
+    );
+
+    return `# 🤖 AI智能引用
+
+${reference}
+
+---
+*📅 生成时间: ${new Date().toLocaleString('zh-CN')}*
+*📊 数据源: ${sessions.length} 个会话 + ${prompts.length} 个提示词*
+*🎯 上下文: ${context || '通用开发指导'}*`;
+  }
+
+  /**
+   * 批量智能提炼历史会话
+   */
+  async batchSmartSummarize(sessions: any[]): Promise<PromptTemplate[]> {
+    if (!this.aiSummarizer) {
+      throw new Error('AI摘要器未初始化');
+    }
+
+    const results: PromptTemplate[] = [];
+    
+    console.log(`🤖 开始批量智能提炼 ${sessions.length} 个历史会话...`);
+    
+    for (let i = 0; i < sessions.length; i++) {
+      const session = sessions[i];
+      try {
+        console.log(`[${i + 1}/${sessions.length}] 提炼会话: ${session.title}`);
+        
+        // 这里需要获取完整对话内容，暂时使用summary作为内容
+        const fullContent = session.content || session.summary || `Title: ${session.title}\nCategory: ${session.category}`;
+        
+        const prompt = await this.smartSummarizeSession(session, fullContent);
+        results.push(prompt);
+        
+        // 避免API请求过于频繁
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+      } catch (error) {
+        console.error(`❌ 提炼失败 [${session.title}]:`, error);
+      }
+    }
+    
+    console.log(`✅ 批量提炼完成，成功处理 ${results.length}/${sessions.length} 个会话`);
+    return results;
   }
 } 

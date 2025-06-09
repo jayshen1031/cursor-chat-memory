@@ -1564,4 +1564,396 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
+}
+
+/* 智能分析样式 */
+.analyzer-selector {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+/* 流程指导样式 */
+.workflow-guide {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(66, 153, 225, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.workflow-guide h3 {
+    color: #2d3748;
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.workflow-steps {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.workflow-step {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    background: rgba(240, 249, 255, 0.6);
+    border: 2px solid #e2e8f0;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.workflow-step:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(66, 153, 225, 0.2);
+    border-color: #4299e1;
+}
+
+.workflow-step.completed {
+    background: rgba(196, 246, 213, 0.6);
+    border-color: #68d391;
+}
+
+.workflow-step.active {
+    background: rgba(240, 249, 255, 0.9);
+    border-color: #4299e1;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+}
+
+.step-number {
+    min-width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #4299e1;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.workflow-step.completed .step-number {
+    background: #48bb78;
+}
+
+.step-content h4 {
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.step-content p {
+    color: #666;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.project-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(248, 250, 252, 0.8);
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.project-info span {
+    font-size: 0.9rem;
+    color: #4a5568;
+    font-weight: 500;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.radio-label:hover {
+    background: rgba(66, 153, 225, 0.1);
+}
+
+.radio-label input[type="radio"] {
+    margin: 0;
+}
+
+.radio-label span {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.analysis-dashboard {
+    padding: 0;
+}
+
+.analysis-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.analysis-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(66, 153, 225, 0.15);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.analysis-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(66, 153, 225, 0.2);
+}
+
+.analysis-card.full-width {
+    grid-column: 1 / -1;
+}
+
+.analysis-card h3 {
+    color: #2d3748;
+    margin-bottom: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.analysis-card p {
+    color: #666;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.analysis-actions {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.analysis-actions .btn {
+    flex: 1;
+    min-width: 120px;
+}
+
+.analysis-results {
+    min-height: 100px;
+    border: 2px dashed #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    background: rgba(248, 250, 252, 0.8);
+    position: relative;
+}
+
+.analysis-results:empty:before {
+    content: "分析结果将在这里显示...";
+    color: #a0aec0;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-style: italic;
+}
+
+.analysis-results.loading:before {
+    content: "正在分析中...";
+    color: #4299e1;
+}
+
+.analysis-results.has-content {
+    border-style: solid;
+    border-color: #4299e1;
+    background: rgba(240, 249, 255, 0.9);
+}
+
+/* 分析结果样式 */
+.analysis-result-item {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #4299e1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.analysis-result-item:last-child {
+    margin-bottom: 0;
+}
+
+.analysis-result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.analysis-result-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0;
+}
+
+.analysis-result-meta {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.analysis-result-content {
+    color: #4a5568;
+    line-height: 1.5;
+}
+
+.analysis-result-tags {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.analysis-tag {
+    background: rgba(66, 153, 225, 0.1);
+    color: #4299e1;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* 知识图谱显示样式 */
+.knowledge-overview {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.knowledge-section {
+    margin-bottom: 2rem;
+}
+
+.knowledge-section:last-child {
+    margin-bottom: 0;
+}
+
+.knowledge-section h4 {
+    color: #0f172a;
+    margin-bottom: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0.5rem;
+}
+
+.knowledge-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.knowledge-section li {
+    padding: 0.5rem 0;
+    padding-left: 1.5rem;
+    position: relative;
+    color: #4a5568;
+    line-height: 1.5;
+}
+
+.knowledge-section li:before {
+    content: "•";
+    color: #4299e1;
+    font-weight: bold;
+    position: absolute;
+    left: 0.5rem;
+}
+
+.timeline-item {
+    border-left: 3px solid #4299e1;
+    padding-left: 1rem;
+    margin-bottom: 1rem;
+    position: relative;
+}
+
+.timeline-item:before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    background: #4299e1;
+    border-radius: 50%;
+    position: absolute;
+    left: -5.5px;
+    top: 0.5rem;
+}
+
+.timeline-date {
+    font-size: 0.8rem;
+    color: #666;
+    margin-bottom: 0.25rem;
+}
+
+.timeline-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.25rem;
+}
+
+.timeline-description {
+    color: #4a5568;
+    line-height: 1.5;
+}
+
+/* 错误和成功状态 */
+.analysis-error {
+    background: #fed7d7;
+    border-color: #fc8181;
+    color: #c53030;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-top: 1rem;
+}
+
+.analysis-success {
+    background: #c6f6d5;
+    border-color: #68d391;
+    color: #276749;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-top: 1rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .analysis-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .analysis-actions {
+        flex-direction: column;
+    }
+    
+    .analyzer-selector {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .analysis-card {
+        padding: 1.5rem;
+    }
 } 

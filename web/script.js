@@ -1175,6 +1175,492 @@ class ReferenceGenerator {
 }
 
 // 统计分析
+// 智能分析管理器
+class AnalysisManager {
+    static workflowState = {
+        integrated: false,
+        summarized: false,
+        knowledgeGenerated: false
+    };
+    
+    static init() {
+        // 绑定分析按钮事件
+        const batchSummarizeBtn = document.getElementById('batchSummarizeBtn');
+        const singleSummarizeBtn = document.getElementById('singleSummarizeBtn');
+        const smartIntegrateBtn = document.getElementById('smartIntegrateBtn');
+        const generateKnowledgeBtn = document.getElementById('generateKnowledgeBtn');
+        const viewKnowledgeBaseBtn = document.getElementById('viewKnowledgeBaseBtn');
+        const viewProjectKnowledgeBtn = document.getElementById('viewProjectKnowledgeBtn');
+        
+        if (batchSummarizeBtn) {
+            batchSummarizeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.batchSummarize();
+            });
+        }
+        
+        if (singleSummarizeBtn) {
+            singleSummarizeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.singleSummarize();
+            });
+        }
+        
+        if (smartIntegrateBtn) {
+            smartIntegrateBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.smartIntegrate();
+            });
+        }
+        
+        if (generateKnowledgeBtn) {
+            generateKnowledgeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.generateKnowledge();
+            });
+        }
+        
+        if (viewKnowledgeBaseBtn) {
+            viewKnowledgeBaseBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.viewKnowledgeBase();
+            });
+        }
+        
+        if (viewProjectKnowledgeBtn) {
+            viewProjectKnowledgeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.viewProjectKnowledge();
+            });
+        }
+        
+        // 绑定流程步骤点击事件
+        document.querySelectorAll('.workflow-step').forEach(step => {
+            step.addEventListener('click', () => this.handleWorkflowStepClick(step));
+        });
+        
+        // 加载项目信息
+        this.loadProjectInfo();
+        
+        console.log('智能分析管理器初始化完成 - 按钮事件已绑定');
+    }
+    
+    static async loadProjectInfo() {
+        try {
+            const response = await APIClient.get('/api/sessions/count');
+            if (response.success) {
+                const countElement = document.getElementById('projectSessionCount');
+                if (countElement) {
+                    countElement.textContent = `📊 项目会话: ${response.count}个`;
+                }
+            }
+        } catch (error) {
+            console.error('加载项目信息失败:', error);
+        }
+    }
+    
+    static handleWorkflowStepClick(step) {
+        const stepNumber = step.dataset.step;
+        switch (stepNumber) {
+            case '1':
+                this.smartIntegrate();
+                break;
+            case '2':
+                this.batchSummarize();
+                break;
+            case '3':
+                this.generateKnowledge();
+                break;
+        }
+    }
+    
+    static updateWorkflowProgress(step) {
+        const stepElement = document.querySelector(`.workflow-step[data-step="${step}"]`);
+        if (stepElement) {
+            stepElement.classList.add('completed');
+        }
+        
+        // 更新状态
+        switch (step) {
+            case '1':
+                this.workflowState.integrated = true;
+                break;
+            case '2':
+                this.workflowState.summarized = true;
+                break;
+            case '3':
+                this.workflowState.knowledgeGenerated = true;
+                break;
+        }
+        
+        // 激活下一步
+        const nextStep = parseInt(step) + 1;
+        if (nextStep <= 3) {
+            const nextStepElement = document.querySelector(`.workflow-step[data-step="${nextStep}"]`);
+            if (nextStepElement) {
+                nextStepElement.classList.add('active');
+            }
+        }
+    }
+
+    static getSelectedAnalyzer() {
+        const selected = document.querySelector('input[name="analyzer"]:checked');
+        return selected ? selected.value === 'local' : true;
+    }
+
+    static async batchSummarize() {
+        const useLocal = this.getSelectedAnalyzer();
+        const analyzerType = useLocal ? '本地Claude' : 'Azure OpenAI';
+        const resultsContainer = document.getElementById('summarizeResults');
+        
+        try {
+            resultsContainer.innerHTML = '<div class="loading-spinner">正在批量提炼项目相关会话...</div>';
+            resultsContainer.classList.add('loading');
+            
+            const response = await APIClient.post('/api/analysis/batch-summary', {
+                useLocal,
+                maxSessions: 20,
+                projectOnly: true  // 只分析项目相关的会话
+            });
+            
+            if (response.success) {
+                this.renderBatchSummaryResults(response.results, analyzerType);
+                this.updateWorkflowProgress('2');
+                NotificationManager.success(`批量提炼完成！使用${analyzerType}分析了${response.processed}个项目相关会话`);
+                // 批量提炼完成后，建议进行下一步
+                setTimeout(() => {
+                    NotificationManager.success('🎯 下一步建议：点击"生成知识图谱"获得项目全貌');
+                }, 2000);
+            } else {
+                throw new Error(response.error || '分析失败');
+            }
+        } catch (error) {
+            console.error('批量提炼失败:', error);
+            resultsContainer.innerHTML = `<div class="analysis-error">批量提炼失败: ${error.message}</div>`;
+            NotificationManager.error('批量提炼失败');
+        } finally {
+            resultsContainer.classList.remove('loading');
+        }
+    }
+    
+    static async singleSummarize() {
+        const selectedSession = state.selectedSession;
+        if (!selectedSession) {
+            NotificationManager.warning('请先选择一个会话进行提炼');
+            return;
+        }
+        
+        const useLocal = this.getSelectedAnalyzer();
+        const analyzerType = useLocal ? '本地Claude' : 'Azure OpenAI';
+        const resultsContainer = document.getElementById('summarizeResults');
+        
+        try {
+            resultsContainer.innerHTML = '<div class="loading-spinner">正在提炼选中会话...</div>';
+            resultsContainer.classList.add('loading');
+            
+            const fullContent = selectedSession.summary + '\n\n消息内容:\n' + selectedSession.messages.map(m => `${m.role}: ${m.content}`).join('\n');
+            const response = await APIClient.post('/api/analysis/session-summary', {
+                sessionId: selectedSession.id,
+                content: fullContent,
+                useLocal
+            });
+            
+            if (response.success) {
+                const html = `
+                    <div class="analysis-success">
+                        ✅ 会话提炼完成！使用${analyzerType}分析
+                    </div>
+                    ${this.formatPromptResult(response.result)}
+                `;
+                resultsContainer.innerHTML = html;
+                resultsContainer.classList.add('has-content');
+                NotificationManager.success(`会话提炼完成！使用${analyzerType}分析`);
+            } else {
+                throw new Error(response.error || '分析失败');
+            }
+        } catch (error) {
+            console.error('会话提炼失败:', error);
+            resultsContainer.innerHTML = `<div class="analysis-error">会话提炼失败: ${error.message}</div>`;
+            NotificationManager.error('会话提炼失败');
+        } finally {
+            resultsContainer.classList.remove('loading');
+        }
+    }
+
+    static async smartIntegrate() {
+        const useLocal = this.getSelectedAnalyzer();
+        const analyzerType = useLocal ? '本地Claude' : 'Azure OpenAI';
+        const resultsContainer = document.getElementById('integrateResults');
+        
+        try {
+            resultsContainer.innerHTML = '<div class="loading-spinner">正在智能整合项目提示词...</div>';
+            resultsContainer.classList.add('loading');
+            
+            const response = await APIClient.post('/api/analysis/smart-integrate', {
+                useLocal,
+                projectOnly: true  // 只整合项目相关的提示词
+            });
+            
+            if (response.success) {
+                this.renderIntegrateResults(response.integrated, response.knowledgeBase, analyzerType);
+                this.updateWorkflowProgress('1');
+                NotificationManager.success(`项目提示词整合完成！使用${analyzerType}生成了${response.integrated.length}个优化提示词`);
+                // 整合完成后，建议进行下一步
+                setTimeout(() => {
+                    NotificationManager.success('🎯 下一步建议：点击"批量提炼会话"分析项目相关对话');
+                }, 2000);
+            } else {
+                throw new Error(response.error || '整合失败');
+            }
+        } catch (error) {
+            console.error('智能整合失败:', error);
+            resultsContainer.innerHTML = `<div class="analysis-error">智能整合失败: ${error.message}</div>`;
+            NotificationManager.error('智能整合失败');
+        } finally {
+            resultsContainer.classList.remove('loading');
+        }
+    }
+
+    static async generateKnowledge() {
+        const useLocal = this.getSelectedAnalyzer();
+        const analyzerType = useLocal ? '本地Claude' : 'Azure OpenAI';
+        const resultsContainer = document.getElementById('knowledgeResults');
+        
+        try {
+            resultsContainer.innerHTML = '<div class="loading-spinner">正在生成项目知识图谱...</div>';
+            resultsContainer.classList.add('loading');
+            
+            const response = await APIClient.post('/api/analysis/project-knowledge', {
+                useLocal,
+                projectOnly: true  // 只分析项目相关的会话
+            });
+            
+            if (response.success) {
+                this.renderKnowledgeResults(response.knowledge, analyzerType);
+                this.updateWorkflowProgress('3');
+                NotificationManager.success(`项目知识图谱生成完成！使用${analyzerType}分析了${response.sessionsAnalyzed}个会话`);
+                // 知识图谱生成完成，流程结束
+                setTimeout(() => {
+                    NotificationManager.success('🎉 智能分析流程完成！你现在拥有了完整的项目知识体系');
+                }, 2000);
+            } else {
+                throw new Error(response.error || '生成失败');
+            }
+        } catch (error) {
+            console.error('知识图谱生成失败:', error);
+            resultsContainer.innerHTML = `<div class="analysis-error">知识图谱生成失败: ${error.message}</div>`;
+            NotificationManager.error('知识图谱生成失败');
+        } finally {
+            resultsContainer.classList.remove('loading');
+        }
+    }
+
+    static async viewKnowledgeBase() {
+        try {
+            const response = await APIClient.get('/api/knowledge/base');
+            if (response.success) {
+                const content = this.formatKnowledgeBase(response.knowledgeBase);
+                ModalManager.show('知识库详情', content);
+            } else {
+                NotificationManager.warning('知识库文件不存在，请先进行智能整合');
+            }
+        } catch (error) {
+            console.error('查看知识库失败:', error);
+            NotificationManager.error('查看知识库失败');
+        }
+    }
+
+    static async viewProjectKnowledge() {
+        try {
+            const response = await APIClient.get('/api/knowledge/project');
+            if (response.success) {
+                const content = this.formatProjectKnowledge(response.projectKnowledge);
+                ModalManager.show('项目知识图谱', content);
+            } else {
+                NotificationManager.warning('项目知识图谱不存在，请先生成知识图谱');
+            }
+        } catch (error) {
+            console.error('查看项目知识图谱失败:', error);
+            NotificationManager.error('查看项目知识图谱失败');
+        }
+    }
+
+    // 渲染方法
+    static renderBatchSummaryResults(results, analyzerType) {
+        const container = document.getElementById('summarizeResults');
+        container.classList.add('has-content');
+        
+        const html = `
+            <div class="analysis-success">
+                ✅ 批量提炼完成！使用${analyzerType}分析了${results.length}个会话
+            </div>
+            ${results.map(result => {
+                if (result.success) {
+                    return this.formatPromptResult(result.prompt);
+                } else {
+                    return `<div class="analysis-error">会话 ${result.sessionId}: ${result.error}</div>`;
+                }
+            }).join('')}
+        `;
+        
+        container.innerHTML = html;
+    }
+
+    static renderIntegrateResults(integrated, knowledgeBase, analyzerType) {
+        const container = document.getElementById('integrateResults');
+        container.classList.add('has-content');
+        
+        const html = `
+            <div class="analysis-success">
+                ✅ 智能整合完成！使用${analyzerType}生成${integrated.length}个优化提示词
+            </div>
+            <div class="knowledge-overview">
+                <h4>🧠 知识库概览</h4>
+                <div class="knowledge-section">
+                    <strong>架构设计:</strong> ${knowledgeBase.architecture}
+                </div>
+                <div class="knowledge-section">
+                    <strong>关键解决方案:</strong> ${knowledgeBase.solutions}
+                </div>
+                <div class="knowledge-section">
+                    <strong>迭代演进:</strong> ${knowledgeBase.iterations}
+                </div>
+                <div class="knowledge-section">
+                    <strong>最佳实践:</strong> ${knowledgeBase.bestPractices}
+                </div>
+            </div>
+            ${integrated.map(prompt => this.formatPromptResult(prompt)).join('')}
+        `;
+        
+        container.innerHTML = html;
+    }
+
+    static renderKnowledgeResults(knowledge, analyzerType) {
+        const container = document.getElementById('knowledgeResults');
+        container.classList.add('has-content');
+        
+        const html = `
+            <div class="analysis-success">
+                ✅ 项目知识图谱生成完成！使用${analyzerType}分析
+            </div>
+            <div class="knowledge-overview">
+                <div class="knowledge-section">
+                    <h4>🎯 项目概述</h4>
+                    <p>${knowledge.projectOverview}</p>
+                </div>
+                <div class="knowledge-section">
+                    <h4>🏗️ 核心架构</h4>
+                    <p>${knowledge.coreArchitecture}</p>
+                </div>
+                <div class="knowledge-section">
+                    <h4>💻 关键技术</h4>
+                    <ul>${knowledge.keyTechnologies.map(tech => `<li>${tech}</li>`).join('')}</ul>
+                </div>
+                <div class="knowledge-section">
+                    <h4>❗ 主要挑战</h4>
+                    <ul>${knowledge.mainChallenges.map(challenge => `<li>${challenge}</li>`).join('')}</ul>
+                </div>
+                <div class="knowledge-section">
+                    <h4>💡 解决方案模式</h4>
+                    <ul>${knowledge.solutionPatterns.map(pattern => `<li>${pattern}</li>`).join('')}</ul>
+                </div>
+                <div class="knowledge-section">
+                    <h4>📈 演进时间线</h4>
+                    ${knowledge.evolutionTimeline.map(phase => `
+                        <div class="timeline-item">
+                            <div class="timeline-date">${new Date(phase.timestamp).toLocaleDateString('zh-CN')}</div>
+                            <div class="timeline-title">${phase.phase}</div>
+                            <div class="timeline-description">${phase.description}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="knowledge-section">
+                    <h4>🎯 建议</h4>
+                    <ul>${knowledge.recommendations.map(rec => `<li>${rec}</li>`).join('')}</ul>
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML = html;
+    }
+
+    static formatPromptResult(prompt) {
+        return `
+            <div class="analysis-result-item">
+                <div class="analysis-result-header">
+                    <h4 class="analysis-result-title">${prompt.name}</h4>
+                    <span class="analysis-result-meta">${prompt.category} | ${new Date(prompt.createdAt).toLocaleDateString('zh-CN')}</span>
+                </div>
+                <div class="analysis-result-content">
+                    ${prompt.description}
+                </div>
+                <div class="analysis-result-tags">
+                    ${prompt.tags.map(tag => `<span class="analysis-tag">${tag}</span>`).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    static formatKnowledgeBase(knowledgeBase) {
+        return `
+            <div class="knowledge-overview">
+                <div class="knowledge-section">
+                    <h4>🏗️ 架构设计</h4>
+                    <p>${knowledgeBase.architecture}</p>
+                </div>
+                <div class="knowledge-section">
+                    <h4>🛠️ 关键解决方案</h4>
+                    <p>${knowledgeBase.solutions}</p>
+                </div>
+                <div class="knowledge-section">
+                    <h4>📈 迭代演进</h4>
+                    <p>${knowledgeBase.iterations}</p>
+                </div>
+                <div class="knowledge-section">
+                    <h4>💡 最佳实践</h4>
+                    <p>${knowledgeBase.bestPractices}</p>
+                </div>
+                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; font-size: 0.9rem; color: #666;">
+                    生成时间: ${new Date(knowledgeBase.generatedAt).toLocaleString('zh-CN')} | 
+                    分析器: ${knowledgeBase.analyzer}
+                </div>
+            </div>
+        `;
+    }
+
+    static formatProjectKnowledge(knowledge) {
+        return `
+            <div class="knowledge-overview">
+                <div class="knowledge-section">
+                    <h4>🎯 项目概述</h4>
+                    <p>${knowledge.projectOverview}</p>
+                </div>
+                <div class="knowledge-section">
+                    <h4>🏗️ 核心架构</h4>
+                    <p>${knowledge.coreArchitecture}</p>
+                </div>
+                <div class="knowledge-section">
+                    <h4>💻 关键技术</h4>
+                    <ul>${knowledge.keyTechnologies.map(tech => `<li>${tech}</li>`).join('')}</ul>
+                </div>
+                <div class="knowledge-section">
+                    <h4>❗ 主要挑战</h4>
+                    <ul>${knowledge.mainChallenges.map(challenge => `<li>${challenge}</li>`).join('')}</ul>
+                </div>
+                <div class="knowledge-section">
+                    <h4>💡 解决方案模式</h4>
+                    <ul>${knowledge.solutionPatterns.map(pattern => `<li>${pattern}</li>`).join('')}</ul>
+                </div>
+                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; font-size: 0.9rem; color: #666;">
+                    生成时间: ${new Date(knowledge.generatedAt).toLocaleString('zh-CN')} | 
+                    分析器: ${knowledge.analyzer} | 
+                    分析会话: ${knowledge.sessionsAnalyzed}个
+                </div>
+            </div>
+        `;
+    }
+}
+
 class AnalyticsManager {
     static async loadAnalytics() {
         try {
@@ -1330,6 +1816,9 @@ class TabManager {
                     PromptManager.loadPrompts();
                 }
                 break;
+            case 'analysis':
+                // 智能分析标签页不需要预加载数据
+                break;
             case 'analytics':
                 AnalyticsManager.loadAnalytics();
                 break;
@@ -1446,6 +1935,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('getRecommendationsBtn').addEventListener('click', ReferenceGenerator.getRecommendations);
     document.getElementById('copyReferenceBtn').addEventListener('click', ReferenceGenerator.copyReference);
 
+    // 初始化AnalysisManager (按钮事件绑定在其init方法中)
+    AnalysisManager.init();
+
     // 绑定刷新按钮
     document.getElementById('refreshBtn').addEventListener('click', function() {
         switch (state.currentTab) {
@@ -1454,6 +1946,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 break;
             case 'prompts':
                 PromptManager.loadPrompts();
+                break;
+            case 'analysis':
+                // 刷新时清空分析结果
+                document.getElementById('summarizeResults').innerHTML = '';
+                document.getElementById('integrateResults').innerHTML = '';
+                document.getElementById('knowledgeResults').innerHTML = '';
                 break;
             case 'analytics':
                 AnalyticsManager.loadAnalytics();

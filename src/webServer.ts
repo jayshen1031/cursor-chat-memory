@@ -4,17 +4,22 @@ import * as path from 'path';
 import * as url from 'url';
 import { ChatMemoryService } from './chatMemoryService';
 import { PromptCenter, PromptTemplate } from './promptCenter';
+import { LocalAnalyzer } from './localAnalyzer';
 
 export class WebServer {
   private server: http.Server;
   private memoryService: ChatMemoryService;
   private promptCenter: PromptCenter;
+  private localAnalyzer: LocalAnalyzer;
   private port: number;
+  private projectPath?: string;
 
   constructor(port: number = 3000, projectPath?: string) {
     this.port = port;
+    this.projectPath = projectPath;
     this.memoryService = new ChatMemoryService(projectPath);
     this.promptCenter = this.memoryService.getPromptCenter();
+    this.localAnalyzer = new LocalAnalyzer();
     this.server = this.createServer();
   }
 
@@ -121,6 +126,28 @@ export class WebServer {
         }
         break;
 
+      case '/api/sessions/count':
+        if (method === 'GET') {
+          try {
+            await this.memoryService.start();
+            const allSessions = this.memoryService.getAllSessions();
+            const projectSessions = this.memoryService.getProjectSessions(this.projectPath);
+            this.memoryService.stop();
+            this.sendJSON(res, { 
+              success: true, 
+              count: projectSessions.length,
+              totalCount: allSessions.length
+            });
+          } catch (error) {
+            this.memoryService.stop();
+            this.sendJSON(res, { 
+              success: false, 
+              error: error instanceof Error ? error.message : '获取会话数量失败' 
+            });
+          }
+        }
+        break;
+
       case '/api/prompts':
         if (method === 'GET') {
           const prompts = this.promptCenter.getAllPrompts();
@@ -153,6 +180,160 @@ export class WebServer {
           const { context, maxPrompts = 3 } = JSON.parse(body);
           const recommendations = this.promptCenter.getRecommendedPrompts(context, maxPrompts);
           this.sendJSON(res, { recommendations });
+        }
+        break;
+
+      case '/api/analysis/session-summary':
+        if (method === 'POST') {
+          const { sessionId, content, useLocal = true } = JSON.parse(body || '{}');
+          try {
+            const session = { id: sessionId, content };
+            const result = await this.promptCenter.smartSummarizeSession(session, content, useLocal);
+            this.sendJSON(res, { 
+              success: true, 
+              result,
+              analyzer: useLocal ? '本地Claude' : 'Azure OpenAI'
+            });
+          } catch (error) {
+            this.sendJSON(res, { 
+              success: false, 
+              error: error instanceof Error ? error.message : '分析失败' 
+            });
+          }
+        }
+        break;
+
+      case '/api/analysis/smart-integrate':
+        if (method === 'POST') {
+          const { useLocal = true, projectOnly = false } = JSON.parse(body || '{}');
+          try {
+            const result = await this.promptCenter.smartIntegratePrompts(useLocal);
+            this.sendJSON(res, { 
+              success: true, 
+              integrated: result.integrated,
+              knowledgeBase: result.knowledgeBase,
+              analyzer: useLocal ? '本地Claude' : 'Azure OpenAI',
+              projectOnly
+            });
+          } catch (error) {
+            this.sendJSON(res, { 
+              success: false, 
+              error: error instanceof Error ? error.message : '分析失败' 
+            });
+          }
+        }
+        break;
+
+      case '/api/analysis/project-knowledge':
+        if (method === 'POST') {
+          const { useLocal = true, projectOnly = false } = JSON.parse(body || '{}');
+          try {
+            await this.memoryService.start();
+            const allSessions = this.memoryService.getAllSessions();
+            // 如果是项目模式，只获取项目相关的会话
+            const sessions = projectOnly ? this.memoryService.getProjectSessions(this.projectPath) : allSessions;
+            const knowledge = await this.promptCenter.generateProjectKnowledge(sessions, useLocal);
+            this.memoryService.stop();
+            this.sendJSON(res, { 
+              success: true, 
+              knowledge,
+              analyzer: useLocal ? '本地Claude' : 'Azure OpenAI',
+              projectOnly,
+              sessionsAnalyzed: sessions.length
+            });
+          } catch (error) {
+            this.memoryService.stop();
+            this.sendJSON(res, { 
+              success: false, 
+              error: error instanceof Error ? error.message : '分析失败' 
+            });
+          }
+        }
+        break;
+
+      case '/api/analysis/batch-summary':
+        if (method === 'POST') {
+          const { useLocal = true, maxSessions = 10, projectOnly = false } = JSON.parse(body || '{}');
+          try {
+            await this.memoryService.start();
+            const allSessions = this.memoryService.getAllSessions();
+            // 如果是项目模式，只获取项目相关的会话
+            const projectSessions = projectOnly ? this.memoryService.getProjectSessions(this.projectPath) : allSessions;
+            const sessions = projectSessions.slice(0, maxSessions);
+            const results = [];
+            
+            for (const session of sessions) {
+              try {
+                const fullContent = session.summary + '\n\n消息内容:\n' + session.messages.map(m => `${m.role}: ${m.content}`).join('\n');
+                const result = await this.promptCenter.smartSummarizeSession(session, fullContent, useLocal);
+                results.push({ 
+                  sessionId: session.id, 
+                  success: true, 
+                  prompt: result 
+                });
+              } catch (error) {
+                results.push({ 
+                  sessionId: session.id, 
+                  success: false, 
+                  error: error instanceof Error ? error.message : '分析失败' 
+                });
+              }
+            }
+            
+            this.memoryService.stop();
+            this.sendJSON(res, { 
+              success: true, 
+              results,
+              analyzer: useLocal ? '本地Claude' : 'Azure OpenAI',
+              processed: results.length,
+              projectOnly,
+              totalProjectSessions: projectSessions.length
+            });
+          } catch (error) {
+            this.memoryService.stop();
+            this.sendJSON(res, { 
+              success: false, 
+              error: error instanceof Error ? error.message : '批量分析失败' 
+            });
+          }
+        }
+        break;
+
+      case '/api/knowledge/base':
+        if (method === 'GET') {
+          try {
+            const knowledgeBasePath = path.join(this.projectPath || process.cwd(), '.cursor-memory', 'knowledge_base.json');
+            if (fs.existsSync(knowledgeBasePath)) {
+              const knowledgeBase = JSON.parse(fs.readFileSync(knowledgeBasePath, 'utf8'));
+              this.sendJSON(res, { success: true, knowledgeBase });
+            } else {
+              this.sendJSON(res, { success: false, error: '知识库文件不存在' });
+            }
+          } catch (error) {
+            this.sendJSON(res, { 
+              success: false, 
+              error: error instanceof Error ? error.message : '读取知识库失败' 
+            });
+          }
+        }
+        break;
+
+      case '/api/knowledge/project':
+        if (method === 'GET') {
+          try {
+            const projectKnowledgePath = path.join(this.projectPath || process.cwd(), '.cursor-memory', 'project_knowledge.json');
+            if (fs.existsSync(projectKnowledgePath)) {
+              const projectKnowledge = JSON.parse(fs.readFileSync(projectKnowledgePath, 'utf8'));
+              this.sendJSON(res, { success: true, projectKnowledge });
+            } else {
+              this.sendJSON(res, { success: false, error: '项目知识图谱文件不存在' });
+            }
+          } catch (error) {
+            this.sendJSON(res, { 
+              success: false, 
+              error: error instanceof Error ? error.message : '读取项目知识图谱失败' 
+            });
+          }
         }
         break;
 

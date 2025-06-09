@@ -65,31 +65,14 @@ function registerCommands(context: vscode.ExtensionContext) {
     await showSmartReferencePanel();
   });
 
-  // 2. 快速引用命令 (使用模板)
+  // 2. 快速引用命令 (智能项目上下文引用)
   const quickReferenceCmd = vscode.commands.registerCommand('cursorChatMemory.quickReference', async () => {
     if (!memoryService) {
       vscode.window.showErrorMessage('Memory service not available');
       return;
     }
 
-    // 使用"最近会话"模板作为快速引用
-    const reference = memoryService.getReferenceByTemplate('recent');
-    
-    if (reference.includes('没有找到')) {
-      vscode.window.showInformationMessage('📭 暂无最近的重要对话');
-      return;
-    }
-
-    await vscode.env.clipboard.writeText(reference);
-    
-    vscode.window.showInformationMessage(
-      '⚡ 最近会话引用已复制! 现在可以在Cursor聊天中粘贴使用',
-      '🚀 打开Cursor聊天'
-    ).then((action) => {
-      if (action === '🚀 打开Cursor聊天') {
-        vscode.commands.executeCommand('workbench.panel.chat.view.focus');
-      }
-    });
+    await showQuickReferencePanel();
   });
 
   // 3. 显示状态命令
@@ -251,6 +234,302 @@ function registerCommands(context: vscode.ExtensionContext) {
       enhancedReferenceCmd,
       statusBarItem
     );
+}
+
+/**
+ * 显示快速引用面板 - 智能项目上下文引用
+ */
+async function showQuickReferencePanel(): Promise<void> {
+  const quickPickItems: vscode.QuickPickItem[] = [
+    {
+      label: '🌍 全局工程知识',
+      description: '软件架构、设计模式、最佳实践',
+      detail: '获取跨项目的通用工程知识引用'
+    },
+    {
+      label: '📁 当前项目上下文',
+      description: '项目特定的技术选型和解决方案',
+      detail: '基于当前项目的技术栈和配置'
+    },
+    {
+      label: '🔄 项目迭代记录',
+      description: '版本演进、重构历史、问题解决',
+      detail: '项目开发过程中的关键决策和改进'
+    },
+    {
+      label: '⚡ 智能组合引用',
+      description: '自动组合最相关的引用',
+      detail: '根据当前上下文智能选择最合适的引用内容'
+    },
+    {
+      label: '🎯 基于关键词',
+      description: '输入关键词获取相关引用',
+      detail: '根据特定关键词搜索相关的历史对话和提示词'
+    }
+  ];
+
+  const selected = await vscode.window.showQuickPick(quickPickItems, {
+    placeHolder: '选择快速引用类型',
+    title: '⚡ 快速引用上下文'
+  });
+
+  if (!selected) return;
+
+  switch (selected.label) {
+    case '🌍 全局工程知识':
+      await showGlobalPromptReference();
+      break;
+    case '📁 当前项目上下文':
+      await showProjectContextReference();
+      break;
+    case '🔄 项目迭代记录':
+      await showIterationReference();
+      break;
+    case '⚡ 智能组合引用':
+      await showSmartCombinedReference();
+      break;
+    case '🎯 基于关键词':
+      await showKeywordBasedReference();
+      break;
+  }
+}
+
+/**
+ * 显示全局工程知识引用
+ */
+async function showGlobalPromptReference(): Promise<void> {
+  const promptCenter = memoryService.getPromptCenter();
+  const globalPrompts = promptCenter.getAllPrompts('global');
+  
+  if (globalPrompts.length === 0) {
+    vscode.window.showInformationMessage('📭 暂无全局工程知识提示词');
+    return;
+  }
+
+  const items: vscode.QuickPickItem[] = globalPrompts.map(prompt => ({
+    label: `🧠 ${prompt.name}`,
+    description: prompt.description,
+    detail: `标签: ${prompt.tags.join(', ')}`,
+    alwaysShow: true
+  }));
+
+  const selected = await vscode.window.showQuickPick(items, {
+    placeHolder: '选择全局工程知识',
+    title: '🌍 全局工程知识引用'
+  });
+
+  if (selected) {
+    const prompt = globalPrompts.find(p => p.name === selected.label.replace('🧠 ', ''));
+    if (prompt) {
+      await copyReferenceToClipboard(prompt.content, '全局工程知识');
+    }
+  }
+}
+
+/**
+ * 显示项目上下文引用
+ */
+async function showProjectContextReference(): Promise<void> {
+  const promptCenter = memoryService.getPromptCenter();
+  const projectPrompts = promptCenter.getAllPrompts('project');
+  const allSessions = memoryService.getAllSessions();
+  const recentSessions = allSessions
+    .sort((a, b) => b.lastActivity - a.lastActivity)
+    .slice(0, 5);
+  
+  if (projectPrompts.length === 0 && recentSessions.length === 0) {
+    vscode.window.showInformationMessage('📭 暂无项目上下文数据');
+    return;
+  }
+
+  const items: vscode.QuickPickItem[] = [];
+  
+  // 添加项目提示词
+  projectPrompts.forEach((prompt: any) => {
+    items.push({
+      label: `📁 ${prompt.name}`,
+      description: prompt.description,
+      detail: `项目提示词 | ${prompt.tags.join(', ')}`,
+      alwaysShow: true
+    });
+  });
+
+  // 添加最近会话
+  recentSessions.forEach((session: any, index: number) => {
+    items.push({
+      label: `💬 ${session.title}`,
+      description: `[${session.category}] ${'⭐'.repeat(Math.floor(session.importance * 5))}`,
+      detail: `最近会话 | ${session.summary}`,
+      alwaysShow: true
+    });
+  });
+
+  const selected = await vscode.window.showQuickPick(items, {
+    placeHolder: '选择项目上下文',
+    title: '📁 当前项目上下文引用'
+  });
+
+  if (selected) {
+    if (selected.label.startsWith('📁')) {
+      // 项目提示词
+      const prompt = projectPrompts.find((p: any) => p.name === selected.label.replace('📁 ', ''));
+      if (prompt) {
+        await copyReferenceToClipboard(prompt.content, '项目上下文');
+      }
+    } else {
+      // 最近会话
+      const session = recentSessions.find((s: any) => s.title === selected.label.replace('💬 ', ''));
+      if (session) {
+        const reference = memoryService.getCustomReference([session.id], '最近会话');
+        await copyReferenceToClipboard(reference, '最近会话');
+      }
+    }
+  }
+}
+
+/**
+ * 显示迭代记录引用
+ */
+async function showIterationReference(): Promise<void> {
+  const promptCenter = memoryService.getPromptCenter();
+  const iterationPrompts = promptCenter.getAllPrompts('iteration');
+  
+  if (iterationPrompts.length === 0) {
+    vscode.window.showInformationMessage('📭 暂无项目迭代记录');
+    return;
+  }
+
+  const items: vscode.QuickPickItem[] = iterationPrompts.map((iteration: any) => ({
+    label: `🔄 ${iteration.name}`,
+    description: iteration.description,
+    detail: `标签: ${iteration.tags.join(', ')} | ${new Date(iteration.updatedAt).toLocaleDateString()}`,
+    alwaysShow: true
+  }));
+
+  const selected = await vscode.window.showQuickPick(items, {
+    placeHolder: '选择项目迭代记录',
+    title: '🔄 项目迭代记录引用'
+  });
+
+  if (selected) {
+    const iteration = iterationPrompts.find((i: any) => i.name === selected.label.replace('🔄 ', ''));
+    if (iteration) {
+      await copyReferenceToClipboard(iteration.content, '迭代记录');
+    }
+  }
+}
+
+/**
+ * 显示智能组合引用
+ */
+async function showSmartCombinedReference(): Promise<void> {
+  const inputText = await vscode.window.showInputBox({
+    prompt: '输入您的问题或上下文描述',
+    placeHolder: '例如: 需要优化React组件性能、解决API调用问题...'
+  });
+
+  if (!inputText) return;
+
+  // 生成智能组合引用
+  const reference = memoryService.getEnhancedReference('smart-combined', inputText, true);
+  
+  if (reference.includes('没有找到')) {
+    vscode.window.showInformationMessage('📭 没有找到相关的引用内容');
+    return;
+  }
+
+  await copyReferenceToClipboard(reference, '智能组合引用');
+}
+
+/**
+ * 显示基于关键词的引用
+ */
+async function showKeywordBasedReference(): Promise<void> {
+  const inputText = await vscode.window.showInputBox({
+    prompt: '输入关键词（用空格或逗号分隔）',
+    placeHolder: '例如: React 性能优化, TypeScript 类型推断...'
+  });
+
+  if (!inputText) return;
+
+  const keywords = inputText.split(/[,，\s]+/).filter(k => k.trim());
+  
+  if (keywords.length === 0) {
+    vscode.window.showInformationMessage('请输入有效的关键词');
+    return;
+  }
+
+  // 搜索相关会话
+  const sessions = memoryService.getRecommendedSessions(inputText);
+  
+  // 搜索相关提示词
+  const promptCenter = memoryService.getPromptCenter();
+  const prompts = promptCenter.searchPrompts(keywords.join(' '));
+  
+  if (sessions.length === 0 && prompts.length === 0) {
+    vscode.window.showInformationMessage('📭 没有找到相关的引用内容');
+    return;
+  }
+
+  const items: vscode.QuickPickItem[] = [];
+  
+  // 添加相关会话
+  sessions.forEach((session: any, index: number) => {
+    items.push({
+      label: `💬 ${session.title}`,
+      description: `[${session.category}] ${'⭐'.repeat(Math.floor(session.importance * 5))}`,
+      detail: `历史会话 | ${session.summary}`,
+      alwaysShow: true
+    });
+  });
+
+  // 添加相关提示词
+  prompts.forEach((prompt: any) => {
+    items.push({
+      label: `🧠 ${prompt.name}`,
+      description: prompt.description,
+      detail: `${prompt.type} 提示词 | ${prompt.tags.join(', ')}`,
+      alwaysShow: true
+    });
+  });
+
+  const selected = await vscode.window.showQuickPick(items, {
+    placeHolder: '选择引用内容',
+    title: `🎯 关键词引用: ${keywords.join(', ')}`
+  });
+
+  if (selected) {
+    if (selected.label.startsWith('💬')) {
+      // 历史会话
+      const session = sessions.find((s: any) => s.title === selected.label.replace('💬 ', ''));
+      if (session) {
+        const reference = memoryService.getCustomReference([session.id], '历史会话');
+        await copyReferenceToClipboard(reference, '历史会话');
+      }
+    } else {
+      // 提示词
+      const prompt = prompts.find((p: any) => p.name === selected.label.replace('🧠 ', ''));
+      if (prompt) {
+        await copyReferenceToClipboard(prompt.content, '提示词');
+      }
+    }
+  }
+}
+
+/**
+ * 复制引用到剪贴板并显示提示
+ */
+async function copyReferenceToClipboard(content: string, type: string): Promise<void> {
+  await vscode.env.clipboard.writeText(content);
+  
+  vscode.window.showInformationMessage(
+    `⚡ ${type}引用已复制到剪贴板!`,
+    '🚀 打开Cursor聊天'
+  ).then((action) => {
+    if (action === '🚀 打开Cursor聊天') {
+      vscode.commands.executeCommand('workbench.panel.chat.view.focus');
+    }
+  });
 }
 
 /**

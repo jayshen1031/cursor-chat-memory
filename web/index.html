@@ -52,6 +52,7 @@
             <button class="tab-btn active" data-tab="sessions">📋 历史会话</button>
             <button class="tab-btn" data-tab="prompts">🧠 提示词中心</button>
             <button class="tab-btn" data-tab="reference">⚡ 引用生成</button>
+            <button class="tab-btn" data-tab="analysis">🧠 智能分析</button>
             <button class="tab-btn" data-tab="analytics">📊 统计分析</button>
         </nav>
 
@@ -149,6 +150,98 @@
                         </div>
                         <div class="output-actions">
                             <button id="copyReferenceBtn" class="btn btn-success" style="display: none;">📋 复制到剪贴板</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 智能分析 -->
+            <div id="analysis-tab" class="tab-content">
+                <div class="tab-header">
+                    <h2>🧠 智能分析中心</h2>
+                    <div class="analyzer-selector">
+                        <label class="radio-label">
+                            <input type="radio" name="analyzer" value="local" checked>
+                            <span>🧠 本地Claude分析器</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="analyzer" value="openai">
+                            <span>🤖 Azure OpenAI</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 流程指导 -->
+                <div class="workflow-guide">
+                    <h3>🎯 建议的分析流程</h3>
+                    <div class="workflow-steps">
+                        <div class="workflow-step" data-step="1">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h4>首次使用：智能整合</h4>
+                                <p>整合现有提示词，优化知识结构</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step" data-step="2">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h4>定期执行：批量提炼</h4>
+                                <p>分析新增会话，提取关键信息</p>
+                            </div>
+                        </div>
+                        <div class="workflow-step" data-step="3">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h4>项目总结：知识图谱</h4>
+                                <p>生成项目全貌，获得深度洞察</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-info">
+                        <span id="currentProject">🏗️ 当前项目: cursor-chat-memory</span>
+                        <span id="projectSessionCount">📊 项目会话: 加载中...</span>
+                    </div>
+                </div>
+                
+                <div class="analysis-dashboard">
+                    <div class="analysis-grid">
+                        <!-- 智能提炼 -->
+                        <div class="analysis-card">
+                            <h3>📝 智能提炼</h3>
+                            <p>从历史会话中提取关键技术信息和解决方案</p>
+                            <div class="analysis-actions">
+                                <button id="batchSummarizeBtn" class="btn btn-primary">📚 批量提炼会话</button>
+                                <button id="singleSummarizeBtn" class="btn btn-secondary">📄 单会话提炼</button>
+                            </div>
+                            <div id="summarizeResults" class="analysis-results">
+                                <!-- 提炼结果 -->
+                            </div>
+                        </div>
+
+                        <!-- 智能整合 -->
+                        <div class="analysis-card">
+                            <h3>🔧 智能整合</h3>
+                            <p>整合现有提示词模板，去除冗余，优化结构</p>
+                            <div class="analysis-actions">
+                                <button id="smartIntegrateBtn" class="btn btn-primary">🚀 开始整合</button>
+                                <button id="viewKnowledgeBaseBtn" class="btn btn-secondary">📚 查看知识库</button>
+                            </div>
+                            <div id="integrateResults" class="analysis-results">
+                                <!-- 整合结果 -->
+                            </div>
+                        </div>
+
+                        <!-- 项目知识图谱 -->
+                        <div class="analysis-card full-width">
+                            <h3>📊 项目知识图谱</h3>
+                            <p>分析项目整体架构、技术栈、挑战和解决方案模式</p>
+                            <div class="analysis-actions">
+                                <button id="generateKnowledgeBtn" class="btn btn-primary">🎯 生成知识图谱</button>
+                                <button id="viewProjectKnowledgeBtn" class="btn btn-secondary">📖 查看现有图谱</button>
+                            </div>
+                            <div id="knowledgeResults" class="analysis-results">
+                                <!-- 知识图谱结果 -->
+                            </div>
                         </div>
                     </div>
                 </div>
