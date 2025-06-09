@@ -138,8 +138,8 @@ export class PromptCenter extends EventEmitter {
     this.initializeDirectories();
     this.loadPrompts();
     this.loadIterations();
-    this.initializeGlobalPrompts();
-    this.createBuiltinTemplates();
+    // 🚫 移除内置模板创建，只从真实对话中提取
+    console.log('📋 提示词中心已初始化 - 专注于从项目对话中提取实际内容');
   }
 
   /**
@@ -337,7 +337,7 @@ ${iteration.codeEvolution.after}
   }
 
   /**
-   * 生成智能引用内容
+   * 生成智能引用内容（增强版 - 包含精确来源标识）
    */
   public generateReference(templateIds: string[], context?: string): string {
     const selectedPrompts = templateIds
@@ -348,37 +348,84 @@ ${iteration.codeEvolution.after}
       return '📭 没有找到相关的提示词模板';
     }
 
-    let reference = `🧠 **提示词引用** (${selectedPrompts.length}个模板)\n\n`;
+    // 🆕 添加项目和来源标识
+    const projectInfo = this.getProjectInfo();
+    const sourceTag = projectInfo.isProject ? `📁 项目: ${projectInfo.name}` : '🌐 全局知识库';
+    
+    let reference = `🧠 **提示词引用** (${selectedPrompts.length}个模板) | ${sourceTag}\n`;
+    reference += `📍 来源: ${this.promptsDir}\n\n`;
     
     // 按类型分组
     const groupedPrompts = this.groupPromptsByType(selectedPrompts);
     
     for (const [type, prompts] of groupedPrompts) {
       const typeNames: { [key: string]: string } = {
-        'global': '全局工程知识',
-        'project': '项目特定经验', 
-        'iteration': '迭代演进记录'
+        'global': '🌐 全局工程知识',
+        'project': '📁 项目特定经验', 
+        'iteration': '🔄 迭代演进记录'
       };
       
-      reference += `### 📚 ${typeNames[type] || type}\n\n`;
+      reference += `### ${typeNames[type] || type}\n\n`;
       
       prompts.forEach((prompt, index) => {
-        reference += `**${index + 1}. ${prompt.name}** [${prompt.category}]\n`;
-        reference += `${prompt.tags.map(tag => `#${tag}`).join(' ')}\n`;
-        reference += `📝 ${prompt.description}\n\n`;
-        reference += `${prompt.content}\n\n`;
-        reference += `---\n\n`;
+        reference += this.formatSinglePromptReference(prompt, index + 1, type);
         
         // 更新使用次数
         this.updatePromptUsage(prompt.id);
       });
     }
     
-    // 添加上下文信息
+    // 添加详细的上下文信息和来源标识
     const totalTokens = this.estimateTokens(reference);
-    reference += `📊 引用统计: ~${totalTokens} tokens | ${selectedPrompts.length}个模板 | 使用时间: ${new Date().toLocaleString()}\n\n`;
+    reference += `---\n`;
+    reference += `📊 引用统计: ~${totalTokens} tokens | ${selectedPrompts.length}个模板\n`;
+    reference += `🕒 生成时间: ${new Date().toLocaleString()}\n`;
+    reference += `🔖 引用标识: [${sourceTag}] 提示词引用\n`;
+    if (context) {
+      reference += `🎯 应用场景: ${context}\n`;
+    }
+    reference += `\n`;
     
     return reference;
+  }
+
+  /**
+   * 🆕 格式化单个提示词的引用内容，包含精确来源标识
+   */
+  private formatSinglePromptReference(prompt: PromptTemplate, index: number, type: string): string {
+    const sourceIcon = type === 'global' ? '🌐' : type === 'project' ? '📁' : '🔄';
+    const sourceLabel = type.toUpperCase();
+    
+    let content = `**${index}. ${prompt.name}** [${prompt.category}] ${sourceIcon} ${sourceLabel}\n`;
+    content += `🆔 ID: ${prompt.id} | 📈 使用次数: ${prompt.usage || 0}\n`;
+    
+    if (prompt.tags && prompt.tags.length > 0) {
+      content += `🏷️  标签: ${prompt.tags.map(tag => `#${tag}`).join(' ')}\n`;
+    }
+    
+    content += `📝 描述: ${prompt.description}\n`;
+    content += `🕐 更新时间: ${new Date(prompt.updatedAt || prompt.createdAt).toLocaleString()}\n\n`;
+    content += `${prompt.content}\n\n`;
+    content += `---\n\n`;
+    
+    return content;
+  }
+
+  /**
+   * 🆕 获取当前项目信息
+   */
+  private getProjectInfo(): { isProject: boolean; name: string; path?: string } {
+    if (this.currentProject) {
+      return {
+        isProject: true,
+        name: path.basename(this.currentProject),
+        path: this.currentProject
+      };
+    }
+    return {
+      isProject: false,
+      name: '全局知识库'
+    };
   }
 
   /**
@@ -489,8 +536,15 @@ ${iteration.codeEvolution.after}
       if (fs.existsSync(promptsFile)) {
         const data = JSON.parse(fs.readFileSync(promptsFile, 'utf8'));
         if (data.prompts) {
-          this.templates = new Map(Object.entries(data.prompts));
-          console.log(`📂 加载了 ${this.templates.size} 个提示词模板`);
+          const allPrompts = Object.entries(data.prompts);
+          
+          // 只加载project和iteration类型的提示词，过滤掉global模板
+          const filteredPrompts = allPrompts.filter(([id, prompt]: [string, any]) => 
+            prompt.type === 'project' || prompt.type === 'iteration'
+          ) as [string, PromptTemplate][];
+          
+          this.templates = new Map(filteredPrompts);
+          console.log(`📂 加载了 ${this.templates.size} 个项目相关提示词模板 (已过滤 ${allPrompts.length - filteredPrompts.length} 个通用模板)`);
         }
       }
     } catch (error) {
@@ -804,5 +858,373 @@ ${iteration.codeEvolution.after}
     });
 
     console.log('✅ 已创建增强版内置提示词模板');
+  }
+
+  /**
+   * 🆕 从项目对话中提取关键工程信息
+   */
+  public extractProjectKnowledge(sessions: any[]): void {
+    if (!this.currentProject) {
+      console.log('⚠️  未设置项目路径，跳过项目知识提取');
+      return;
+    }
+
+    const projectSessions = sessions.filter(session => 
+      this.isProjectRelated(session, this.currentProject)
+    );
+
+    if (projectSessions.length === 0) {
+      console.log('⚠️  未找到项目相关对话，无法提取工程知识');
+      return;
+    }
+
+    console.log(`🔍 找到 ${projectSessions.length} 个项目相关对话，开始提取工程知识...`);
+
+    const projectName = path.basename(this.currentProject);
+    
+    // 检查是否已提取过项目知识，避免重复
+    const existingTemplates = Array.from(this.templates.values());
+    const hasArchitecture = existingTemplates.some(t => t.name.includes(`${projectName} 架构决策记录`));
+    const hasSolutions = existingTemplates.some(t => t.name.includes(`${projectName} 关键解决方案`));
+    const hasIteration = existingTemplates.some(t => t.name.includes(`${projectName} 迭代演进记录`));
+    
+    if (hasArchitecture && hasSolutions && hasIteration) {
+      console.log(`⏭️  ${projectName} 项目知识已存在，跳过重复提取`);
+      return;
+    }
+
+    // 只提取必要的类型：架构决策、解决方案、迭代演进
+    if (!hasArchitecture) this.extractArchitectureDecisions(projectSessions);
+    if (!hasSolutions) this.extractSolutions(projectSessions);
+    if (!hasIteration) this.extractIterationProgress(projectSessions);
+    
+    console.log(`✅ 从 ${projectSessions.length} 个项目对话中提取了关键工程信息`);
+  }
+
+  /**
+   * 判断对话是否与项目相关
+   */
+  private isProjectRelated(session: any, projectPath?: string): boolean {
+    if (!projectPath) return false;
+    
+    const projectName = path.basename(projectPath);
+    const content = (session.title + ' ' + session.summary + ' ' + 
+                    session.messages?.map((m: any) => m.content).join(' ') || '').toLowerCase();
+    
+    // 检查是否包含项目相关关键词
+    return content.includes(projectName.toLowerCase()) ||
+           content.includes('cursor-chat-memory') ||
+           content.includes('提示词中心') ||
+           content.includes('chat memory') ||
+           content.includes('vscode extension') ||
+           content.includes('扩展开发') ||
+           content.includes('prompt center') ||
+           content.includes('memory service');
+  }
+
+  /**
+   * 提取架构决策
+   */
+  private extractArchitectureDecisions(sessions: any[]): void {
+    const architectureKeywords = ['架构', '设计', 'architecture', '模块', 'service', '接口', 'api', 'class'];
+    const relevantSessions = sessions.filter(session =>
+      architectureKeywords.some(keyword => 
+        session.summary.toLowerCase().includes(keyword) ||
+        session.title.toLowerCase().includes(keyword)
+      )
+    );
+
+    if (relevantSessions.length > 0) {
+      const content = this.buildKnowledgeContent(relevantSessions, '架构决策');
+      this.createPrompt({
+        name: `${path.basename(this.currentProject || 'Project')} 架构决策记录`,
+        type: 'project',
+        category: '架构设计',
+        content,
+        description: '从项目对话中提取的实际架构决策和设计思路',
+        tags: ['架构', '设计决策', '项目特定'],
+        version: '1.0.0'
+      });
+      console.log(`📐 提取了 ${relevantSessions.length} 个架构决策相关对话`);
+    }
+  }
+
+
+
+  /**
+   * 提取解决方案
+   */
+  private extractSolutions(sessions: any[]): void {
+    const solutionKeywords = ['解决', 'fix', 'solution', '实现', '修复', '优化', 'bug', 'error', 'issue'];
+    const relevantSessions = sessions.filter(session =>
+      solutionKeywords.some(keyword => 
+        session.summary.toLowerCase().includes(keyword) ||
+        session.title.toLowerCase().includes(keyword)
+      ) && session.importance > 0.7
+    );
+
+    if (relevantSessions.length > 0) {
+      const content = this.buildKnowledgeContent(relevantSessions, '解决方案');
+      this.createPrompt({
+        name: `${path.basename(this.currentProject || 'Project')} 关键解决方案`,
+        type: 'project',
+        category: '问题解决',
+        content,
+        description: '从项目对话中提取的实际问题解决方案',
+        tags: ['解决方案', '问题修复', '项目特定'],
+        version: '1.0.0'
+      });
+      console.log(`🛠️ 提取了 ${relevantSessions.length} 个解决方案相关对话`);
+    }
+  }
+
+  /**
+   * 提取迭代演进
+   */
+  private extractIterationProgress(sessions: any[]): void {
+    const iterationKeywords = ['迭代', '版本', '更新', '功能', '改进', 'feature', 'version', 'update', 'enhance'];
+    const relevantSessions = sessions.filter(session =>
+      iterationKeywords.some(keyword => 
+        session.summary.toLowerCase().includes(keyword) ||
+        session.title.toLowerCase().includes(keyword)
+      )
+    );
+
+    if (relevantSessions.length > 0) {
+      // 按时间排序，展示演进过程
+      relevantSessions.sort((a, b) => a.lastActivity - b.lastActivity);
+      const content = this.buildIterationContent(relevantSessions);
+      
+      this.createPrompt({
+        name: `${path.basename(this.currentProject || 'Project')} 迭代演进记录`,
+        type: 'iteration',
+        category: '项目演进',
+        content,
+        description: '从项目对话中提取的实际迭代演进过程',
+        tags: ['迭代', '演进', '功能发展'],
+        version: '1.0.0'
+      });
+      console.log(`📈 提取了 ${relevantSessions.length} 个迭代演进相关对话`);
+    }
+  }
+
+  /**
+   * 构建知识内容 - 增强版，包含完整的工程信息
+   */
+  private buildKnowledgeContent(sessions: any[], type: string): string {
+    const projectName = path.basename(this.currentProject || 'Unknown Project');
+    let content = `## 🎯 ${projectName} - ${type}\n\n`;
+    content += `> 📅 提取时间: ${new Date().toLocaleString()}\n`;
+    content += `> 📊 基于 ${sessions.length} 个真实项目对话生成\n`;
+    content += `> 🎯 这是从实际开发过程中提取的工程知识，不是理论模板\n\n`;
+    
+    // 根据类型生成不同的内容结构
+    if (type === '架构决策') {
+      content += this.buildArchitectureContent(sessions, projectName);
+    } else if (type === '解决方案') {
+      content += this.buildSolutionsContent(sessions, projectName);
+    } else if (type === '技术选型') {
+      content += this.buildTechChoicesContent(sessions, projectName);
+    } else {
+      content += this.buildGenericContent(sessions);
+    }
+    
+    return content;
+  }
+
+  /**
+   * 构建架构决策内容
+   */
+  private buildArchitectureContent(sessions: any[], projectName: string): string {
+    let content = `### 🏗️ 核心架构设计\n\n`;
+    
+    sessions.forEach((session, index) => {
+      content += `#### 第${index + 1}阶段: ${session.title}\n`;
+      content += `**⭐ 重要性**: ${(session.importance * 5).toFixed(1)}/5.0 | **📅 时间**: ${new Date(session.lastActivity).toLocaleDateString()}\n\n`;
+      
+      // 提取用户问题
+      const userMessages = session.messages?.filter((m: any) => m.role === 'user') || [];
+      if (userMessages.length > 0) {
+        content += `**💭 原始需求/问题**:\n`;
+        userMessages.forEach((msg: any, i: number) => {
+          content += `${i + 1}. ${msg.content.substring(0, 200)}${msg.content.length > 200 ? '...' : ''}\n`;
+        });
+        content += '\n';
+      }
+      
+      // 提取助手回答中的关键架构信息
+      const assistantMessages = session.messages?.filter((m: any) => m.role === 'assistant') || [];
+      if (assistantMessages.length > 0) {
+        content += `**🎯 架构解决方案**:\n`;
+        assistantMessages.forEach((msg: any, i: number) => {
+          // 提取关键的架构决策点
+          const keyPoints = this.extractArchitecturePoints(msg.content);
+          if (keyPoints.length > 0) {
+            keyPoints.forEach(point => {
+              content += `- ${point}\n`;
+            });
+          } else {
+            // 如果没有提取到结构化信息，显示前500字符
+            content += `${msg.content.substring(0, 800)}${msg.content.length > 800 ? '...' : ''}\n`;
+          }
+        });
+        content += '\n';
+      }
+      
+      content += `**📊 关键指标**: 类别(${session.category}) | 摘要长度(${session.summary.length}字符)\n\n`;
+      content += '---\n\n';
+    });
+    
+    content += `### 💡 架构总结\n`;
+    content += `- **总体评估**: 基于 ${sessions.length} 个真实开发对话\n`;
+    content += `- **平均重要性**: ${(sessions.reduce((sum: number, s: any) => sum + s.importance, 0) / sessions.length * 5).toFixed(1)}/5.0\n`;
+    content += `- **主要特点**: 从实际问题驱动的架构演进过程\n`;
+    content += `- **适用场景**: ${projectName} 项目及类似技术栈的开发\n\n`;
+    
+    return content;
+  }
+
+  /**
+   * 从文本中提取架构要点
+   */
+  private extractArchitecturePoints(text: string): string[] {
+    const points: string[] = [];
+    const lines = text.split('\n');
+    
+    for (const line of lines) {
+      const trimmed = line.trim();
+      // 查找列表项、标题、关键术语
+      if (trimmed.match(/^[- *•]\s+/) || trimmed.match(/^\d+\.\s+/) || 
+          trimmed.includes('架构') || trimmed.includes('设计') || 
+          trimmed.includes('模块') || trimmed.includes('组件') ||
+          trimmed.includes('接口') || trimmed.includes('服务')) {
+        if (trimmed.length > 10 && trimmed.length < 200) {
+          points.push(trimmed.replace(/^[- *•\d.]\s*/, ''));
+        }
+      }
+    }
+    
+    return points.slice(0, 8); // 最多8个要点
+  }
+
+  /**
+   * 构建解决方案内容
+   */
+  private buildSolutionsContent(sessions: any[], projectName: string): string {
+    let content = `### 🛠️ 关键问题解决方案\n\n`;
+    
+    sessions.forEach((session, index) => {
+      content += `#### 解决方案 ${index + 1}: ${session.title}\n`;
+      content += `**⭐ 重要性**: ${(session.importance * 5).toFixed(1)}/5.0 | **📅 解决时间**: ${new Date(session.lastActivity).toLocaleDateString()}\n\n`;
+      
+      // 问题描述
+      const userMessages = session.messages?.filter((m: any) => m.role === 'user') || [];
+      if (userMessages.length > 0) {
+        content += `**❓ 遇到的问题**:\n`;
+        userMessages.forEach((msg: any) => {
+          content += `> ${msg.content.substring(0, 300)}${msg.content.length > 300 ? '...' : ''}\n\n`;
+        });
+      }
+      
+      // 解决过程
+      const assistantMessages = session.messages?.filter((m: any) => m.role === 'assistant') || [];
+      if (assistantMessages.length > 0) {
+        content += `**✅ 解决过程与方案**:\n`;
+        assistantMessages.forEach((msg: any) => {
+          const solutions = this.extractSolutionSteps(msg.content);
+          if (solutions.length > 0) {
+            solutions.forEach((step, i) => {
+              content += `${i + 1}. ${step}\n`;
+            });
+          } else {
+            content += `${msg.content.substring(0, 1000)}${msg.content.length > 1000 ? '...' : ''}\n`;
+          }
+          content += '\n';
+        });
+      }
+      
+      content += '---\n\n';
+    });
+    
+    return content;
+  }
+
+  /**
+   * 提取解决方案步骤
+   */
+  private extractSolutionSteps(text: string): string[] {
+    const steps: string[] = [];
+    const lines = text.split('\n');
+    
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.match(/^[- *•]\s+/) || trimmed.match(/^\d+\.\s+/) ||
+          trimmed.includes('解决') || trimmed.includes('修复') || 
+          trimmed.includes('实现') || trimmed.includes('配置') ||
+          trimmed.includes('检查') || trimmed.includes('启动')) {
+        if (trimmed.length > 15 && trimmed.length < 300) {
+          steps.push(trimmed.replace(/^[- *•\d.]\s*/, ''));
+        }
+      }
+    }
+    
+    return steps.slice(0, 10); // 最多10个步骤
+  }
+
+  /**
+   * 构建技术选型内容
+   */
+  private buildTechChoicesContent(sessions: any[], projectName: string): string {
+    let content = `### 🔧 技术选型决策\n\n`;
+    // 类似的实现...
+    return content + this.buildGenericContent(sessions);
+  }
+
+  /**
+   * 构建通用内容
+   */
+  private buildGenericContent(sessions: any[]): string {
+    let content = '';
+    sessions.forEach((session, index) => {
+      content += `### ${index + 1}. ${session.title}\n`;
+      content += `- **重要性**: ${(session.importance * 5).toFixed(1)}/5.0\n`;
+      content += `- **类别**: ${session.category}\n`;
+      content += `- **时间**: ${new Date(session.lastActivity).toLocaleDateString()}\n`;
+      content += `- **摘要**: ${session.summary}\n\n`;
+      content += '---\n\n';
+    });
+    return content;
+  }
+
+  /**
+   * 构建迭代内容
+   */
+  private buildIterationContent(sessions: any[]): string {
+    const projectName = path.basename(this.currentProject || 'Unknown Project');
+    let content = `## 📈 ${projectName} - 迭代演进时间线\n\n`;
+    content += `> 📅 提取时间: ${new Date().toLocaleString()}\n`;
+    content += `> 📊 跟踪 ${sessions.length} 个迭代节点\n\n`;
+    
+    sessions.forEach((session, index) => {
+      const date = new Date(session.lastActivity).toLocaleDateString();
+      content += `### 第 ${index + 1} 阶段 (${date})\n`;
+      content += `**📋 ${session.title}**\n`;
+      content += `- 重要性: ${(session.importance * 5).toFixed(1)}/5.0\n`;
+      content += `- 类别: ${session.category}\n`;
+      content += `- 关键成果: ${session.summary}\n\n`;
+      
+      if (session.tags && session.tags.length > 0) {
+        content += `- 标签: ${session.tags.map((t: any) => `#${t.name}`).join(' ')}\n\n`;
+      }
+    });
+    
+    content += `\n## 📊 演进总结\n`;
+    content += `- 总迭代轮次: ${sessions.length}\n`;
+    content += `- 平均重要性: ${(sessions.reduce((sum: number, s: any) => sum + s.importance, 0) / sessions.length * 5).toFixed(1)}/5.0\n`;
+    if (sessions.length > 1) {
+      content += `- 时间跨度: ${new Date(sessions[0]?.lastActivity).toLocaleDateString()} - ${new Date(sessions[sessions.length - 1]?.lastActivity).toLocaleDateString()}\n`;
+    }
+    
+    return content;
   }
 } 

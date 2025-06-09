@@ -74,19 +74,9 @@
                     </div>
                 </div>
                 
-                <div class="content-grid">
-                    <div class="sessions-list">
-                        <div id="sessionsContainer" class="sessions-container">
-                            <!-- 会话列表将在这里动态生成 -->
-                        </div>
-                    </div>
-                    
-                    <div class="session-detail">
-                        <div id="sessionDetailContainer" class="detail-container">
-                            <div class="empty-state">
-                                <p>选择一个会话查看详细信息</p>
-                            </div>
-                        </div>
+                <div class="sessions-full-container">
+                    <div id="sessionsContainer" class="sessions-container">
+                        <!-- 会话列表将在这里动态生成 -->
                     </div>
                 </div>
             </div>
@@ -108,19 +98,9 @@
                     </div>
                 </div>
                 
-                <div class="content-grid">
-                    <div class="prompts-list">
-                        <div id="promptsContainer" class="prompts-container">
-                            <!-- 提示词列表将在这里动态生成 -->
-                        </div>
-                    </div>
-                    
-                    <div class="prompt-detail">
-                        <div id="promptDetailContainer" class="detail-container">
-                            <div class="empty-state">
-                                <p>选择一个提示词查看详细信息</p>
-                            </div>
-                        </div>
+                <div class="prompts-full-container">
+                    <div id="promptsContainer" class="prompts-container">
+                        <!-- 提示词列表将在这里动态生成 -->
                     </div>
                 </div>
             </div>
@@ -208,6 +188,37 @@
         </main>
     </div>
 
+    <!-- 会话详情全屏模态框 -->
+    <div id="sessionDetailModal" class="session-detail-modal">
+        <div class="session-detail-container">
+            <div class="session-detail-header">
+                <h1 id="sessionDetailTitle">会话详情</h1>
+                <button class="session-detail-close" onclick="SessionManager.closeFullscreenDetail()">×</button>
+            </div>
+            <div class="session-detail-main">
+                <div class="session-detail-sidebar">
+                    <div id="sessionMetaInfo" class="fullscreen-meta-tags">
+                        <!-- 会话元信息 -->
+                    </div>
+                    <div id="sessionStatistics" class="fullscreen-content-summary">
+                        <!-- 会话统计信息 -->
+                    </div>
+                </div>
+                <div class="session-detail-content">
+                    <div id="sessionMainContent" class="fullscreen-content-section">
+                        <!-- 会话消息内容 -->
+                    </div>
+                </div>
+            </div>
+            <div class="fullscreen-actions">
+                <button id="useSessionBtn" class="fullscreen-btn primary">📋 生成引用</button>
+                <button id="copySessionBtn" class="fullscreen-btn secondary">📋 复制内容</button>
+                <button id="editSessionBtn" class="fullscreen-btn secondary">✏️ 编辑会话</button>
+                <button id="deleteSessionBtn" class="fullscreen-btn danger">🗑️ 删除会话</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 模态框 -->
     <div id="modal" class="modal">
         <div class="modal-content">
@@ -248,6 +259,35 @@
 
     <!-- 通知容器 -->
     <div id="notifications" class="notifications"></div>
+
+    <!-- 全屏提示词详情模态 -->
+    <div id="promptDetailModal" class="prompt-detail-modal">
+        <div class="prompt-detail-container">
+            <div class="prompt-detail-header">
+                <h1 id="promptDetailTitle">提示词详情</h1>
+                <button class="prompt-detail-close" onclick="PromptManager.closeFullscreenDetail()">
+                    ✕
+                </button>
+            </div>
+            <div class="prompt-detail-main">
+                <div class="prompt-detail-sidebar">
+                    <div id="promptDetailSidebar">
+                        <!-- 侧边栏内容 -->
+                    </div>
+                </div>
+                <div class="prompt-detail-content">
+                    <div id="promptDetailMainContent">
+                        <!-- 主要内容 -->
+                    </div>
+                </div>
+            </div>
+            <div class="fullscreen-actions">
+                <div id="promptDetailActions">
+                    <!-- 操作按钮 -->
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- 异步加载非关键JS -->
     <script defer src="script.js"></script>

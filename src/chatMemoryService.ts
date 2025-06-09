@@ -310,35 +310,51 @@ export class ChatMemoryService extends EventEmitter {
   }
 
   /**
-   * 获取所有会话（按重要性排序）
+   * 🆕 过滤掉测试数据的辅助方法
    */
-  public getAllSessions(): ChatSession[] {
-    return Array.from(this.contextCache.sessions.values())
-      .sort((a, b) => b.importance - a.importance || b.lastActivity - a.lastActivity);
+  private isTestData(session: ChatSession): boolean {
+    return session.id.startsWith('sample_chat_') || 
+           session.id.startsWith('test_') ||
+           session.title.toLowerCase().includes('[测试]') ||
+           session.title.toLowerCase().includes('[test]');
   }
 
   /**
-   * 根据类别获取会话
+   * 获取所有会话（按重要性排序，默认排除测试数据）
    */
-  public getSessionsByCategory(category: string): ChatSession[] {
-    return this.getAllSessions().filter(session => session.category === category);
+  public getAllSessions(includeTestData: boolean = false): ChatSession[] {
+    let sessions = Array.from(this.contextCache.sessions.values());
+    
+    // 🆕 默认过滤掉测试数据
+    if (!includeTestData) {
+      sessions = sessions.filter(session => !this.isTestData(session));
+    }
+    
+    return sessions.sort((a, b) => b.importance - a.importance || b.lastActivity - a.lastActivity);
   }
 
   /**
-   * 根据标签获取会话
+   * 根据类别获取会话（排除测试数据）
    */
-  public getSessionsByTag(tagName: string): ChatSession[] {
-    return this.getAllSessions().filter(session => 
+  public getSessionsByCategory(category: string, includeTestData: boolean = false): ChatSession[] {
+    return this.getAllSessions(includeTestData).filter(session => session.category === category);
+  }
+
+  /**
+   * 根据标签获取会话（排除测试数据）
+   */
+  public getSessionsByTag(tagName: string, includeTestData: boolean = false): ChatSession[] {
+    return this.getAllSessions(includeTestData).filter(session => 
       session.tags.some(tag => tag.name === tagName)
     );
   }
 
   /**
-   * 智能推荐相关会话
+   * 智能推荐相关会话（排除测试数据）
    */
-  public getRecommendedSessions(inputText: string, maxSessions: number = 5): ChatSession[] {
+  public getRecommendedSessions(inputText: string, maxSessions: number = 5, includeTestData: boolean = false): ChatSession[] {
     const inputKeywords = this.extractKeywords(inputText.toLowerCase());
-    const allSessions = this.getAllSessions();
+    const allSessions = this.getAllSessions(includeTestData);
     
     // 计算相关性分数
     const scoredSessions = allSessions.map(session => {
@@ -381,7 +397,7 @@ export class ChatMemoryService extends EventEmitter {
       return '模板不存在';
     }
 
-    let sessions = this.getAllSessions();
+    let sessions = this.getAllSessions(); // 默认排除测试数据
 
     // 应用过滤器
     if (template.filters.categories) {
@@ -416,7 +432,7 @@ export class ChatMemoryService extends EventEmitter {
    * 获取轻量级引用 (用于上下文敏感场景)
    */
   public getLightweightReference(maxTokens: number = 3000): string {
-    const sessions = this.getAllSessions()
+    const sessions = this.getAllSessions() // 默认排除测试数据
       .filter(s => s.importance >= 0.5)  // 只选择重要会话
       .slice(0, 3);  // 最多3个会话
     
@@ -478,14 +494,45 @@ export class ChatMemoryService extends EventEmitter {
   }
 
   /**
-   * 搜索会话
+   * 搜索会话（排除测试数据）
    */
-  public searchSessions(query: string): ChatSession[] {
+  public searchSessions(query: string, includeTestData: boolean = false): ChatSession[] {
     const keywords = this.extractKeywords(query.toLowerCase());
-    return this.getAllSessions().filter(session => {
+    return this.getAllSessions(includeTestData).filter(session => {
       const sessionText = (session.title + ' ' + session.summary).toLowerCase();
       return keywords.some(keyword => sessionText.includes(keyword));
     });
+  }
+
+  /**
+   * 删除会话
+   */
+  public deleteSession(sessionId: string): boolean {
+    try {
+      // 从内存缓存中删除
+      const deleted = this.contextCache.sessions.delete(sessionId);
+      
+      if (deleted) {
+        // 更新缓存时间戳
+        this.contextCache.lastUpdated = Date.now();
+        
+        // 更新分类统计
+        this.updateCategoryStats();
+        
+        // 保存缓存
+        this.saveCache();
+        
+        console.log(`🗑️ Deleted session: ${sessionId}`);
+        this.emit('sessionDeleted', sessionId);
+        
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('❌ Error deleting session:', error);
+      return false;
+    }
   }
 
   /**
@@ -728,23 +775,27 @@ export class ChatMemoryService extends EventEmitter {
   }
 
   /**
-   * 格式化引用内容 (增强版 - 控制上下文长度)
+   * 格式化引用内容 (增强版 - 控制上下文长度，精确标识来源)
    */
   private formatReferenceContent(sessions: ChatSession[], title: string): string {
     if (sessions.length === 0) {
       return '📭 没有找到相关的历史对话';
     }
 
-    let content = `💡 **${title}** (${sessions.length}个会话)\n\n`;
+    // 🆕 添加项目和来源标识
+    const projectInfo = this.getProjectInfo();
+    const sourceTag = projectInfo.isProject ? `📁 项目: ${projectInfo.name}` : '🌐 全局记忆';
+    
+    let content = `💡 **${title}** (${sessions.length}个会话) | ${sourceTag}\n`;
+    content += `📍 来源: ${this.chatDir}\n\n`;
+    
     let estimatedTokens = this.estimateTokens(content);
     const maxTokensForSessions = this.contextLimits.maxTotalTokens - this.contextLimits.tokenBuffer;
     
     const validSessions: ChatSession[] = [];
     
     for (const session of sessions) {
-      const tagsText = session.tags.map(tag => `#${tag.name}`).join(' ');
-      const sessionContent = `**${validSessions.length + 1}. ${this.truncateText(session.title, this.contextLimits.maxTitleLength)}** [${session.category}]\n${tagsText}\n📝 ${this.truncateText(session.summary, this.contextLimits.maxSummaryLength)}\n\n`;
-      
+      const sessionContent = this.formatSingleSessionReference(session, validSessions.length + 1);
       const sessionTokens = this.estimateTokens(sessionContent);
       
       if (estimatedTokens + sessionTokens <= maxTokensForSessions) {
@@ -757,18 +808,76 @@ export class ChatMemoryService extends EventEmitter {
     }
     
     validSessions.forEach((session, index) => {
-      const tagsText = session.tags.map(tag => `#${tag.name}`).join(' ');
-      content += `**${index + 1}. ${this.truncateText(session.title, this.contextLimits.maxTitleLength)}** [${session.category}]\n`;
-      content += `${tagsText}\n`;
-      content += `📝 ${this.truncateText(session.summary, this.contextLimits.maxSummaryLength)}\n\n`;
+      content += this.formatSingleSessionReference(session, index + 1);
     });
     
-    // 添加上下文使用情况提示
+    // 添加详细的上下文使用情况和来源信息
     const finalTokens = this.estimateTokens(content);
     content += `---\n`;
-    content += `📊 上下文使用: ~${finalTokens} tokens (${validSessions.length}/${sessions.length}个会话)\n\n`;
+    content += `📊 引用统计: ~${finalTokens} tokens | ${validSessions.length}/${sessions.length}个会话\n`;
+    content += `🕒 生成时间: ${new Date().toLocaleString()}\n`;
+    content += `🔖 引用标识: [${sourceTag}] ${title}\n\n`;
     
     return content;
+  }
+
+  /**
+   * 🆕 格式化单个会话的引用内容，包含精确来源标识
+   */
+  private formatSingleSessionReference(session: ChatSession, index: number): string {
+    const tagsText = session.tags.map(tag => `#${tag.name}`).join(' ');
+    
+    // 🆕 判断会话来源类型
+    const isProjectRelated = this.isSessionProjectRelated(session);
+    const sourceIcon = isProjectRelated ? '📁' : '🌐';
+    const sourceLabel = isProjectRelated ? 'PROJECT' : 'GLOBAL';
+    
+    let content = `**${index}. ${this.truncateText(session.title, this.contextLimits.maxTitleLength)}** `;
+    content += `[${session.category}] ${sourceIcon} ${sourceLabel}\n`;
+    content += `🆔 ID: ${session.id} | ⭐ 重要性: ${(session.importance * 100).toFixed(0)}%\n`;
+    if (tagsText) {
+      content += `🏷️  标签: ${tagsText}\n`;
+    }
+    content += `📝 摘要: ${this.truncateText(session.summary, this.contextLimits.maxSummaryLength)}\n`;
+    content += `🕐 时间: ${new Date(session.lastActivity).toLocaleString()}\n\n`;
+    
+    return content;
+  }
+
+  /**
+   * 🆕 获取当前项目信息
+   */
+  private getProjectInfo(): { isProject: boolean; name: string; path?: string } {
+    if (this.currentProject) {
+      return {
+        isProject: true,
+        name: path.basename(this.currentProject),
+        path: this.currentProject
+      };
+    }
+    return {
+      isProject: false,
+      name: '全局记忆'
+    };
+  }
+
+  /**
+   * 🆕 判断会话是否与项目相关
+   */
+  private isSessionProjectRelated(session: ChatSession): boolean {
+    if (!this.currentProject) return false;
+    
+    const projectName = path.basename(this.currentProject).toLowerCase();
+    const sessionContent = (session.title + ' ' + session.summary).toLowerCase();
+    
+    // 检查会话内容是否包含项目名称或项目相关标签
+    const hasProjectName = sessionContent.includes(projectName);
+    const hasProjectTags = session.tags.some(tag => 
+      tag.name.toLowerCase().includes(projectName) || 
+      tag.name.toLowerCase().includes('project')
+    );
+    
+    return hasProjectName || hasProjectTags;
   }
 
   /**
@@ -924,7 +1033,7 @@ export class ChatMemoryService extends EventEmitter {
    * 获取模板匹配的会话数量
    */
   private getSessionCountForTemplate(template: ReferenceTemplate): number {
-    let sessions = this.getAllSessions();
+    let sessions = this.getAllSessions(); // 默认排除测试数据
     
     if (template.filters.categories) {
       sessions = sessions.filter(s => template.filters.categories!.includes(s.category));
@@ -1010,6 +1119,12 @@ export class ChatMemoryService extends EventEmitter {
         await this.processChangedFile(filePath);
       }
       
+      // 🆕 扫描完成后从对话中提取项目知识
+      if (this.currentProject) {
+        const allSessions = this.getAllSessions(true); // 包含测试数据用于提取知识
+        this.promptCenter.extractProjectKnowledge(allSessions);
+      }
+      
     } catch (error) {
       console.error('❌ Error scanning existing chats:', error);
     }
@@ -1072,11 +1187,11 @@ export class ChatMemoryService extends EventEmitter {
   public getProjectSessions(projectPath?: string): ChatSession[] {
     const targetProject = projectPath || this.currentProject;
     if (!targetProject) {
-      return this.getAllSessions();
+      return this.getAllSessions(); // 默认排除测试数据
     }
     
     const projectName = path.basename(targetProject);
-    return this.getAllSessions().filter(session => {
+    return this.getAllSessions().filter(session => { // 默认排除测试数据
       // 检查会话内容是否与项目相关
       const content = (session.title + ' ' + session.summary).toLowerCase();
       return content.includes(projectName.toLowerCase()) || 
@@ -1109,7 +1224,7 @@ export class ChatMemoryService extends EventEmitter {
    * 获取包含特定解决方案的会话
    */
   public getSolutionSessions(solutionKeywords: string[]): ChatSession[] {
-    const sessions = this.getAllSessions();
+    const sessions = this.getAllSessions(); // 默认排除测试数据
     return sessions.filter(session => {
       // 检查会话内容是否包含解决方案关键词
       const hasSolution = solutionKeywords.some(keyword => 

@@ -157,7 +157,13 @@ export class WebServer {
         break;
 
       default:
-        if (pathname.startsWith('/api/prompts/') && method === 'GET') {
+        if (pathname.startsWith('/api/sessions/') && method === 'DELETE') {
+          const id = pathname.split('/')[3];
+          await this.memoryService.start();
+          const success = this.memoryService.deleteSession(id);
+          this.memoryService.stop();
+          this.sendJSON(res, { success });
+        } else if (pathname.startsWith('/api/prompts/') && method === 'GET') {
           const id = pathname.split('/')[3];
           const prompt = this.promptCenter.getPrompt(id);
           if (prompt) {

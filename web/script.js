@@ -252,17 +252,58 @@ class SessionManager {
             return;
         }
 
-        container.innerHTML = sessions.map(session => `
-            <div class="session-item" data-id="${session.id}" onclick="SessionManager.selectSession('${session.id}')">
-                <div class="session-title">${session.summary || session.id}</div>
-                <div class="session-meta">
-                    <span class="importance-stars">${'★'.repeat(session.importance || 1)}</span>
-                    ${session.category ? `<span class="tag category-tag">${session.category}</span>` : ''}
-                    <span class="tag">${new Date(session.timestamp).toLocaleDateString()}</span>
+        container.innerHTML = sessions.map(session => {
+            // 生成内容摘要
+            const summary = this.generateSessionSummary(session);
+            
+            return `
+                <div class="session-item" data-id="${session.id}" onclick="SessionManager.showFullscreenDetail('${session.id}')">
+                    <div class="session-header">
+                        <div class="session-title">${session.title || session.summary || session.id}</div>
+                        <div class="session-meta">
+                            <span class="importance-stars">${'★'.repeat(Math.round((session.importance || 0.5) * 5))}</span>
+                            ${session.category ? `<span class="tag category-tag">${session.category}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="session-content">
+                        <div class="session-summary">${summary}</div>
+                    </div>
+                    <div class="session-footer">
+                        <div class="session-stats">
+                            <span class="tag">${session.messages ? session.messages.length : 0}条消息</span>
+                            <span class="tag">${session.tokens || 0} tokens</span>
+                        </div>
+                        <div class="session-date">${new Date(session.lastActivity || session.timestamp).toLocaleDateString()}</div>
+                    </div>
                 </div>
-                <div class="session-summary">${session.content?.substring(0, 100)}...</div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
+    }
+
+    static generateSessionSummary(session) {
+        if (!session.messages || session.messages.length === 0) {
+            return session.summary || '暂无内容摘要';
+        }
+
+        // 获取用户和助手的关键消息
+        const userMessages = session.messages.filter(m => m.role === 'user');
+        const assistantMessages = session.messages.filter(m => m.role === 'assistant');
+        
+        let summary = '';
+        
+        // 添加主要问题或需求
+        if (userMessages.length > 0) {
+            const firstQuestion = userMessages[0].content.substring(0, 100);
+            summary += `问题: ${firstQuestion}...`;
+        }
+        
+        // 添加解决方案概要
+        if (assistantMessages.length > 0) {
+            const lastResponse = assistantMessages[assistantMessages.length - 1].content.substring(0, 100);
+            summary += ` 方案: ${lastResponse}...`;
+        }
+        
+        return summary || session.summary || '技术对话记录';
     }
 
     static selectSession(sessionId) {
@@ -287,32 +328,63 @@ class SessionManager {
     static renderSessionDetail(session) {
         const container = document.getElementById('sessionDetailContainer');
         
+        // 构建消息内容
+        let messagesHtml = '';
+        if (session.messages && session.messages.length > 0) {
+            messagesHtml = session.messages.map((msg, index) => `
+                <div class="message-item ${msg.role}">
+                    <div class="message-header">
+                        <span class="message-role">${msg.role === 'user' ? '👤 用户' : '🤖 助手'}</span>
+                        <span class="message-index">#${index + 1}</span>
+                    </div>
+                    <div class="message-content">${this.formatMessageContent(msg.content)}</div>
+                </div>
+            `).join('');
+        } else {
+            messagesHtml = `
+                <div class="empty-state">
+                    <p>📝 此会话暂无详细消息内容</p>
+                    <p>摘要: ${session.summary || '无摘要'}</p>
+                </div>
+            `;
+        }
+        
         container.innerHTML = `
             <div class="detail-header">
-                <div class="detail-title">${session.summary || session.id}</div>
+                <div class="detail-title">${session.title || session.summary || session.id}</div>
                 <div class="session-meta">
-                    <span class="importance-stars">${'★'.repeat(session.importance || 1)}</span>
+                    <span class="importance-stars">${'★'.repeat(Math.round((session.importance || 0.5) * 5))}</span>
                     ${session.category ? `<span class="tag category-tag">${session.category}</span>` : ''}
-                    <span class="tag">${new Date(session.timestamp).toLocaleDateString()}</span>
+                    <span class="tag">${new Date(session.lastActivity || session.timestamp).toLocaleDateString()}</span>
+                    <span class="tag">${session.messages ? session.messages.length : 0}条消息</span>
                 </div>
             </div>
             <div class="detail-content">
-                <h4>会话内容</h4>
-                <pre style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;">${session.content || '暂无内容'}</pre>
-                ${session.context ? `
-                    <h4 style="margin-top: 2rem;">上下文信息</h4>
-                    <pre style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;">${session.context}</pre>
-                ` : ''}
+                <div class="messages-container">
+                    ${messagesHtml}
+                </div>
             </div>
             <div class="detail-actions">
-                <button class="btn btn-primary" onclick="SessionManager.generateReference('${session.id}')">
-                    生成引用
+                <button onclick="SessionManager.generateReference('${session.id}')" class="btn btn-primary">
+                    📋 生成引用
                 </button>
-                <button class="btn btn-secondary" onclick="SessionManager.copyContent('${session.id}')">
-                    复制内容
+                <button onclick="SessionManager.copyContent('${session.id}')" class="btn btn-secondary">
+                    📋 复制内容
                 </button>
             </div>
         `;
+    }
+
+    static formatMessageContent(content) {
+        if (!content) return '';
+        
+        // 简单的格式化：保留换行，转换特殊字符
+        return content
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\n/g, '<br>')
+            .replace(/```([^`]+)```/g, '<pre><code>$1</code></pre>')
+            .replace(/`([^`]+)`/g, '<code>$1</code>');
     }
 
     static async generateReference(sessionId) {
@@ -344,6 +416,127 @@ class SessionManager {
             });
         }
     }
+
+    static showFullscreenDetail(sessionId) {
+        const session = state.sessions.find(s => s.id === sessionId);
+        if (!session) return;
+
+        // 显示模态框
+        const modal = document.getElementById('sessionDetailModal');
+        modal.classList.add('show');
+
+        // 设置标题
+        document.getElementById('sessionDetailTitle').textContent = session.title || session.summary || session.id;
+
+        // 设置元信息
+        const metaInfo = document.getElementById('sessionMetaInfo');
+        metaInfo.innerHTML = `
+            <div class="fullscreen-meta-tag category">${session.category || '未分类'}</div>
+            <div class="fullscreen-meta-tag rating">重要性: ${'★'.repeat(Math.round((session.importance || 0.5) * 5))}</div>
+            <div class="fullscreen-meta-tag usage">消息数: ${session.messages ? session.messages.length : 0}</div>
+            <div class="fullscreen-meta-tag type">Tokens: ${session.tokens || 0}</div>
+        `;
+
+        // 设置统计信息
+        const statistics = document.getElementById('sessionStatistics');
+        statistics.innerHTML = `
+            <h3>📊 会话统计</h3>
+            <p><strong>创建时间:</strong> ${new Date(session.timestamp || Date.now()).toLocaleString()}</p>
+            <p><strong>最后活动:</strong> ${new Date(session.lastActivity || session.timestamp).toLocaleString()}</p>
+            <p><strong>总消息数:</strong> ${session.messages ? session.messages.length : 0}</p>
+            <p><strong>用户消息:</strong> ${session.messages ? session.messages.filter(m => m.role === 'user').length : 0}</p>
+            <p><strong>助手消息:</strong> ${session.messages ? session.messages.filter(m => m.role === 'assistant').length : 0}</p>
+        `;
+
+        // 设置主要内容
+        const mainContent = document.getElementById('sessionMainContent');
+        let messagesHtml = '';
+        
+        if (session.messages && session.messages.length > 0) {
+            messagesHtml = `
+                <h2>💬 对话内容</h2>
+                <div class="messages-container">
+                    ${session.messages.map((msg, index) => `
+                        <div class="message-item ${msg.role}">
+                            <div class="message-header">
+                                <span class="message-role">${msg.role === 'user' ? '👤 用户' : '🤖 助手'}</span>
+                                <span class="message-index">#${index + 1}</span>
+                            </div>
+                            <div class="fullscreen-content-preview">${this.formatMessageContent(msg.content)}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        } else {
+            messagesHtml = `
+                <h2>📝 会话摘要</h2>
+                <div class="fullscreen-content-preview">
+                    ${session.summary || '此会话暂无详细内容'}
+                </div>
+            `;
+        }
+        
+        mainContent.innerHTML = messagesHtml;
+
+        // 设置按钮事件
+        document.getElementById('useSessionBtn').onclick = () => this.generateReference(sessionId);
+        document.getElementById('copySessionBtn').onclick = () => this.copyContent(sessionId);
+        document.getElementById('editSessionBtn').onclick = () => this.editSession(sessionId);
+        document.getElementById('deleteSessionBtn').onclick = () => this.deleteSession(sessionId);
+
+        // 添加键盘监听
+        this.addModalKeyboardListeners();
+    }
+
+    static closeFullscreenDetail() {
+        const modal = document.getElementById('sessionDetailModal');
+        modal.classList.remove('show');
+        
+        // 移除键盘监听
+        document.removeEventListener('keydown', this.handleModalKeydown);
+    }
+
+    static editSession(sessionId) {
+        // TODO: 实现会话编辑功能
+        NotificationManager.warning('会话编辑功能待实现');
+    }
+
+    static async deleteSession(sessionId) {
+        if (confirm('确定要删除这个会话吗？此操作不可撤销。')) {
+            try {
+                LoadingManager.show();
+                const response = await APIClient.delete(`/api/sessions/${sessionId}`);
+                
+                if (response.success) {
+                    // 从本地状态中移除会话
+                    state.sessions = state.sessions.filter(s => s.id !== sessionId);
+                    
+                    // 关闭模态框
+                    this.closeFullscreenDetail();
+                    
+                    // 重新渲染会话列表
+                    this.renderSessions();
+                    
+                    NotificationManager.success('会话已成功删除');
+                } else {
+                    NotificationManager.error('删除会话失败');
+                }
+            } catch (error) {
+                NotificationManager.error('删除会话失败: ' + error.message);
+            } finally {
+                LoadingManager.hide();
+            }
+        }
+    }
+
+    static addModalKeyboardListeners() {
+        this.handleModalKeydown = (e) => {
+            if (e.key === 'Escape') {
+                this.closeFullscreenDetail();
+            }
+        };
+        document.addEventListener('keydown', this.handleModalKeydown);
+    }
 }
 
 // 提示词管理
@@ -351,10 +544,18 @@ class PromptManager {
     static async loadPrompts() {
         try {
             LoadingManager.show();
-            const response = await APIClient.get('/api/prompts');
+            // 添加缓存破坏参数
+            const response = await APIClient.get(`/api/prompts?t=${Date.now()}`);
             state.prompts = response.prompts || [];
             this.renderPrompts();
-            NotificationManager.success(`已加载 ${state.prompts.length} 个提示词`);
+            NotificationManager.success(`已加载 ${state.prompts.length} 个项目相关提示词 (type: project/iteration)`);
+            
+            // 打印类型统计
+            const typeStats = state.prompts.reduce((acc, p) => {
+                acc[p.type] = (acc[p.type] || 0) + 1;
+                return acc;
+            }, {});
+            console.log('提示词类型统计:', typeStats);
         } catch (error) {
             NotificationManager.error('加载提示词失败: ' + error.message);
         } finally {
@@ -395,89 +596,129 @@ class PromptManager {
             container.innerHTML = `
                 <div class="empty-state">
                     <p>暂无提示词模板</p>
+                    <button class="btn btn-primary" onclick="PromptManager.createPrompt()">创建第一个提示词</button>
                 </div>
             `;
             return;
         }
 
-        container.innerHTML = prompts.map(prompt => `
-            <div class="prompt-item" data-id="${prompt.id}" onclick="PromptManager.selectPrompt('${prompt.id}')">
-                <div class="prompt-title">${prompt.title}</div>
-                <div class="prompt-meta">
-                    <span class="tag type-tag">${prompt.type}</span>
-                    ${prompt.category ? `<span class="tag category-tag">${prompt.category}</span>` : ''}
-                    <span class="tag">使用次数: ${prompt.usageCount || 0}</span>
+        container.innerHTML = prompts.map(prompt => {
+            // 生成内容摘要
+            const summary = this.generateContentSummary(prompt.content || prompt.template || '');
+            const displaySummary = summary || prompt.description || '暂无描述';
+            
+            return `
+                <div class="prompt-item" data-id="${prompt.id}" onclick="PromptManager.selectPrompt('${prompt.id}')">
+                    <div class="prompt-header">
+                        <div class="prompt-title">${prompt.name || prompt.title || 'Untitled'}</div>
+                        <div class="prompt-meta">
+                            <span class="prompt-tag type">${prompt.type}</span>
+                            ${prompt.category ? `<span class="prompt-tag category">${prompt.category}</span>` : ''}
+                            <span class="prompt-tag rating">⭐ ${prompt.rating || 0}/5</span>
+                        </div>
+                    </div>
+                    
+                    <div class="prompt-summary">${displaySummary}</div>
+                    
+                    <div class="prompt-footer">
+                        <div class="prompt-stats">
+                            <span>使用 ${prompt.usage || 0} 次</span>
+                            <span>评分 ${prompt.rating || 0}/5</span>
+                        </div>
+                        <div class="prompt-date">
+                            ${new Date(prompt.createdAt).toLocaleDateString()}
+                        </div>
+                    </div>
                 </div>
-                <div class="prompt-description">${prompt.description?.substring(0, 100)}...</div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     static selectPrompt(promptId) {
-        // 更新选中状态
-        document.querySelectorAll('.prompt-item').forEach(item => {
-            item.classList.remove('active');
-        });
-        
-        const selectedItem = document.querySelector(`.prompt-item[data-id="${promptId}"]`);
-        if (selectedItem) {
-            selectedItem.classList.add('active');
-        }
-
-        // 显示提示词详情
+        // 直接打开全屏详情模态
         const prompt = state.prompts.find(p => p.id === promptId);
         if (prompt) {
             state.selectedPrompt = prompt;
-            this.renderPromptDetail(prompt);
+            this.showFullscreenDetail(prompt);
         }
     }
 
     static renderPromptDetail(prompt) {
         const container = document.getElementById('promptDetailContainer');
         
+        // 智能内容摘要
+        const contentSummary = this.generateContentSummary(prompt.content || prompt.template || '');
+        
         container.innerHTML = `
             <div class="detail-header">
-                <div class="detail-title">${prompt.title}</div>
-                <div class="prompt-meta">
-                    <span class="tag type-tag">${prompt.type}</span>
-                    ${prompt.category ? `<span class="tag category-tag">${prompt.category}</span>` : ''}
-                    <span class="tag">评分: ${prompt.averageRating || 0}/5</span>
-                    <span class="tag">使用次数: ${prompt.usageCount || 0}</span>
+                <div class="detail-title">${prompt.name || prompt.title || 'Untitled'}</div>
+                <div class="meta-tags">
+                    <span class="meta-tag type">${prompt.type}</span>
+                    ${prompt.category ? `<span class="meta-tag category">${prompt.category}</span>` : ''}
+                    <span class="meta-tag rating">⭐ ${prompt.rating || 0}/5</span>
+                    <span class="meta-tag usage">使用 ${prompt.usage || 0} 次</span>
+                    <span class="meta-tag">📅 ${new Date(prompt.createdAt).toLocaleDateString()}</span>
                 </div>
             </div>
             <div class="detail-content">
-                <h4>描述</h4>
-                <p>${prompt.description || '暂无描述'}</p>
+                ${prompt.description ? `
+                    <div class="content-section">
+                        <h4>📖 描述</h4>
+                        <p>${prompt.description}</p>
+                    </div>
+                ` : ''}
                 
-                <h4 style="margin-top: 2rem;">模板内容</h4>
-                <pre style="white-space: pre-wrap; font-family: 'Monaco', monospace; background: #f7fafc; padding: 1rem; border-radius: 6px; line-height: 1.6;">${prompt.template}</pre>
+                ${contentSummary ? `
+                    <div class="content-summary">
+                        <h5>💡 内容摘要</h5>
+                        <p>${contentSummary}</p>
+                    </div>
+                ` : ''}
+                
+                <div class="content-section">
+                    <h4>📝 模板内容 
+                        <button class="content-expand-btn" onclick="PromptManager.toggleContentExpansion(this)" data-expanded="false">
+                            展开
+                        </button>
+                    </h4>
+                    <div class="expandable-content">
+                        <div class="content-preview" style="max-height: 300px;">${this.formatPromptContent(prompt.content || prompt.template || '无内容')}</div>
+                    </div>
+                </div>
                 
                 ${prompt.tags && prompt.tags.length > 0 ? `
-                    <h4 style="margin-top: 2rem;">标签</h4>
-                    <div class="prompt-meta">
-                        ${prompt.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                    <div class="content-section">
+                        <h4>🏷️ 标签</h4>
+                        <div class="meta-tags">
+                            ${prompt.tags.map(tag => `<span class="meta-tag">${tag}</span>`).join('')}
+                        </div>
                     </div>
                 ` : ''}
                 
                 ${prompt.examples && prompt.examples.length > 0 ? `
-                    <h4 style="margin-top: 2rem;">示例</h4>
-                    ${prompt.examples.map(example => `
-                        <div style="margin-bottom: 1rem; padding: 1rem; background: #f7fafc; border-radius: 6px;">
-                            <strong>输入:</strong> ${example.input}<br>
-                            <strong>输出:</strong> ${example.output}
-                        </div>
-                    `).join('')}
+                    <div class="content-section">
+                        <h4>📝 示例</h4>
+                        ${prompt.examples.map(example => `
+                            <div class="content-preview" style="max-height: none; margin-bottom: 1rem;">
+                                <strong style="color: #2d3748;">输入:</strong> ${example.input}<br><br>
+                                <strong style="color: #2d3748;">输出:</strong> ${example.output}
+                            </div>
+                        `).join('')}
+                    </div>
                 ` : ''}
             </div>
             <div class="detail-actions">
                 <button class="btn btn-primary" onclick="PromptManager.usePrompt('${prompt.id}')">
-                    使用模板
+                    📋 使用模板
+                </button>
+                <button class="btn btn-success" onclick="PromptManager.copyPromptContent('${prompt.id}')">
+                    📄 复制内容
                 </button>
                 <button class="btn btn-secondary" onclick="PromptManager.editPrompt('${prompt.id}')">
-                    编辑
+                    ✏️ 编辑
                 </button>
                 <button class="btn btn-danger" onclick="PromptManager.deletePrompt('${prompt.id}')">
-                    删除
+                    🗑️ 删除
                 </button>
             </div>
         `;
@@ -488,8 +729,8 @@ class PromptManager {
         if (prompt) {
             // 切换到引用生成标签页并填入模板
             TabManager.switchTab('reference');
-            document.getElementById('contextInput').value = prompt.template;
-            NotificationManager.success('模板已应用到引用生成器');
+            document.getElementById('contextInput').value = prompt.content || prompt.template || '';
+            NotificationManager.success(`已应用模板: ${prompt.name || prompt.title || 'Untitled'}`);
         }
     }
 
@@ -613,6 +854,213 @@ class PromptManager {
                 LoadingManager.hide();
             }
         });
+    }
+
+    // 生成内容摘要
+    static generateContentSummary(content) {
+        if (!content || content.length < 100) return '';
+        
+        // 提取关键信息
+        const lines = content.split('\n').filter(line => line.trim());
+        const keyLines = lines.filter(line => 
+            line.includes('##') || 
+            line.includes('###') || 
+            line.includes('**') ||
+            line.includes('- ') ||
+            line.includes('1.') ||
+            line.includes('* ')
+        ).slice(0, 3);
+        
+        if (keyLines.length > 0) {
+            return keyLines.map(line => 
+                line.replace(/[#*-]/g, '').trim()
+            ).join(' | ');
+        }
+        
+        // 如果没有结构化内容，取前150字符
+        return content.substring(0, 150) + (content.length > 150 ? '...' : '');
+    }
+
+    // 格式化提示词内容
+    static formatPromptContent(content) {
+        if (!content) return '无内容';
+        
+        return content
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/## (.*?)(\n|$)/g, '<div style="font-size: 1.1em; font-weight: 600; color: #2d3748; margin: 1em 0 0.5em 0;">$1</div>')
+            .replace(/### (.*?)(\n|$)/g, '<div style="font-size: 1em; font-weight: 600; color: #4a5568; margin: 0.8em 0 0.3em 0;">$1</div>')
+            .replace(/- (.*?)(\n|$)/g, '<div style="margin-left: 1em; color: #4a5568;">• $1</div>')
+            .replace(/\n/g, '<br>');
+    }
+
+    // 切换内容展开/收起
+    static toggleContentExpansion(button) {
+        const isExpanded = button.getAttribute('data-expanded') === 'true';
+        const contentPreview = button.parentNode.nextElementSibling.querySelector('.content-preview');
+        
+        if (isExpanded) {
+            contentPreview.style.maxHeight = '300px';
+            button.textContent = '展开';
+            button.setAttribute('data-expanded', 'false');
+        } else {
+            contentPreview.style.maxHeight = 'none';
+            button.textContent = '收起';
+            button.setAttribute('data-expanded', 'true');
+        }
+    }
+
+    // 复制提示词内容
+    static copyPromptContent(promptId) {
+        const prompt = state.prompts.find(p => p.id === promptId);
+        if (prompt) {
+            const content = prompt.content || prompt.template || '';
+            navigator.clipboard.writeText(content).then(() => {
+                NotificationManager.success('提示词内容已复制到剪贴板');
+            });
+        }
+    }
+
+    // 显示全屏提示词详情
+    static showFullscreenDetail(prompt) {
+        const modal = document.getElementById('promptDetailModal');
+        const title = document.getElementById('promptDetailTitle');
+        const sidebar = document.getElementById('promptDetailSidebar');
+        const mainContent = document.getElementById('promptDetailMainContent');
+        const actions = document.getElementById('promptDetailActions');
+
+        // 设置标题
+        title.textContent = prompt.name || prompt.title || 'Untitled';
+
+        // 生成内容摘要
+        const contentSummary = this.generateContentSummary(prompt.content || prompt.template || '');
+
+        // 渲染侧边栏（元数据）
+        sidebar.innerHTML = `
+            <div class="fullscreen-meta-tags">
+                <span class="fullscreen-meta-tag type">${prompt.type}</span>
+                ${prompt.category ? `<span class="fullscreen-meta-tag category">${prompt.category}</span>` : ''}
+                <span class="fullscreen-meta-tag rating">⭐ ${prompt.rating || 0}/5</span>
+                <span class="fullscreen-meta-tag usage">使用 ${prompt.usage || 0} 次</span>
+                <span class="fullscreen-meta-tag">📅 ${new Date(prompt.createdAt).toLocaleDateString()}</span>
+            </div>
+
+            ${prompt.tags && prompt.tags.length > 0 ? `
+                <div class="fullscreen-content-section">
+                    <h2>🏷️ 标签</h2>
+                    <div class="fullscreen-meta-tags">
+                        ${prompt.tags.map(tag => `<span class="fullscreen-meta-tag">${tag}</span>`).join('')}
+                    </div>
+                </div>
+            ` : ''}
+
+            <div class="fullscreen-content-section">
+                <h2>📊 使用统计</h2>
+                <p><strong>创建时间:</strong> ${new Date(prompt.createdAt).toLocaleString()}</p>
+                <p><strong>最后更新:</strong> ${new Date(prompt.updatedAt || prompt.createdAt).toLocaleString()}</p>
+                <p><strong>使用次数:</strong> ${prompt.usage || 0}</p>
+                <p><strong>评分:</strong> ${prompt.rating || 0}/5</p>
+            </div>
+        `;
+
+        // 渲染主要内容
+        mainContent.innerHTML = `
+            ${prompt.description ? `
+                <div class="fullscreen-content-section">
+                    <h2>📖 描述</h2>
+                    <p>${prompt.description}</p>
+                </div>
+            ` : ''}
+            
+            ${contentSummary ? `
+                <div class="fullscreen-content-summary">
+                    <h3>💡 内容摘要</h3>
+                    <p>${contentSummary}</p>
+                </div>
+            ` : ''}
+            
+            <div class="fullscreen-content-section">
+                <h2>📝 模板内容</h2>
+                <div class="fullscreen-content-preview">${this.formatPromptContent(prompt.content || prompt.template || '无内容')}</div>
+            </div>
+            
+            ${prompt.examples && prompt.examples.length > 0 ? `
+                <div class="fullscreen-content-section">
+                    <h2>📝 使用示例</h2>
+                    ${prompt.examples.map(example => `
+                        <div class="fullscreen-content-preview" style="margin-bottom: 1.5rem;">
+                            <strong style="color: #2d3748;">输入:</strong><br>
+                            ${example.input}<br><br>
+                            <strong style="color: #2d3748;">输出:</strong><br>
+                            ${example.output}
+                        </div>
+                    `).join('')}
+                </div>
+            ` : ''}
+        `;
+
+        // 渲染操作按钮
+        actions.innerHTML = `
+            <button class="fullscreen-btn primary" onclick="PromptManager.usePromptFromModal('${prompt.id}')">
+                📋 使用此模板
+            </button>
+            <button class="fullscreen-btn success" onclick="PromptManager.copyPromptContent('${prompt.id}')">
+                📄 复制内容
+            </button>
+            <button class="fullscreen-btn secondary" onclick="PromptManager.editPromptFromModal('${prompt.id}')">
+                ✏️ 编辑
+            </button>
+            <button class="fullscreen-btn danger" onclick="PromptManager.deletePromptFromModal('${prompt.id}')">
+                🗑️ 删除
+            </button>
+            <button class="fullscreen-btn secondary" onclick="PromptManager.closeFullscreenDetail()">
+                ❌ 关闭
+            </button>
+        `;
+
+        // 显示模态
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden'; // 防止背景滚动
+
+        // 添加键盘事件监听
+        this.addModalKeyboardListeners();
+    }
+
+    // 关闭全屏详情
+    static closeFullscreenDetail() {
+        const modal = document.getElementById('promptDetailModal');
+        modal.classList.remove('show');
+        document.body.style.overflow = ''; // 恢复背景滚动
+    }
+
+    // 从模态中使用提示词
+    static usePromptFromModal(promptId) {
+        this.usePrompt(promptId);
+        this.closeFullscreenDetail();
+    }
+
+    // 从模态中编辑提示词
+    static editPromptFromModal(promptId) {
+        this.closeFullscreenDetail();
+        this.editPrompt(promptId);
+    }
+
+    // 从模态中删除提示词
+    static deletePromptFromModal(promptId) {
+        this.closeFullscreenDetail();
+        this.deletePrompt(promptId);
+    }
+
+    // 添加模态键盘事件监听
+    static addModalKeyboardListeners() {
+        const handleKeydown = (e) => {
+            if (e.key === 'Escape') {
+                this.closeFullscreenDetail();
+                document.removeEventListener('keydown', handleKeydown);
+            }
+        };
+        document.addEventListener('keydown', handleKeydown);
     }
 }
 

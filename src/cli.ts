@@ -138,6 +138,9 @@ class EnhancedChatMemoryCLI {
           const { startWebManager } = await import('./webManager');
           await startWebManager();
           break;
+        case 'debug-list-sessions':
+          await this.debugListSessions(params[0]);
+          break;
         case 'help':
         default:
           this.showHelp();
@@ -173,6 +176,43 @@ class EnhancedChatMemoryCLI {
       const importanceStars = '⭐'.repeat(Math.floor(session.importance * 5));
       
       console.log(`${index + 1}. ${session.title}`);
+      console.log(`   ID: ${session.id}`);
+      console.log(`   分类: [${session.category}] ${tagsText}`);
+      console.log(`   重要性: ${importanceStars} (${session.importance.toFixed(2)})`);
+      console.log(`   摘要: ${session.summary}`);
+      console.log(`   时间: ${new Date(session.lastActivity).toLocaleString()}`);
+      console.log('');
+    });
+    
+    this.memoryService.stop();
+  }
+
+  /**
+   * 🆕 调试模式：列出所有会话（包括测试数据）
+   */
+  private async debugListSessions(category?: string): Promise<void> {
+    await this.memoryService.start();
+    
+    let sessions = this.memoryService.getAllSessions(true); // 包含测试数据
+    if (category) {
+      sessions = this.memoryService.getSessionsByCategory(category, true);
+    }
+    
+    if (sessions.length === 0) {
+      console.log('📭 没有找到会话');
+      this.memoryService.stop();
+      return;
+    }
+
+    console.log(`🔧 调试模式 - ${category ? `[${category}] ` : ''}共找到 ${sessions.length} 个会话 (包括测试数据):\n`);
+    
+    sessions.forEach((session, index) => {
+      const tagsText = session.tags.map(tag => `#${tag.name}`).join(' ');
+      const importanceStars = '⭐'.repeat(Math.floor(session.importance * 5));
+      const isTestData = session.id.startsWith('sample_') || session.id.startsWith('test_');
+      const testFlag = isTestData ? ' 🧪 [测试数据]' : '';
+      
+      console.log(`${index + 1}. ${session.title}${testFlag}`);
       console.log(`   ID: ${session.id}`);
       console.log(`   分类: [${session.category}] ${tagsText}`);
       console.log(`   重要性: ${importanceStars} (${session.importance.toFixed(2)})`);
@@ -401,6 +441,7 @@ class EnhancedChatMemoryCLI {
 
 📋 基础命令:
   list-sessions [category]     查看所有会话（可选：按分类筛选）
+  debug-list-sessions [category] 🔧 调试模式：查看所有会话（包括测试数据）
   search <query>              搜索包含关键词的会话
   categories                  查看分类统计信息
   status                      显示系统状态
