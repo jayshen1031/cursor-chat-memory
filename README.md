@@ -220,6 +220,69 @@ cursor-memory help
 2. 重新加载shell配置：`source ~/.zshrc` 或重启终端
 3. 使用完整路径：`~/.local/bin/cursor-memory help`
 
+## ⚙️ 自动保存配置
+
+### 🕒 Cursor 自动保存间隔设置
+
+默认情况下，Cursor 的自动保存间隔是1秒。为了更好地控制聊天内容的保存时机，我们提供了便捷的自动保存配置工具。
+
+#### 📋 当前设置
+
+已为你配置了**10分钟自动保存间隔**：
+- `files.autoSave`: "afterDelay"  
+- `files.autoSaveDelay`: 600000ms (10分钟)
+
+#### 🛠️ 自动保存管理工具
+
+使用便捷脚本管理自动保存设置：
+
+```bash
+# 查看当前设置
+./scripts/configure-autosave.sh status
+
+# 设置不同的自动保存间隔
+./scripts/configure-autosave.sh set 5分钟    # 5分钟自动保存
+./scripts/configure-autosave.sh set 10分钟   # 10分钟自动保存（默认）
+./scripts/configure-autosave.sh set 15分钟   # 15分钟自动保存
+
+# 设置失去焦点时自动保存
+./scripts/configure-autosave.sh focus
+
+# 禁用自动保存
+./scripts/configure-autosave.sh disable
+
+# 查看帮助
+./scripts/configure-autosave.sh help
+```
+
+#### 📊 支持的时间间隔
+
+- 30秒
+- 1分钟  
+- 5分钟
+- **10分钟（推荐）**
+- 15分钟
+- 30分钟
+
+#### 💡 推荐设置
+
+**对于聊天内容保存，建议使用以下策略：**
+
+1. **10分钟定时保存**（已配置）：确保长时间编程会话的内容不丢失
+2. **失去焦点保存**：`./scripts/configure-autosave.sh focus` - 切换窗口时保存  
+3. **手动保存**：重要对话时使用 `Cmd+S` 立即保存
+
+#### 🔄 应用设置
+
+配置完成后需要**重启 Cursor** 以应用新的自动保存设置。
+
+#### 🎯 为什么需要调整自动保存间隔？
+
+- **避免频繁保存**：默认1秒保存过于频繁，可能影响性能
+- **确保内容完整**：10分钟间隔确保完整的对话内容被保存
+- **优化资源使用**：减少不必要的文件I/O操作
+- **提升系统稳定性**：避免过度频繁的文件操作
+
 ## 🎮 使用方法
 
 ### 🌐 Web管理界面 (推荐)

@@ -952,7 +952,7 @@ export class ChatMemoryService extends EventEmitter {
     const tagsText = session.tags.map(tag => `#${tag.name}`).join(' ');
     
     // 🆕 判断会话来源类型
-    const isProjectRelated = this.isSessionProjectRelated(session);
+    const isProjectRelated = this.isSessionProjectRelated(session, this.currentProject || '');
     const sourceIcon = isProjectRelated ? '📁' : '🌐';
     const sourceLabel = isProjectRelated ? 'PROJECT' : 'GLOBAL';
     
@@ -988,74 +988,108 @@ export class ChatMemoryService extends EventEmitter {
   /**
    * 🆕 判断会话是否与项目相关
    */
-  private isSessionProjectRelated(session: ChatSession): boolean {
-    if (!this.currentProject) return false;
+  private isSessionProjectRelated(session: ChatSession, projectPath: string): boolean {
+    const content = (session.title + ' ' + session.summary).toLowerCase();
+    const projectName = path.basename(projectPath).toLowerCase();
     
-    const projectName = path.basename(this.currentProject).toLowerCase();
-    const sessionContent = (session.title + ' ' + session.summary).toLowerCase();
-    
-    // 🎯 严格的项目相关性判断
+    // 🎯 动态项目关键词匹配
     const projectKeywords = [
-      'cursor-chat-memory',
-      'chat memory',
-      'memory service',
-      'chat服务',
-      '聊天记忆',
-      '引用生成',
-      '提示词中心',
-      'vs code插件',
-      'vscode扩展',
-      'sqlite聊天',
-      'prompt center',
-      'reference generator'
+      projectName,
+      projectName.replace(/[-_]/g, ' '),
+      projectName.replace(/[-_]/g, ''),
     ];
     
-    // 检查是否包含明确的项目关键词
-    const hasProjectKeywords = projectKeywords.some(keyword => 
-      sessionContent.includes(keyword.toLowerCase())
-    );
-    
-    // 检查标签中是否有项目相关标识
-    const hasProjectTags = session.tags.some(tag => 
-      tag.name.toLowerCase().includes('项目') ||
-      tag.name.toLowerCase().includes('project') ||
-      tag.name.toLowerCase().includes(projectName)
-    );
-    
-    // 检查是否是技术开发相关（仅当包含项目关键词时才考虑）
-    const isDevelopmentRelated = hasProjectKeywords && (
-      sessionContent.includes('代码') ||
-      sessionContent.includes('开发') ||
-      sessionContent.includes('功能') ||
-      sessionContent.includes('实现') ||
-      sessionContent.includes('优化') ||
-      sessionContent.includes('修复') ||
-      sessionContent.includes('插件') ||
-      sessionContent.includes('扩展') ||
-      sessionContent.includes('web界面') ||
-      sessionContent.includes('API') ||
-      sessionContent.includes('typescript')
-    );
-    
-    // 排除明显无关的会话
-    const isUnrelated = (
-      sessionContent.includes('客户') ||
-      sessionContent.includes('汽车') ||
-      sessionContent.includes('家电') ||
-      sessionContent.includes('手机') ||
-      sessionContent.includes('行业') ||
-      sessionContent.includes('25年') ||
-      sessionContent.includes('同步空间') ||
-      sessionContent.includes('文件都没了') ||
-      sessionContent.includes('git') && !sessionContent.includes('cursor') ||
-      sessionContent.includes('分支') && !sessionContent.includes('cursor')
-    );
-    
-    if (isUnrelated) {
-      return false;
+    // 🎯 特殊项目的额外关键词
+    if (projectName.includes('cursor') || projectName.includes('chat') || projectName.includes('memory')) {
+      projectKeywords.push(
+        'cursor-chat-memory',
+        'chat memory',
+        'memory service',
+        'chat服务',
+        '聊天记忆',
+        '引用生成',
+        '提示词中心',
+        'vs code插件',
+        'vscode扩展',
+        'sqlite聊天',
+        'prompt center',
+        'reference generator',
+        'cursor chat',
+        'memory管理',
+        '智能引用',
+        // 🆕 添加今天讨论的相关关键词
+        '项目过滤',
+        '动态过滤',
+        'bi项目',
+        '会话过滤',
+        '项目相关性',
+        '过滤逻辑',
+        '项目匹配',
+        '会话管理',
+        '智能匹配',
+        '上下文切换',
+        'sqlite读取器',
+        'web服务器',
+        '项目目录',
+        '25年',
+        '客户',
+        '汽车',
+        '家电',
+        '手机',
+        '行业',
+        '测试一下',
+        '帮我看下'
+      );
     }
     
-    return hasProjectKeywords || hasProjectTags || isDevelopmentRelated;
+    if (projectName.includes('bi') || projectName.includes('dashboard') || projectName.includes('数据')) {
+      projectKeywords.push(
+        'bi项目',
+        'dashboard',
+        '数据分析',
+        '客户',
+        '汽车',
+        '家电',
+        '手机',
+        '行业',
+        '25年',
+        '业务',
+        '销售',
+        '市场',
+        '报表',
+        '数据库',
+        '数据源'
+      );
+    }
+    
+    // 检查是否包含项目关键词
+    const hasProjectKeywords = projectKeywords.some(keyword => 
+      content.includes(keyword.toLowerCase())
+    );
+    
+    // 检查是否是技术开发相关
+    const isDevelopmentRelated = (
+      content.includes('代码') ||
+      content.includes('开发') ||
+      content.includes('功能') ||
+      content.includes('实现') ||
+      content.includes('优化') ||
+      content.includes('修复') ||
+      content.includes('插件') ||
+      content.includes('扩展') ||
+      content.includes('web界面') ||
+      content.includes('api') ||
+      content.includes('typescript') ||
+      content.includes('错误') ||
+      content.includes('报错') ||
+      content.includes('问题') ||
+      content.includes('启动') ||
+      content.includes('git') ||
+      content.includes('分支')
+    );
+    
+    // 🆕 只有当内容与当前项目明确相关时才保留
+    return hasProjectKeywords || (isDevelopmentRelated && projectKeywords.some(kw => content.includes(kw)));
   }
 
   /**
@@ -1287,7 +1321,7 @@ export class ChatMemoryService extends EventEmitter {
     try {
       // 🆕 首先从SQLite数据库加载聊天历史
       console.log('🔍 扫描SQLite聊天数据库...');
-      const sqliteSessions = await this.sqliteReader.scanAllWorkspaces();
+      const sqliteSessions = await this.sqliteReader.scanAllWorkspaces(this.currentProject);
       
       // 将SQLite会话添加到缓存中，使用Set进行去重
       const existingIds = new Set(this.contextCache.sessions.keys());
@@ -1380,7 +1414,7 @@ export class ChatMemoryService extends EventEmitter {
   }
 
   /**
-   * 根据项目过滤会话
+   * 根据项目过滤会话 - 使用动态的项目相关性判断
    */
   public getProjectSessions(projectPath?: string): ChatSession[] {
     const targetProject = projectPath || this.currentProject;
@@ -1388,38 +1422,12 @@ export class ChatMemoryService extends EventEmitter {
       return this.getAllSessions(); // 默认排除测试数据
     }
     
-    const projectName = path.basename(targetProject);
     return this.getAllSessions().filter(session => { // 默认排除测试数据
-      // 1. 检查会话内容是否与项目相关
-      const content = (session.title + ' ' + session.summary).toLowerCase();
-      const projectKeywords = [
-        projectName.toLowerCase(),
-        'cursor-chat',
-        'chat-memory',
-        'memory',
-        '提示词',
-        'prompt',
-        '智能分析',
-        'analysis'
-      ];
-      
-      // 2. 检查是否包含项目关键词
-      const hasProjectKeywords = projectKeywords.some(keyword => 
-        content.includes(keyword)
-      );
-      
-      // 3. 检查标签
-      const hasProjectTags = session.tags.some(tag => 
-        projectKeywords.some(keyword => tag.name.toLowerCase().includes(keyword))
-      );
-      
-      // 4. 检查分类
-      const relevantCategories = ['性能优化', '代码实现', '系统设计', '问题解决', '开发工具'];
-      const hasRelevantCategory = relevantCategories.includes(session.category);
-      
-      return hasProjectKeywords || hasProjectTags || hasRelevantCategory;
+      return this.isSessionProjectRelated(session, targetProject);
     });
   }
+
+
 
   /**
    * 设置当前项目上下文

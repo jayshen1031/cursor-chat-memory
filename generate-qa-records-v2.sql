@@ -1,0 +1,84 @@
+-- 🗂️ 生成结构化的聊天记录（改进版）：项目、会话ID、时间、Q、A
+
+.headers on
+.mode csv
+.output cursor_chat_records_v2.csv
+
+-- 生成完整的聊天记录
+WITH 
+prompts_data AS (
+    SELECT value as prompts_json FROM ItemTable WHERE key = 'aiService.prompts'
+),
+generations_data AS (
+    SELECT value as generations_json FROM ItemTable WHERE key = 'aiService.generations'
+),
+-- 生成索引序列（只生成有效记录数量）
+indices AS (
+    SELECT 0 as idx UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL
+    SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL
+    SELECT 10 UNION ALL SELECT 11 UNION ALL SELECT 12 UNION ALL SELECT 13 UNION ALL SELECT 14 UNION ALL
+    SELECT 15 UNION ALL SELECT 16 UNION ALL SELECT 17 UNION ALL SELECT 18 UNION ALL SELECT 19 UNION ALL
+    SELECT 20 UNION ALL SELECT 21 UNION ALL SELECT 22 UNION ALL SELECT 23 UNION ALL SELECT 24 UNION ALL
+    SELECT 25 UNION ALL SELECT 26 UNION ALL SELECT 27 UNION ALL SELECT 28 UNION ALL SELECT 29 UNION ALL
+    SELECT 30 UNION ALL SELECT 31 UNION ALL SELECT 32 UNION ALL SELECT 33 UNION ALL SELECT 34 UNION ALL
+    SELECT 35 UNION ALL SELECT 36 UNION ALL SELECT 37 UNION ALL SELECT 38 UNION ALL SELECT 39 UNION ALL
+    SELECT 40 UNION ALL SELECT 41 UNION ALL SELECT 42 UNION ALL SELECT 43 UNION ALL SELECT 44 UNION ALL
+    SELECT 45 UNION ALL SELECT 46 UNION ALL SELECT 47 UNION ALL SELECT 48 UNION ALL SELECT 49 UNION ALL
+    SELECT 50 UNION ALL SELECT 51 UNION ALL SELECT 52 UNION ALL SELECT 53 UNION ALL SELECT 54 UNION ALL
+    SELECT 55 UNION ALL SELECT 56 UNION ALL SELECT 57 UNION ALL SELECT 58 UNION ALL SELECT 59 UNION ALL
+    SELECT 60 UNION ALL SELECT 61 UNION ALL SELECT 62 UNION ALL SELECT 63 UNION ALL SELECT 64 UNION ALL
+    SELECT 65 UNION ALL SELECT 66 UNION ALL SELECT 67 UNION ALL SELECT 68 UNION ALL SELECT 69 UNION ALL
+    SELECT 70 UNION ALL SELECT 71 UNION ALL SELECT 72 UNION ALL SELECT 73 UNION ALL SELECT 74 UNION ALL
+    SELECT 75 UNION ALL SELECT 76 UNION ALL SELECT 77 UNION ALL SELECT 78 UNION ALL SELECT 79 UNION ALL
+    SELECT 80 UNION ALL SELECT 81 UNION ALL SELECT 82 UNION ALL SELECT 83 UNION ALL SELECT 84 UNION ALL
+    SELECT 85 UNION ALL SELECT 86 UNION ALL SELECT 87 UNION ALL SELECT 88 UNION ALL SELECT 89 UNION ALL
+    SELECT 90 UNION ALL SELECT 91 UNION ALL SELECT 92 UNION ALL SELECT 93 UNION ALL SELECT 94 UNION ALL
+    SELECT 95 UNION ALL SELECT 96 UNION ALL SELECT 97 UNION ALL SELECT 98 UNION ALL SELECT 99 UNION ALL
+    SELECT 100 UNION ALL SELECT 101 UNION ALL SELECT 102 UNION ALL SELECT 103 UNION ALL SELECT 104 UNION ALL
+    SELECT 105 UNION ALL SELECT 106 UNION ALL SELECT 107 UNION ALL SELECT 108 UNION ALL SELECT 109 UNION ALL
+    SELECT 110 UNION ALL SELECT 111 UNION ALL SELECT 112 UNION ALL SELECT 113 UNION ALL SELECT 114 UNION ALL
+    SELECT 115 UNION ALL SELECT 116 UNION ALL SELECT 117 UNION ALL SELECT 118 UNION ALL SELECT 119 UNION ALL
+    SELECT 120 UNION ALL SELECT 121 UNION ALL SELECT 122 UNION ALL SELECT 123 UNION ALL SELECT 124 UNION ALL
+    SELECT 125 UNION ALL SELECT 126 UNION ALL SELECT 127 UNION ALL SELECT 128 UNION ALL SELECT 129
+)
+
+SELECT 
+    'cursor-chat-memory' as "项目",
+    'session-' || (i.idx + 1) as "会话ID", 
+    CASE 
+        WHEN json_extract(gd.generations_json, '$[' || i.idx || '].unixMs') IS NOT NULL 
+        THEN datetime(json_extract(gd.generations_json, '$[' || i.idx || '].unixMs') / 1000, 'unixepoch', 'localtime')
+        ELSE strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime')
+    END as "时间",
+    json_extract(pd.prompts_json, '$[' || i.idx || '].text') as "Q",
+    COALESCE(
+        json_extract(gd.generations_json, '$[' || i.idx || '].textDescription'),
+        json_extract(gd.generations_json, '$[' || i.idx || '].text'),
+        '[无AI回答]'
+    ) as "A"
+FROM indices i
+CROSS JOIN prompts_data pd
+CROSS JOIN generations_data gd
+WHERE i.idx < json_array_length(pd.prompts_json)
+  AND json_extract(pd.prompts_json, '$[' || i.idx || '].text') IS NOT NULL
+  AND json_extract(pd.prompts_json, '$[' || i.idx || '].text') != ''
+  AND i.idx < MIN(json_array_length(pd.prompts_json), json_array_length(gd.generations_json))
+ORDER BY i.idx;
+
+.output stdout
+.mode table
+.headers on
+
+SELECT 
+    '✅ 改进版CSV文件已生成' as 状态,
+    'cursor_chat_records_v2.csv' as 文件名,
+    (SELECT COUNT(*) FROM (
+        SELECT i.idx
+        FROM indices i
+        CROSS JOIN prompts_data pd
+        CROSS JOIN generations_data gd
+        WHERE i.idx < json_array_length(pd.prompts_json)
+          AND json_extract(pd.prompts_json, '$[' || i.idx || '].text') IS NOT NULL
+          AND json_extract(pd.prompts_json, '$[' || i.idx || '].text') != ''
+          AND i.idx < MIN(json_array_length(pd.prompts_json), json_array_length(gd.generations_json))
+    )) as 记录数量; 

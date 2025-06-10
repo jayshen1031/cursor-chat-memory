@@ -2058,4 +2058,847 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* ==================== 数据提取功能样式 ==================== */
+
+/* 数据提取页面布局 */
+.extraction-dashboard {
+    padding: 0 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.extraction-status {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.status-indicator {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    background: #e6f3ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+.last-update {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+/* 提取功能网格布局 */
+.extraction-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.extraction-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+}
+
+.extraction-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.extraction-card h3 {
+    color: #1f2937;
+    margin-bottom: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.extraction-card p {
+    color: #6b7280;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+/* 概览卡片特殊样式 */
+.overview-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.overview-card h3 {
+    color: white;
+}
+
+.overview-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.875rem;
+    opacity: 0.9;
+    margin-bottom: 0.25rem;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+/* 提取操作按钮 */
+.extraction-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.extraction-results {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    min-height: 60px;
+    border: 1px solid #e2e8f0;
+}
+
+/* 高级选项样式 */
+.extraction-options {
+    margin-bottom: 1.5rem;
+}
+
+.option-group {
+    margin-bottom: 1rem;
+}
+
+.option-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    color: #374151;
+}
+
+.option-group small {
+    display: block;
+    color: #6b7280;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    margin-left: 1.5rem;
+}
+
+/* 结果展示区域 */
+.extraction-results-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+}
+
+.extraction-results-section h3 {
+    color: #1f2937;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.results-tabs {
+    display: flex;
+    border-bottom: 2px solid #e5e7eb;
+    margin-bottom: 1.5rem;
+}
+
+.result-tab-btn {
+    background: none;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.result-tab-btn:hover {
+    color: #4f46e5;
+}
+
+.result-tab-btn.active {
+    color: #4f46e5;
+    border-bottom-color: #4f46e5;
+}
+
+.result-content {
+    display: none;
+}
+
+.result-content.active {
+    display: block;
+}
+
+.preview-container {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    min-height: 200px;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 0.875rem;
+    overflow-x: auto;
+}
+
+.empty-state {
+    text-align: center;
+    color: #6b7280;
+    padding: 2rem;
+}
+
+.empty-state p {
+    margin: 0.5rem 0;
+}
+
+/* 统计容器 */
+.statistics-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.statistic-item {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+.statistic-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+}
+
+.statistic-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+/* 文件列表 */
+.files-container {
+    space-y: 1rem;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.file-icon {
+    font-size: 1.25rem;
+}
+
+.file-details h4 {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.file-details p {
+    margin: 0;
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.file-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.file-actions .btn {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+}
+
+/* 数据管理区域 */
+.data-management-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
+}
+
+.data-management-section h3 {
+    color: #1f2937;
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.management-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.management-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.management-card h4 {
+    color: #1f2937;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.export-options,
+.sync-options,
+.settings-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.settings-options label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #374151;
+    cursor: pointer;
+}
+
+/* 加载和状态样式 */
+.extraction-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    color: #6b7280;
+}
+
+.extraction-loading .spinner {
+    margin-right: 0.75rem;
+}
+
+.extraction-success {
+    background: #d1fae5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+.extraction-error {
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .extraction-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .overview-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .extraction-actions {
+        flex-direction: column;
+    }
+    
+    .results-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .result-tab-btn {
+        white-space: nowrap;
+    }
+    
+    .management-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .file-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .file-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+/* 🧠 项目知识管理样式 - 紧凑布局优化 */
+.data-extraction-container {
+    padding: 10px;
+    max-width: 100%;
+    height: calc(100vh - 60px); /* 进一步减少顶部空间，移除了过滤器区域 */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 紧凑的页面标题 */
+.page-header {
+    text-align: center;
+    margin-bottom: 10px; /* 从20px减少到10px */
+    padding: 12px 20px; /* 从20px减少到12px */
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px; /* 从12px减少到8px */
+    color: white;
+}
+
+.page-header h2 {
+    margin: 0 0 4px 0; /* 从8px减少到4px */
+    font-size: 20px; /* 从28px减少到20px */
+}
+
+.page-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 13px; /* 从16px减少到13px */
+}
+
+/* 移除过滤器区域样式 - 控件已集成到面板头部 */
+
+/* 优化的三栏布局 - 占据更多空间 */
+.knowledge-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr 280px; /* 调整栏宽比例 */
+    gap: 12px; /* 从15px减少到12px */
+    flex: 1;
+    height: 100%;
+    overflow: hidden;
+    min-height: 600px; /* 确保最小高度 */
+}
+
+/* 面板通用样式 - 更紧凑 */
+.sessions-panel,
+.content-panel,
+.knowledge-panel {
+    background: white;
+    border-radius: 6px; /* 从8px减少到6px */
+    border: 1px solid #e9ecef;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.panel-header {
+    padding: 10px 12px; /* 从15px减少到10px 12px */
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.panel-header h3 {
+    margin: 0;
+    font-size: 14px; /* 从16px减少到14px */
+    color: #495057;
+}
+
+.panel-actions {
+    display: flex;
+    gap: 6px; /* 从8px减少到6px */
+    align-items: center;
+}
+
+/* 左栏：会话列表 - 优化滚动和密度 */
+.sessions-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px; /* 从10px减少到8px */
+}
+
+.session-item {
+    padding: 8px 10px; /* 从12px减少到8px 10px */
+    border: 1px solid #e9ecef;
+    border-radius: 4px; /* 从6px减少到4px */
+    margin-bottom: 6px; /* 从8px减少到6px */
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+}
+
+.session-item:hover {
+    border-color: #667eea;
+    background: #f8f9ff;
+}
+
+.session-item.active {
+    border-color: #667eea;
+    background: linear-gradient(135deg, #667eea20, #764ba220);
+}
+
+.session-title {
+    font-weight: 600;
+    color: #343a40;
+    margin-bottom: 3px; /* 从4px减少到3px */
+    font-size: 13px; /* 从14px减少到13px */
+    line-height: 1.3;
+}
+
+.session-meta {
+    font-size: 11px; /* 从12px减少到11px */
+    color: #6c757d;
+    display: flex;
+    gap: 8px; /* 从10px减少到8px */
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.session-category {
+    background: #e9ecef;
+    padding: 1px 4px; /* 从2px 6px减少到1px 4px */
+    border-radius: 3px;
+    font-size: 10px; /* 从11px减少到10px */
+}
+
+.session-category.implementation { background: #d1ecf1; color: #0c5460; }
+.session-category.architecture { background: #f8d7da; color: #721c24; }
+.session-category.debugging { background: #fff3cd; color: #856404; }
+.session-category.optimization { background: #d4edda; color: #155724; }
+
+/* 中栏：内容详情 - 优化空间利用 */
+.content-detail {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px; /* 从15px减少到10px */
+}
+
+.session-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* 从15px减少到10px */
+}
+
+.message-item {
+    padding: 8px 10px; /* 从12px减少到8px 10px */
+    border-radius: 6px; /* 从8px减少到6px */
+    border: 1px solid #e9ecef;
+}
+
+.message-item.user {
+    background: #f8f9ff;
+    border-left: 3px solid #667eea; /* 从4px减少到3px */
+}
+
+.message-item.assistant {
+    background: #f8fff8;
+    border-left: 3px solid #28a745; /* 从4px减少到3px */
+}
+
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px; /* 从8px减少到6px */
+    font-size: 11px; /* 从12px减少到11px */
+    color: #6c757d;
+}
+
+.message-content {
+    color: #343a40;
+    line-height: 1.4; /* 从1.5减少到1.4 */
+    font-size: 13px; /* 从14px减少到13px */
+}
+
+/* 提炼内容对照区 - 更紧凑 */
+.extracted-content {
+    border-top: 1px solid #e9ecef;
+    background: #f8f9fa;
+}
+
+.content-comparison {
+    padding: 10px; /* 从15px减少到10px */
+}
+
+.comparison-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px; /* 从15px减少到10px */
+}
+
+.comparison-header h4 {
+    margin: 0;
+    color: #495057;
+    font-size: 14px; /* 从16px减少到14px */
+}
+
+.extraction-result {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 4px; /* 从6px减少到4px */
+    padding: 10px; /* 从15px减少到10px */
+}
+
+.knowledge-item {
+    margin-bottom: 10px; /* 从15px减少到10px */
+    padding: 8px 10px; /* 从12px减少到8px 10px */
+    border-left: 3px solid #667eea; /* 从4px减少到3px */
+    background: #f8f9ff;
+    border-radius: 0 4px 4px 0; /* 从6px减少到4px */
+}
+
+.knowledge-type {
+    font-weight: 600;
+    color: #667eea;
+    font-size: 11px; /* 从12px减少到11px */
+    text-transform: uppercase;
+    margin-bottom: 4px; /* 从6px减少到4px */
+}
+
+.knowledge-content-text {
+    color: #343a40;
+    line-height: 1.4; /* 从1.5减少到1.4 */
+    font-size: 13px; /* 从14px减少到13px */
+}
+
+/* 右栏：全局知识 - 高密度显示 */
+.knowledge-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px; /* 从15px减少到8px */
+}
+
+.global-knowledge-item {
+    margin-bottom: 12px; /* 从20px减少到12px */
+    padding: 10px; /* 从15px减少到10px */
+    border: 1px solid #e9ecef;
+    border-radius: 6px; /* 从8px减少到6px */
+    background: white;
+}
+
+.knowledge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6px; /* 从10px减少到6px */
+}
+
+.knowledge-title {
+    font-weight: 600;
+    color: #343a40;
+    margin: 0;
+    font-size: 13px; /* 从15px减少到13px */
+    line-height: 1.3;
+}
+
+.knowledge-category-tag {
+    background: #667eea;
+    color: white;
+    padding: 2px 6px; /* 从3px 8px减少到2px 6px */
+    border-radius: 10px; /* 从12px减少到10px */
+    font-size: 10px; /* 从11px减少到10px */
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+.knowledge-category-tag.sop { background: #28a745; }
+.knowledge-category-tag.implementation { background: #17a2b8; }
+.knowledge-category-tag.engineering { background: #ffc107; color: #343a40; }
+.knowledge-category-tag.architecture { background: #dc3545; }
+
+.knowledge-description {
+    color: #6c757d;
+    margin-bottom: 8px; /* 从12px减少到8px */
+    font-size: 11px; /* 从13px减少到11px */
+    line-height: 1.3; /* 从1.4减少到1.3 */
+}
+
+.knowledge-details {
+    color: #343a40;
+    line-height: 1.4; /* 从1.5减少到1.4 */
+    font-size: 12px; /* 从14px减少到12px */
+}
+
+.knowledge-source {
+    margin-top: 6px; /* 从10px减少到6px */
+    padding-top: 6px; /* 从10px减少到6px */
+    border-top: 1px solid #e9ecef;
+    font-size: 10px; /* 从12px减少到10px */
+    color: #6c757d;
+}
+
+/* 底部状态栏 - 极简设计 */
+.knowledge-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px; /* 从15px减少到8px 12px */
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    margin-top: 0; /* 从15px减少到0 */
+    font-size: 12px;
+}
+
+.status-info {
+    color: #6c757d;
+    font-size: 12px; /* 从14px减少到12px */
+}
+
+.quick-actions {
+    display: flex;
+    gap: 6px; /* 从10px减少到6px */
+}
+
+/* 搜索和过滤控件 - 紧凑化 */
+.search-input {
+    padding: 4px 8px; /* 从6px 12px减少到4px 8px */
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 12px; /* 从14px减少到12px */
+    min-width: 120px; /* 从200px减少到120px */
+}
+
+.category-filter {
+    padding: 4px 8px; /* 从6px 12px减少到4px 8px */
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 12px; /* 从14px减少到12px */
+    background: white;
+}
+
+.form-select {
+    padding: 4px 8px; /* 从8px 12px减少到4px 8px */
+    border: 1px solid #ced4da;
+    border-radius: 4px; /* 从6px减少到4px */
+    font-size: 12px; /* 从14px减少到12px */
+    background: white;
+    min-width: 140px; /* 从200px减少到140px */
+}
+
+/* 按钮样式优化 */
+.btn {
+    padding: 4px 8px; /* 从常规大小减少 */
+    font-size: 12px;
+    border-radius: 4px;
+}
+
+.btn-primary {
+    background: #667eea;
+    border: 1px solid #667eea;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    border: 1px solid #6c757d;
+    color: white;
+}
+
+.btn-success {
+    background: #28a745;
+    border: 1px solid #28a745;
+    color: white;
+}
+
+/* 空状态优化 */
+.empty-state {
+    text-align: center;
+    padding: 20px 15px; /* 从40px 20px减少到20px 15px */
+    color: #6c757d;
+}
+
+.empty-state p {
+    margin: 0 0 6px 0;
+    font-size: 14px; /* 从16px减少到14px */
+}
+
+/* 响应式设计 - 适应小屏幕 */
+@media (max-width: 1400px) {
+    .knowledge-layout {
+        grid-template-columns: 280px 1fr 240px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .knowledge-layout {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 0.8fr;
+    }
+    
+    .knowledge-panel {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 768px) {
+    .data-extraction-container {
+        padding: 8px;
+        height: calc(100vh - 50px);
+    }
+    
+    .knowledge-layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+        gap: 8px;
+    }
+    
+    .sessions-panel,
+    .content-panel,
+    .knowledge-panel {
+        min-height: 200px;
+    }
+    
+    .panel-actions {
+        flex-direction: column;
+        gap: 4px;
+        align-items: stretch;
+    }
+    
+    .form-select,
+    .search-input {
+        min-width: auto;
+        width: 100%;
+    }
 } 

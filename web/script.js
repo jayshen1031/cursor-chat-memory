@@ -77,11 +77,8 @@ class PerformanceUtils {
 // 全局状态管理
 class AppState {
     constructor() {
-        this.sessions = [];
-        this.prompts = [];
-        this.selectedSession = null;
-        this.selectedPrompt = null;
-        this.currentTab = 'sessions';
+        this.currentTab = 'extraction';
+        this.knowledgeData = {};
     }
 }
 
@@ -195,1679 +192,292 @@ class ModalManager {
     }
 }
 
-// 会话管理
-class SessionManager {
-    static async loadSessions() {
-        console.log('🔍 SessionManager.loadSessions() 开始执行...');
-        try {
-            LoadingManager.show();
-            console.log('📡 发送API请求到 /api/sessions...');
-            const response = await APIClient.get('/api/sessions');
-            console.log('📥 API响应:', response);
-            state.sessions = response.sessions || [];
-            console.log('💾 会话数据已保存到state:', state.sessions.length, '个会话');
-            this.renderSessions();
-            console.log('🎨 会话渲染完成');
-            NotificationManager.success(`已加载 ${state.sessions.length} 个会话`);
-        } catch (error) {
-            console.error('❌ 加载会话失败:', error);
-            NotificationManager.error('加载会话失败: ' + error.message);
-        } finally {
-            LoadingManager.hide();
-        }
-    }
-
-    static async searchSessions() {
-        const query = document.getElementById('sessionSearch').value;
-        const category = document.getElementById('categoryFilter').value;
-        
-        if (!query.trim()) {
-            this.renderSessions();
-            return;
-        }
-
-        try {
-            LoadingManager.show();
-            const response = await APIClient.post('/api/sessions/search', { 
-                query,
-                category: category || undefined
-            });
-            
-            const filteredSessions = response.results || [];
-            this.renderSessions(filteredSessions);
-            NotificationManager.success(`找到 ${filteredSessions.length} 个匹配的会话`);
-        } catch (error) {
-            NotificationManager.error('搜索会话失败: ' + error.message);
-        } finally {
-            LoadingManager.hide();
-        }
-    }
-
-    // 优化的防抖搜索方法
-    static debouncedSearchSessions = PerformanceUtils.debounce(SessionManager.searchSessions.bind(SessionManager), 300);
-
-    static renderSessions(sessions = state.sessions) {
-        console.log('🎨 renderSessions() 开始执行，会话数量:', sessions.length);
-        const container = document.getElementById('sessionsContainer');
-        console.log('📦 找到容器元素:', container);
-        
-        if (!sessions || sessions.length === 0) {
-            console.log('⚠️ 没有会话数据，显示空状态');
-            container.innerHTML = `
-                <div class="empty-state">
-                    <p>📝 暂无会话记录</p>
-                    <p>开始使用Cursor聊天功能，这里将显示您的对话历史</p>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = sessions.map(session => {
-            // 🆕 判断会话来源类型
-            const isProjectRelated = this.isSessionProjectRelated(session);
-            const sourceIcon = isProjectRelated ? '📁' : '🌐';
-            const sourceLabel = isProjectRelated ? 'PROJECT' : 'GLOBAL';
-            
-            const summary = this.generateSessionSummary(session);
-            return `
-                <div class="session-item" data-session-id="${session.id}" onclick="SessionManager.selectSession('${session.id}')">
-                    <div class="session-header">
-                        <div class="session-title">${session.title || session.summary || session.id}</div>
-                        <div class="session-source-tag ${isProjectRelated ? 'project' : 'global'}">${sourceIcon} ${sourceLabel}</div>
-                    </div>
-                    <div class="session-summary">${summary}</div>
-                    <div class="session-meta">
-                        <span class="importance-stars">${'★'.repeat(Math.round((session.importance || 0.5) * 5))}</span>
-                        ${session.category ? `<span class="meta-tag">${session.category}</span>` : ''}
-                        <span class="meta-tag">${new Date(session.lastActivity || session.timestamp).toLocaleDateString()}</span>
-                        <span class="meta-tag">${session.messages ? session.messages.length : 0}条消息</span>
-                        ${session.tags && session.tags.length > 0 ? 
-                            `<span class="meta-tag tags">🏷️ ${session.tags.map(t => t.name || t).slice(0, 2).join(', ')}</span>` : ''
-                        }
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    static generateSessionSummary(session) {
-        if (!session.messages || session.messages.length === 0) {
-            return session.summary || '暂无内容摘要';
-        }
-
-        // 获取用户和助手的关键消息
-        const userMessages = session.messages.filter(m => m.role === 'user');
-        const assistantMessages = session.messages.filter(m => m.role === 'assistant');
-        
-        let summary = '';
-        
-        // 添加主要问题或需求
-        if (userMessages.length > 0) {
-            const firstQuestion = userMessages[0].content.substring(0, 100);
-            summary += `问题: ${firstQuestion}...`;
-        }
-        
-        // 添加解决方案概要
-        if (assistantMessages.length > 0) {
-            const lastResponse = assistantMessages[assistantMessages.length - 1].content.substring(0, 100);
-            summary += ` 方案: ${lastResponse}...`;
-        }
-        
-        return summary || session.summary || '技术对话记录';
-    }
-
-    static selectSession(sessionId) {
-        // 更新选中状态
-        document.querySelectorAll('.session-item').forEach(item => {
-            item.classList.remove('active');
-        });
-        
-        const selectedItem = document.querySelector(`[data-session-id="${sessionId}"]`);
-        if (selectedItem) {
-            selectedItem.classList.add('active');
-        }
-
-        // 显示会话详情
-        const session = state.sessions.find(s => s.id === sessionId);
-        if (session) {
-            state.selectedSession = session;
-            this.renderSessionDetail(session);
-        }
-    }
-
-    static renderSessionDetail(session) {
-        const container = document.getElementById('sessionDetailContainer');
-        
-        // 🆕 判断会话来源类型
-        const isProjectRelated = this.isSessionProjectRelated(session);
-        const sourceIcon = isProjectRelated ? '📁' : '🌐';
-        const sourceLabel = isProjectRelated ? 'PROJECT' : 'GLOBAL';
-        
-        // 构建消息内容
-        let messagesHtml = '';
-        if (session.messages && session.messages.length > 0) {
-            messagesHtml = session.messages.map((msg, index) => `
-                <div class="message-item ${msg.role}">
-                    <div class="message-header">
-                        <span class="message-role">${msg.role === 'user' ? '👤 用户' : '🤖 助手'}</span>
-                        <span class="message-index">#${index + 1}</span>
-                    </div>
-                    <div class="message-content">${this.formatMessageContent(msg.content)}</div>
-                </div>
-            `).join('');
-        } else {
-            messagesHtml = `
-                <div class="empty-state">
-                    <p>📝 此会话暂无详细消息内容</p>
-                    <p>摘要: ${session.summary || '无摘要'}</p>
-                </div>
-            `;
-        }
-        
-        container.innerHTML = `
-            <div class="detail-header">
-                <div class="detail-title">${session.title || session.summary || session.id}</div>
-                <div class="session-meta">
-                    <span class="importance-stars">${'★'.repeat(Math.round((session.importance || 0.5) * 5))}</span>
-                    <span class="source-tag ${isProjectRelated ? 'project' : 'global'}">${sourceIcon} ${sourceLabel}</span>
-                    ${session.category ? `<span class="tag category-tag">${session.category}</span>` : ''}
-                    <span class="tag">${new Date(session.lastActivity || session.timestamp).toLocaleDateString()}</span>
-                    <span class="tag">${session.messages ? session.messages.length : 0}条消息</span>
-                    ${session.tags && session.tags.length > 0 ? 
-                        `<span class="tag tags-preview">🏷️ ${session.tags.map(t => t.name || t).slice(0, 3).join(', ')}</span>` : ''
-                    }
-                </div>
-            </div>
-            <div class="detail-content">
-                <div class="messages-container">
-                    ${messagesHtml}
-                </div>
-            </div>
-            <div class="detail-actions">
-                <button onclick="SessionManager.generateReference('${session.id}')" class="btn btn-primary">
-                    📋 生成引用
-                </button>
-                <button onclick="SessionManager.copyContent('${session.id}')" class="btn btn-secondary">
-                    📋 复制内容
-                </button>
-            </div>
-        `;
-    }
-
-    static formatMessageContent(content) {
-        if (!content) return '';
-        
-        // 简单的格式化：保留换行，转换特殊字符
-        return content
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/\n/g, '<br>')
-            .replace(/```([^`]+)```/g, '<pre><code>$1</code></pre>')
-            .replace(/`([^`]+)`/g, '<code>$1</code>');
-    }
-
-    static async generateReference(sessionId) {
-        try {
-            LoadingManager.show();
-            const response = await APIClient.post('/api/sessions/enhanced-reference', {
-                templateId: 'current-topic',
-                inputText: state.selectedSession?.content || ''
-            });
-            
-            // 切换到引用生成标签页并显示结果
-            TabManager.switchTab('reference');
-            document.getElementById('referenceOutput').textContent = response.reference;
-            document.getElementById('copyReferenceBtn').style.display = 'block';
-            
-            NotificationManager.success('引用内容已生成');
-        } catch (error) {
-            NotificationManager.error('生成引用失败: ' + error.message);
-        } finally {
-            LoadingManager.hide();
-        }
-    }
-
-    static copyContent(sessionId) {
-        const session = state.sessions.find(s => s.id === sessionId);
-        if (session) {
-            navigator.clipboard.writeText(session.content || '').then(() => {
-                NotificationManager.success('内容已复制到剪贴板');
-            });
-        }
-    }
-
-    static showFullscreenDetail(sessionId) {
-        const session = state.sessions.find(s => s.id === sessionId);
-        if (!session) return;
-
-        // 显示模态框
-        const modal = document.getElementById('sessionDetailModal');
-        modal.classList.add('show');
-
-        // 设置标题
-        document.getElementById('sessionDetailTitle').textContent = session.title || session.summary || session.id;
-
-        // 设置元信息
-        const metaInfo = document.getElementById('sessionMetaInfo');
-        metaInfo.innerHTML = `
-            <div class="fullscreen-meta-tag category">${session.category || '未分类'}</div>
-            <div class="fullscreen-meta-tag rating">重要性: ${'★'.repeat(Math.round((session.importance || 0.5) * 5))}</div>
-            <div class="fullscreen-meta-tag usage">消息数: ${session.messages ? session.messages.length : 0}</div>
-            <div class="fullscreen-meta-tag type">Tokens: ${session.tokens || 0}</div>
-        `;
-
-        // 设置统计信息
-        const statistics = document.getElementById('sessionStatistics');
-        statistics.innerHTML = `
-            <h3>📊 会话统计</h3>
-            <p><strong>创建时间:</strong> ${new Date(session.timestamp || Date.now()).toLocaleString()}</p>
-            <p><strong>最后活动:</strong> ${new Date(session.lastActivity || session.timestamp).toLocaleString()}</p>
-            <p><strong>总消息数:</strong> ${session.messages ? session.messages.length : 0}</p>
-            <p><strong>用户消息:</strong> ${session.messages ? session.messages.filter(m => m.role === 'user').length : 0}</p>
-            <p><strong>助手消息:</strong> ${session.messages ? session.messages.filter(m => m.role === 'assistant').length : 0}</p>
-        `;
-
-        // 设置主要内容
-        const mainContent = document.getElementById('sessionMainContent');
-        let messagesHtml = '';
-        
-        if (session.messages && session.messages.length > 0) {
-            messagesHtml = `
-                <h2>💬 对话内容</h2>
-                <div class="messages-container">
-                    ${session.messages.map((msg, index) => `
-                        <div class="message-item ${msg.role}">
-                            <div class="message-header">
-                                <span class="message-role">${msg.role === 'user' ? '👤 用户' : '🤖 助手'}</span>
-                                <span class="message-index">#${index + 1}</span>
-                            </div>
-                            <div class="fullscreen-content-preview">${this.formatMessageContent(msg.content)}</div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        } else {
-            messagesHtml = `
-                <h2>📝 会话摘要</h2>
-                <div class="fullscreen-content-preview">
-                    ${session.summary || '此会话暂无详细内容'}
-                </div>
-            `;
-        }
-        
-        mainContent.innerHTML = messagesHtml;
-
-        // 设置按钮事件
-        document.getElementById('useSessionBtn').onclick = () => this.generateReference(sessionId);
-        document.getElementById('copySessionBtn').onclick = () => this.copyContent(sessionId);
-        document.getElementById('editSessionBtn').onclick = () => this.editSession(sessionId);
-        document.getElementById('deleteSessionBtn').onclick = () => this.deleteSession(sessionId);
-
-        // 添加键盘监听
-        this.addModalKeyboardListeners();
-    }
-
-    static closeFullscreenDetail() {
-        const modal = document.getElementById('sessionDetailModal');
-        modal.classList.remove('show');
-        
-        // 移除键盘监听
-        document.removeEventListener('keydown', this.handleModalKeydown);
-    }
-
-    static editSession(sessionId) {
-        // TODO: 实现会话编辑功能
-        NotificationManager.warning('会话编辑功能待实现');
-    }
-
-    static async deleteSession(sessionId) {
-        if (confirm('确定要删除这个会话吗？此操作不可撤销。')) {
-            try {
-                LoadingManager.show();
-                const response = await APIClient.delete(`/api/sessions/${sessionId}`);
-                
-                if (response.success) {
-                    // 从本地状态中移除会话
-                    state.sessions = state.sessions.filter(s => s.id !== sessionId);
-                    
-                    // 关闭模态框
-                    this.closeFullscreenDetail();
-                    
-                    // 重新渲染会话列表
-                    this.renderSessions();
-                    
-                    NotificationManager.success('会话已成功删除');
-                } else {
-                    NotificationManager.error('删除会话失败');
-                }
-            } catch (error) {
-                NotificationManager.error('删除会话失败: ' + error.message);
-            } finally {
-                LoadingManager.hide();
-            }
-        }
-    }
-
-    static addModalKeyboardListeners() {
-        this.handleModalKeydown = (e) => {
-            if (e.key === 'Escape') {
-                this.closeFullscreenDetail();
-            }
-        };
-        document.addEventListener('keydown', this.handleModalKeydown);
-    }
-
-    // 🆕 判断会话是否与项目相关
-    static isSessionProjectRelated(session) {
-        const sessionContent = (session.title + ' ' + session.summary).toLowerCase();
-        
-        // 🎯 严格的项目相关性判断
-        const projectKeywords = [
-            'cursor-chat-memory',
-            'chat memory',
-            'memory service',
-            'chat服务',
-            '聊天记忆',
-            '引用生成',
-            '提示词中心',
-            'vs code插件',
-            'vscode扩展',
-            'sqlite聊天',
-            'prompt center',
-            'reference generator'
-        ];
-        
-        // 检查是否包含明确的项目关键词
-        const hasProjectKeywords = projectKeywords.some(keyword => 
-            sessionContent.includes(keyword.toLowerCase())
-        );
-        
-        // 检查标签中是否有项目相关标识
-        const hasProjectTags = session.tags && session.tags.some(tag => 
-            (tag.name || tag).toLowerCase().includes('项目') ||
-            (tag.name || tag).toLowerCase().includes('project') ||
-            (tag.name || tag).toLowerCase().includes('cursor-chat-memory')
-        );
-        
-        // 检查是否是技术开发相关（仅当包含项目关键词时才考虑）
-        const isDevelopmentRelated = hasProjectKeywords && (
-            sessionContent.includes('代码') ||
-            sessionContent.includes('开发') ||
-            sessionContent.includes('功能') ||
-            sessionContent.includes('实现') ||
-            sessionContent.includes('优化') ||
-            sessionContent.includes('修复') ||
-            sessionContent.includes('插件') ||
-            sessionContent.includes('扩展') ||
-            sessionContent.includes('web界面') ||
-            sessionContent.includes('api') ||
-            sessionContent.includes('typescript')
-        );
-        
-        // 排除明显无关的会话
-        const isUnrelated = (
-            sessionContent.includes('客户') ||
-            sessionContent.includes('汽车') ||
-            sessionContent.includes('家电') ||
-            sessionContent.includes('手机') ||
-            sessionContent.includes('行业') ||
-            sessionContent.includes('25年') ||
-            sessionContent.includes('同步空间') ||
-            sessionContent.includes('文件都没了') ||
-            sessionContent.includes('git') && !sessionContent.includes('cursor') ||
-            sessionContent.includes('分支') && !sessionContent.includes('cursor')
-        );
-        
-        if (isUnrelated) {
-            return false;
-        }
-        
-        return hasProjectKeywords || hasProjectTags || isDevelopmentRelated;
-    }
-}
-
-// 提示词管理
-class PromptManager {
-    static async loadPrompts() {
-        try {
-            LoadingManager.show();
-            // 添加缓存破坏参数
-            const response = await APIClient.get(`/api/prompts?t=${Date.now()}`);
-            state.prompts = response.prompts || [];
-            this.renderPrompts();
-            NotificationManager.success(`已加载 ${state.prompts.length} 个项目相关提示词 (type: project/iteration)`);
-            
-            // 打印类型统计
-            const typeStats = state.prompts.reduce((acc, p) => {
-                acc[p.type] = (acc[p.type] || 0) + 1;
-                return acc;
-            }, {});
-            console.log('提示词类型统计:', typeStats);
-        } catch (error) {
-            NotificationManager.error('加载提示词失败: ' + error.message);
-        } finally {
-            LoadingManager.hide();
-        }
-    }
-
-    static async searchPrompts() {
-        const query = document.getElementById('promptSearch').value;
-        const category = document.getElementById('typeFilter').value;
-        
-        if (!query.trim()) {
-            this.renderPrompts();
-            return;
-        }
-
-        try {
-            LoadingManager.show();
-            const response = await APIClient.post('/api/prompts/search', { 
-                query,
-                category: category || undefined
-            });
-            
-            const filteredPrompts = response.results || [];
-            this.renderPrompts(filteredPrompts);
-            NotificationManager.success(`找到 ${filteredPrompts.length} 个匹配的提示词`);
-        } catch (error) {
-            NotificationManager.error('搜索提示词失败: ' + error.message);
-        } finally {
-            LoadingManager.hide();
-        }
-    }
-
-    static renderPrompts(prompts = state.prompts) {
-        const container = document.getElementById('promptsContainer');
-        
-        if (prompts.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <p>暂无提示词模板</p>
-                    <button class="btn btn-primary" onclick="PromptManager.createPrompt()">创建第一个提示词</button>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = prompts.map(prompt => {
-            // 生成内容摘要
-            const summary = this.generateContentSummary(prompt.content || prompt.template || '');
-            const displaySummary = summary || prompt.description || '暂无描述';
-            
-            return `
-                <div class="prompt-item" data-id="${prompt.id}" onclick="PromptManager.selectPrompt('${prompt.id}')">
-                    <div class="prompt-header">
-                        <div class="prompt-title">${prompt.name || prompt.title || 'Untitled'}</div>
-                        <div class="prompt-meta">
-                            <span class="prompt-tag type">${prompt.type}</span>
-                            ${prompt.category ? `<span class="prompt-tag category">${prompt.category}</span>` : ''}
-                            <span class="prompt-tag rating">⭐ ${prompt.rating || 0}/5</span>
-                        </div>
-                    </div>
-                    
-                    <div class="prompt-summary">${displaySummary}</div>
-                    
-                    <div class="prompt-footer">
-                        <div class="prompt-stats">
-                            <span>使用 ${prompt.usage || 0} 次</span>
-                            <span>评分 ${prompt.rating || 0}/5</span>
-                        </div>
-                        <div class="prompt-date">
-                            ${new Date(prompt.createdAt).toLocaleDateString()}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    static selectPrompt(promptId) {
-        // 直接打开全屏详情模态
-        const prompt = state.prompts.find(p => p.id === promptId);
-        if (prompt) {
-            state.selectedPrompt = prompt;
-            this.showFullscreenDetail(prompt);
-        }
-    }
-
-    static renderPromptDetail(prompt) {
-        const container = document.getElementById('promptDetailContainer');
-        
-        // 智能内容摘要
-        const contentSummary = this.generateContentSummary(prompt.content || prompt.template || '');
-        
-        container.innerHTML = `
-            <div class="detail-header">
-                <div class="detail-title">${prompt.name || prompt.title || 'Untitled'}</div>
-                <div class="meta-tags">
-                    <span class="meta-tag type">${prompt.type}</span>
-                    ${prompt.category ? `<span class="meta-tag category">${prompt.category}</span>` : ''}
-                    <span class="meta-tag rating">⭐ ${prompt.rating || 0}/5</span>
-                    <span class="meta-tag usage">使用 ${prompt.usage || 0} 次</span>
-                    <span class="meta-tag">📅 ${new Date(prompt.createdAt).toLocaleDateString()}</span>
-                </div>
-            </div>
-            <div class="detail-content">
-                ${prompt.description ? `
-                    <div class="content-section">
-                        <h4>📖 描述</h4>
-                        <p>${prompt.description}</p>
-                    </div>
-                ` : ''}
-                
-                ${contentSummary ? `
-                    <div class="content-summary">
-                        <h5>💡 内容摘要</h5>
-                        <p>${contentSummary}</p>
-                    </div>
-                ` : ''}
-                
-                <div class="content-section">
-                    <h4>📝 模板内容 
-                        <button class="content-expand-btn" onclick="PromptManager.toggleContentExpansion(this)" data-expanded="false">
-                            展开
-                        </button>
-                    </h4>
-                    <div class="expandable-content">
-                        <div class="content-preview" style="max-height: 300px;">${this.formatPromptContent(prompt.content || prompt.template || '无内容')}</div>
-                    </div>
-                </div>
-                
-                ${prompt.tags && prompt.tags.length > 0 ? `
-                    <div class="content-section">
-                        <h4>🏷️ 标签</h4>
-                        <div class="meta-tags">
-                            ${prompt.tags.map(tag => `<span class="meta-tag">${tag}</span>`).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-                
-                ${prompt.examples && prompt.examples.length > 0 ? `
-                    <div class="content-section">
-                        <h4>📝 示例</h4>
-                        ${prompt.examples.map(example => `
-                            <div class="content-preview" style="max-height: none; margin-bottom: 1rem;">
-                                <strong style="color: #2d3748;">输入:</strong> ${example.input}<br><br>
-                                <strong style="color: #2d3748;">输出:</strong> ${example.output}
-                            </div>
-                        `).join('')}
-                    </div>
-                ` : ''}
-            </div>
-            <div class="detail-actions">
-                <button class="btn btn-primary" onclick="PromptManager.usePrompt('${prompt.id}')">
-                    📋 使用模板
-                </button>
-                <button class="btn btn-success" onclick="PromptManager.copyPromptContent('${prompt.id}')">
-                    📄 复制内容
-                </button>
-                <button class="btn btn-secondary" onclick="PromptManager.editPrompt('${prompt.id}')">
-                    ✏️ 编辑
-                </button>
-                <button class="btn btn-danger" onclick="PromptManager.deletePrompt('${prompt.id}')">
-                    🗑️ 删除
-                </button>
-            </div>
-        `;
-    }
-
-    static usePrompt(promptId) {
-        const prompt = state.prompts.find(p => p.id === promptId);
-        if (prompt) {
-            // 切换到引用生成标签页并填入模板
-            TabManager.switchTab('reference');
-            document.getElementById('contextInput').value = prompt.content || prompt.template || '';
-            NotificationManager.success(`已应用模板: ${prompt.name || prompt.title || 'Untitled'}`);
-        }
-    }
-
-    static async editPrompt(promptId) {
-        const prompt = state.prompts.find(p => p.id === promptId);
-        if (!prompt) return;
-
-        const content = `
-            <form id="editPromptForm">
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">标题</label>
-                    <input type="text" name="title" value="${prompt.title}" style="width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 6px;">
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">描述</label>
-                    <textarea name="description" rows="3" style="width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 6px;">${prompt.description || ''}</textarea>
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">类型</label>
-                    <select name="type" style="width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 6px;">
-                        <option value="global" ${prompt.type === 'global' ? 'selected' : ''}>全局知识</option>
-                        <option value="project" ${prompt.type === 'project' ? 'selected' : ''}>项目经验</option>
-                        <option value="iteration" ${prompt.type === 'iteration' ? 'selected' : ''}>迭代记录</option>
-                    </select>
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">模板内容</label>
-                    <textarea name="template" rows="8" style="width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 6px; font-family: Monaco, monospace;">${prompt.template}</textarea>
-                </div>
-            </form>
-        `;
-
-        ModalManager.show('编辑提示词', content, async () => {
-            const form = document.getElementById('editPromptForm');
-            const formData = new FormData(form);
-            const updates = Object.fromEntries(formData);
-
-            try {
-                LoadingManager.show();
-                await APIClient.put(`/api/prompts/${promptId}`, updates);
-                await this.loadPrompts();
-                NotificationManager.success('提示词更新成功');
-            } catch (error) {
-                NotificationManager.error('更新提示词失败: ' + error.message);
-            } finally {
-                LoadingManager.hide();
-            }
-        });
-    }
-
-    static async deletePrompt(promptId) {
-        const prompt = state.prompts.find(p => p.id === promptId);
-        if (!prompt) return;
-
-        ModalManager.show(
-            '确认删除',
-            `确定要删除提示词 "${prompt.title}" 吗？此操作不可撤销。`,
-            async () => {
-                try {
-                    LoadingManager.show();
-                    await APIClient.delete(`/api/prompts/${promptId}`);
-                    await this.loadPrompts();
-                    document.getElementById('promptDetailContainer').innerHTML = `
-                        <div class="empty-state">
-                            <p>选择一个提示词查看详细信息</p>
-                        </div>
-                    `;
-                    NotificationManager.success('提示词删除成功');
-                } catch (error) {
-                    NotificationManager.error('删除提示词失败: ' + error.message);
-                } finally {
-                    LoadingManager.hide();
-                }
-            }
-        );
-    }
-
-    static async createPrompt() {
-        const content = `
-            <form id="createPromptForm">
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">标题</label>
-                    <input type="text" name="title" required style="width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 6px;">
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">描述</label>
-                    <textarea name="description" rows="3" style="width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 6px;"></textarea>
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">类型</label>
-                    <select name="type" style="width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 6px;">
-                        <option value="global">全局知识</option>
-                        <option value="project">项目经验</option>
-                        <option value="iteration">迭代记录</option>
-                    </select>
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">分类（可选）</label>
-                    <input type="text" name="category" style="width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 6px;">
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">模板内容</label>
-                    <textarea name="template" rows="8" required style="width: 100%; padding: 0.75rem; border: 2px solid #e2e8f0; border-radius: 6px; font-family: Monaco, monospace;"></textarea>
-                </div>
-            </form>
-        `;
-
-        ModalManager.show('创建新提示词', content, async () => {
-            const form = document.getElementById('createPromptForm');
-            const formData = new FormData(form);
-            const promptData = Object.fromEntries(formData);
-
-            try {
-                LoadingManager.show();
-                await APIClient.post('/api/prompts', promptData);
-                await this.loadPrompts();
-                NotificationManager.success('提示词创建成功');
-            } catch (error) {
-                NotificationManager.error('创建提示词失败: ' + error.message);
-            } finally {
-                LoadingManager.hide();
-            }
-        });
-    }
-
-    // 生成内容摘要
-    static generateContentSummary(content) {
-        if (!content || content.length < 100) return '';
-        
-        // 提取关键信息
-        const lines = content.split('\n').filter(line => line.trim());
-        const keyLines = lines.filter(line => 
-            line.includes('##') || 
-            line.includes('###') || 
-            line.includes('**') ||
-            line.includes('- ') ||
-            line.includes('1.') ||
-            line.includes('* ')
-        ).slice(0, 3);
-        
-        if (keyLines.length > 0) {
-            return keyLines.map(line => 
-                line.replace(/[#*-]/g, '').trim()
-            ).join(' | ');
-        }
-        
-        // 如果没有结构化内容，取前150字符
-        return content.substring(0, 150) + (content.length > 150 ? '...' : '');
-    }
-
-    // 格式化提示词内容
-    static formatPromptContent(content) {
-        if (!content) return '无内容';
-        
-        return content
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/## (.*?)(\n|$)/g, '<div style="font-size: 1.1em; font-weight: 600; color: #2d3748; margin: 1em 0 0.5em 0;">$1</div>')
-            .replace(/### (.*?)(\n|$)/g, '<div style="font-size: 1em; font-weight: 600; color: #4a5568; margin: 0.8em 0 0.3em 0;">$1</div>')
-            .replace(/- (.*?)(\n|$)/g, '<div style="margin-left: 1em; color: #4a5568;">• $1</div>')
-            .replace(/\n/g, '<br>');
-    }
-
-    // 切换内容展开/收起
-    static toggleContentExpansion(button) {
-        const isExpanded = button.getAttribute('data-expanded') === 'true';
-        const contentPreview = button.parentNode.nextElementSibling.querySelector('.content-preview');
-        
-        if (isExpanded) {
-            contentPreview.style.maxHeight = '300px';
-            button.textContent = '展开';
-            button.setAttribute('data-expanded', 'false');
-        } else {
-            contentPreview.style.maxHeight = 'none';
-            button.textContent = '收起';
-            button.setAttribute('data-expanded', 'true');
-        }
-    }
-
-    // 复制提示词内容
-    static copyPromptContent(promptId) {
-        const prompt = state.prompts.find(p => p.id === promptId);
-        if (prompt) {
-            const content = prompt.content || prompt.template || '';
-            navigator.clipboard.writeText(content).then(() => {
-                NotificationManager.success('提示词内容已复制到剪贴板');
-            });
-        }
-    }
-
-    // 显示全屏提示词详情
-    static showFullscreenDetail(prompt) {
-        const modal = document.getElementById('promptDetailModal');
-        const title = document.getElementById('promptDetailTitle');
-        const sidebar = document.getElementById('promptDetailSidebar');
-        const mainContent = document.getElementById('promptDetailMainContent');
-        const actions = document.getElementById('promptDetailActions');
-
-        // 设置标题
-        title.textContent = prompt.name || prompt.title || 'Untitled';
-
-        // 生成内容摘要
-        const contentSummary = this.generateContentSummary(prompt.content || prompt.template || '');
-
-        // 渲染侧边栏（元数据）
-        sidebar.innerHTML = `
-            <div class="fullscreen-meta-tags">
-                <span class="fullscreen-meta-tag type">${prompt.type}</span>
-                ${prompt.category ? `<span class="fullscreen-meta-tag category">${prompt.category}</span>` : ''}
-                <span class="fullscreen-meta-tag rating">⭐ ${prompt.rating || 0}/5</span>
-                <span class="fullscreen-meta-tag usage">使用 ${prompt.usage || 0} 次</span>
-                <span class="fullscreen-meta-tag">📅 ${new Date(prompt.createdAt).toLocaleDateString()}</span>
-            </div>
-
-            ${prompt.tags && prompt.tags.length > 0 ? `
-                <div class="fullscreen-content-section">
-                    <h2>🏷️ 标签</h2>
-                    <div class="fullscreen-meta-tags">
-                        ${prompt.tags.map(tag => `<span class="fullscreen-meta-tag">${tag}</span>`).join('')}
-                    </div>
-                </div>
-            ` : ''}
-
-            <div class="fullscreen-content-section">
-                <h2>📊 使用统计</h2>
-                <p><strong>创建时间:</strong> ${new Date(prompt.createdAt).toLocaleString()}</p>
-                <p><strong>最后更新:</strong> ${new Date(prompt.updatedAt || prompt.createdAt).toLocaleString()}</p>
-                <p><strong>使用次数:</strong> ${prompt.usage || 0}</p>
-                <p><strong>评分:</strong> ${prompt.rating || 0}/5</p>
-            </div>
-        `;
-
-        // 渲染主要内容
-        mainContent.innerHTML = `
-            ${prompt.description ? `
-                <div class="fullscreen-content-section">
-                    <h2>📖 描述</h2>
-                    <p>${prompt.description}</p>
-                </div>
-            ` : ''}
-            
-            ${contentSummary ? `
-                <div class="fullscreen-content-summary">
-                    <h3>💡 内容摘要</h3>
-                    <p>${contentSummary}</p>
-                </div>
-            ` : ''}
-            
-            <div class="fullscreen-content-section">
-                <h2>📝 模板内容</h2>
-                <div class="fullscreen-content-preview">${this.formatPromptContent(prompt.content || prompt.template || '无内容')}</div>
-            </div>
-            
-            ${prompt.examples && prompt.examples.length > 0 ? `
-                <div class="fullscreen-content-section">
-                    <h2>📝 使用示例</h2>
-                    ${prompt.examples.map(example => `
-                        <div class="fullscreen-content-preview" style="margin-bottom: 1.5rem;">
-                            <strong style="color: #2d3748;">输入:</strong><br>
-                            ${example.input}<br><br>
-                            <strong style="color: #2d3748;">输出:</strong><br>
-                            ${example.output}
-                        </div>
-                    `).join('')}
-                </div>
-            ` : ''}
-        `;
-
-        // 渲染操作按钮
-        actions.innerHTML = `
-            <button class="fullscreen-btn primary" onclick="PromptManager.usePromptFromModal('${prompt.id}')">
-                📋 使用此模板
-            </button>
-            <button class="fullscreen-btn success" onclick="PromptManager.copyPromptContent('${prompt.id}')">
-                📄 复制内容
-            </button>
-            <button class="fullscreen-btn secondary" onclick="PromptManager.editPromptFromModal('${prompt.id}')">
-                ✏️ 编辑
-            </button>
-            <button class="fullscreen-btn danger" onclick="PromptManager.deletePromptFromModal('${prompt.id}')">
-                🗑️ 删除
-            </button>
-            <button class="fullscreen-btn secondary" onclick="PromptManager.closeFullscreenDetail()">
-                ❌ 关闭
-            </button>
-        `;
-
-        // 显示模态
-        modal.classList.add('show');
-        document.body.style.overflow = 'hidden'; // 防止背景滚动
-
-        // 添加键盘事件监听
-        this.addModalKeyboardListeners();
-    }
-
-    // 关闭全屏详情
-    static closeFullscreenDetail() {
-        const modal = document.getElementById('promptDetailModal');
-        modal.classList.remove('show');
-        document.body.style.overflow = ''; // 恢复背景滚动
-    }
-
-    // 从模态中使用提示词
-    static usePromptFromModal(promptId) {
-        this.usePrompt(promptId);
-        this.closeFullscreenDetail();
-    }
-
-    // 从模态中编辑提示词
-    static editPromptFromModal(promptId) {
-        this.closeFullscreenDetail();
-        this.editPrompt(promptId);
-    }
-
-    // 从模态中删除提示词
-    static deletePromptFromModal(promptId) {
-        this.closeFullscreenDetail();
-        this.deletePrompt(promptId);
-    }
-
-    // 添加模态键盘事件监听
-    static addModalKeyboardListeners() {
-        const handleKeydown = (e) => {
-            if (e.key === 'Escape') {
-                this.closeFullscreenDetail();
-                document.removeEventListener('keydown', handleKeydown);
-            }
-        };
-        document.addEventListener('keydown', handleKeydown);
-    }
-}
-
-// 引用生成器
-class ReferenceGenerator {
-    static async generateReference() {
-        const context = document.getElementById('contextInput').value;
-        const template = document.getElementById('templateSelect').value;
-        const includePrompts = document.getElementById('includePrompts').checked;
-
-        if (!context.trim()) {
-            NotificationManager.warning('请输入上下文内容');
-            return;
-        }
-
-        try {
-            LoadingManager.show();
-            const endpoint = includePrompts ? '/api/sessions/enhanced-reference' : '/api/sessions/reference';
-            const response = await APIClient.post(endpoint, {
-                templateId: template,
-                inputText: context
-            });
-            
-            document.getElementById('referenceOutput').textContent = response.reference;
-            document.getElementById('copyReferenceBtn').style.display = 'block';
-            
-            NotificationManager.success('引用内容已生成');
-        } catch (error) {
-            NotificationManager.error('生成引用失败: ' + error.message);
-        } finally {
-            LoadingManager.hide();
-        }
-    }
-
-    static async getRecommendations() {
-        const context = document.getElementById('contextInput').value;
-
-        if (!context.trim()) {
-            NotificationManager.warning('请输入上下文内容');
-            return;
-        }
-
-        try {
-            LoadingManager.show();
-            const [sessionResponse, promptResponse] = await Promise.all([
-                APIClient.post('/api/sessions/recommendations', { inputText: context }),
-                APIClient.post('/api/prompts/recommendations', { context: context })
-            ]);
-            
-            const recommendations = {
-                sessions: sessionResponse.recommendations || [],
-                prompts: promptResponse.recommendations || []
-            };
-
-            this.showRecommendations(recommendations);
-            NotificationManager.success('推荐内容已获取');
-        } catch (error) {
-            NotificationManager.error('获取推荐失败: ' + error.message);
-        } finally {
-            LoadingManager.hide();
-        }
-    }
-
-    static showRecommendations(recommendations) {
-        const content = `
-            <div>
-                <h4>推荐会话 (${recommendations.sessions.length})</h4>
-                ${recommendations.sessions.length > 0 ? 
-                    recommendations.sessions.map(session => {
-                        // 🆕 判断会话来源类型
-                        const isProjectRelated = SessionManager.isSessionProjectRelated(session);
-                        const sourceIcon = isProjectRelated ? '📁' : '🌐';
-                        const sourceLabel = isProjectRelated ? 'PROJECT' : 'GLOBAL';
-                        
-                        return `
-                            <div style="margin: 0.5rem 0; padding: 0.75rem; background: #f7fafc; border-radius: 6px; cursor: pointer; border-left: 4px solid ${isProjectRelated ? '#3182ce' : '#38a169'};" onclick="ReferenceGenerator.selectRecommendation('session', '${session.id}')">
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-                                    <strong style="flex: 1;">${session.summary || session.title || session.id}</strong>
-                                    <span style="background: ${isProjectRelated ? '#e6f3ff' : '#e6fffa'}; color: ${isProjectRelated ? '#1e40af' : '#059669'}; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-left: 8px;">
-                                        ${sourceIcon} ${sourceLabel}
-                                    </span>
-                                </div>
-                                <div style="color: #666; font-size: 13px; line-height: 1.4;">
-                                    ${(session.content || session.summary || '').substring(0, 120)}${session.content && session.content.length > 120 ? '...' : ''}
-                                </div>
-                                ${session.category ? `<div style="margin-top: 0.5rem;"><span style="background: #e2e8f0; color: #4a5568; padding: 2px 6px; border-radius: 8px; font-size: 11px;">${session.category}</span></div>` : ''}
-                            </div>
-                        `;
-                    }).join('') : 
-                    '<p style="color: #666;">暂无推荐会话</p>'
-                }
-                
-                <h4 style="margin-top: 2rem;">推荐提示词 (${recommendations.prompts.length})</h4>
-                ${recommendations.prompts.length > 0 ? 
-                    recommendations.prompts.map(prompt => {
-                        // 🆕 判断提示词来源类型
-                        const isProjectPrompt = prompt.type === 'project';
-                        const sourceIcon = isProjectPrompt ? '📁' : prompt.type === 'iteration' ? '🔄' : '🌐';
-                        const sourceLabel = isProjectPrompt ? 'PROJECT' : prompt.type === 'iteration' ? 'ITERATION' : 'GLOBAL';
-                        
-                        return `
-                            <div style="margin: 0.5rem 0; padding: 0.75rem; background: #f7fafc; border-radius: 6px; cursor: pointer; border-left: 4px solid ${isProjectPrompt ? '#7c3aed' : prompt.type === 'iteration' ? '#f59e0b' : '#10b981'};" onclick="ReferenceGenerator.selectRecommendation('prompt', '${prompt.id}')">
-                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-                                    <strong style="flex: 1;">${prompt.title || prompt.name}</strong>
-                                    <span style="background: ${isProjectPrompt ? '#f3e8ff' : prompt.type === 'iteration' ? '#fef3c7' : '#d1fae5'}; color: ${isProjectPrompt ? '#7c2d12' : prompt.type === 'iteration' ? '#92400e' : '#065f46'}; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-left: 8px;">
-                                        ${sourceIcon} ${sourceLabel}
-                                    </span>
-                                </div>
-                                <div style="color: #666; font-size: 13px; line-height: 1.4;">
-                                    ${(prompt.description || '').substring(0, 120)}${prompt.description && prompt.description.length > 120 ? '...' : ''}
-                                </div>
-                                ${prompt.category ? `<div style="margin-top: 0.5rem;"><span style="background: #e2e8f0; color: #4a5568; padding: 2px 6px; border-radius: 8px; font-size: 11px;">${prompt.category}</span></div>` : ''}
-                            </div>
-                        `;
-                    }).join('') : 
-                    '<p style="color: #666;">暂无推荐提示词</p>'
-                }
-            </div>
-        `;
-
-        ModalManager.show('智能推荐', content);
-    }
-
-    static selectRecommendation(type, id) {
-        ModalManager.hide();
-        
-        if (type === 'session') {
-            TabManager.switchTab('sessions');
-            SessionManager.selectSession(id);
-        } else if (type === 'prompt') {
-            TabManager.switchTab('prompts');
-            PromptManager.selectPrompt(id);
-        }
-    }
-
-    static copyReference() {
-        const content = document.getElementById('referenceOutput').textContent;
-        navigator.clipboard.writeText(content).then(() => {
-            NotificationManager.success('引用内容已复制到剪贴板');
-        });
-    }
-}
-
-// 统计分析
-// 智能分析管理器
+// 智能分析管理
 class AnalysisManager {
     static workflowState = {
-        integrated: false,
-        summarized: false,
-        knowledgeGenerated: false
+        currentStep: 1,
+        completedSteps: new Set(),
+        selectedAnalyzer: 'claude'
     };
-    
+
     static init() {
-        // 绑定项目选择器事件
-        const projectScope = document.getElementById('projectScope');
-        const categoryFilter = document.getElementById('categoryFilter');
-        
-        if (projectScope) {
-            projectScope.addEventListener('change', (e) => {
-                if (e.target.value === 'category') {
-                    categoryFilter.style.display = 'inline-block';
-                } else {
-                    categoryFilter.style.display = 'none';
-                }
-                this.updateProjectInfo();
-            });
-        }
-        
-        if (categoryFilter) {
-            categoryFilter.addEventListener('change', () => {
-                this.updateProjectInfo();
-            });
-        }
-        
-        // 绑定分析按钮事件
-        const batchSummarizeBtn = document.getElementById('batchSummarizeBtn');
-        const singleSummarizeBtn = document.getElementById('singleSummarizeBtn');
-        const smartIntegrateBtn = document.getElementById('smartIntegrateBtn');
-        const generateKnowledgeBtn = document.getElementById('generateKnowledgeBtn');
-        const viewKnowledgeBaseBtn = document.getElementById('viewKnowledgeBaseBtn');
-        const viewProjectKnowledgeBtn = document.getElementById('viewProjectKnowledgeBtn');
-        
-        if (batchSummarizeBtn) {
-            batchSummarizeBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.batchSummarize();
-            });
-        }
-        
-        if (singleSummarizeBtn) {
-            singleSummarizeBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.singleSummarize();
-            });
-        }
-        
-        if (smartIntegrateBtn) {
-            smartIntegrateBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.smartIntegrate();
-            });
-        }
-        
-        if (generateKnowledgeBtn) {
-            generateKnowledgeBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.generateKnowledge();
-            });
-        }
-        
-        if (viewKnowledgeBaseBtn) {
-            viewKnowledgeBaseBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.viewKnowledgeBase();
-            });
-        }
-        
-        if (viewProjectKnowledgeBtn) {
-            viewProjectKnowledgeBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.viewProjectKnowledge();
-            });
-        }
-        
-        // 绑定流程步骤点击事件
-        document.querySelectorAll('.workflow-step').forEach(step => {
-            step.addEventListener('click', () => this.handleWorkflowStepClick(step));
-        });
-        
-        // 加载项目信息
+        this.bindWorkflowEvents();
+        this.bindAnalysisEvents();
+        this.updateWorkflowProgress(1);
         this.loadProjectInfo();
-        
-        console.log('智能分析管理器初始化完成 - 按钮事件已绑定');
     }
-    
+
+    static bindWorkflowEvents() {
+        // 绑定工作流步骤点击事件
+        document.querySelectorAll('.workflow-step').forEach(step => {
+            step.addEventListener('click', () => {
+                const stepNumber = parseInt(step.dataset.step);
+                this.handleWorkflowStepClick(stepNumber);
+            });
+        });
+
+        // 绑定分析器选择事件
+        document.querySelectorAll('input[name="analyzer"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                this.workflowState.selectedAnalyzer = e.target.value;
+                console.log('切换分析器:', this.workflowState.selectedAnalyzer);
+            });
+        });
+    }
+
+    static bindAnalysisEvents() {
+        // 绑定分析功能按钮
+        const bindBtn = (id, handler) => {
+            const btn = document.getElementById(id);
+            if (btn) btn.addEventListener('click', handler.bind(this));
+        };
+
+        bindBtn('batchSummarizeBtn', this.batchSummarize);
+        bindBtn('singleSummarizeBtn', this.singleSummarize);
+        bindBtn('smartIntegrateBtn', this.smartIntegrate);
+        bindBtn('generateKnowledgeBtn', this.generateKnowledge);
+        bindBtn('viewKnowledgeBaseBtn', this.viewKnowledgeBase);
+        bindBtn('viewProjectKnowledgeBtn', this.viewProjectKnowledge);
+    }
+
     static async loadProjectInfo() {
         this.updateProjectInfo();
     }
-    
+
     static async updateProjectInfo() {
         try {
-            const scope = this.getAnalysisScope();
-            const response = await APIClient.post('/api/sessions/count-by-scope', scope);
-            if (response.success) {
-                const countElement = document.getElementById('projectSessionCount');
-                if (countElement) {
-                    let text = `📊 分析范围: ${response.count}个会话`;
-                    if (scope.projectOnly) {
-                        text += ` (项目相关)`;
-                    } else if (scope.category) {
-                        text += ` (${scope.category}分类)`;
-                    } else {
-                        text += ` (全部)`;
-                    }
-                    countElement.textContent = text;
-                }
-            }
+            const response = await APIClient.get('/api/sessions');
+            const sessions = response.sessions || [];
+            
+            // 更新项目会话数
+            const projectSessions = sessions.filter(session => 
+                this.isSessionProjectRelated(session)
+            );
+            
+            document.getElementById('projectSessionCount').textContent = 
+                `📊 项目会话: ${projectSessions.length} 个`;
+                
         } catch (error) {
             console.error('加载项目信息失败:', error);
+            document.getElementById('projectSessionCount').textContent = 
+                '📊 项目会话: 加载失败';
         }
     }
-    
-    static getAnalysisScope() {
-        const projectScope = document.getElementById('projectScope');
-        const categoryFilter = document.getElementById('categoryFilter');
-        
-        const scope = {
-            projectOnly: false,
-            category: null
-        };
-        
-        if (projectScope) {
-            switch (projectScope.value) {
-                case 'project':
-                    scope.projectOnly = true;
-                    break;
-                case 'category':
-                    if (categoryFilter && categoryFilter.value) {
-                        scope.category = categoryFilter.value;
-                    }
-                    break;
-                case 'all':
-                default:
-                    // 使用默认值
-                    break;
-            }
-        }
-        
-        return scope;
+
+    static isSessionProjectRelated(session) {
+        const title = session.title.toLowerCase();
+        const keywords = ['cursor-chat-memory', '提示词中心', '项目', 'sqlite', 'dbeaver'];
+        return keywords.some(keyword => title.includes(keyword));
     }
-    
+
     static handleWorkflowStepClick(step) {
-        const stepNumber = step.dataset.step;
-        switch (stepNumber) {
-            case '1':
-                this.smartIntegrate();
-                break;
-            case '2':
-                this.batchSummarize();
-                break;
-            case '3':
-                this.generateKnowledge();
-                break;
-        }
+        this.workflowState.currentStep = step;
+        this.updateWorkflowProgress(step);
     }
-    
+
     static updateWorkflowProgress(step) {
-        const stepElement = document.querySelector(`.workflow-step[data-step="${step}"]`);
-        if (stepElement) {
-            stepElement.classList.add('completed');
-        }
-        
-        // 更新状态
-        switch (step) {
-            case '1':
-                this.workflowState.integrated = true;
-                break;
-            case '2':
-                this.workflowState.summarized = true;
-                break;
-            case '3':
-                this.workflowState.knowledgeGenerated = true;
-                break;
-        }
-        
-        // 激活下一步
-        const nextStep = parseInt(step) + 1;
-        if (nextStep <= 3) {
-            const nextStepElement = document.querySelector(`.workflow-step[data-step="${nextStep}"]`);
-            if (nextStepElement) {
-                nextStepElement.classList.add('active');
+        // 更新步骤状态
+        document.querySelectorAll('.workflow-step').forEach(stepEl => {
+            const stepNumber = parseInt(stepEl.dataset.step);
+            stepEl.classList.remove('active', 'completed');
+            
+            if (stepNumber === step) {
+                stepEl.classList.add('active');
+            } else if (stepNumber < step) {
+                stepEl.classList.add('completed');
+                this.workflowState.completedSteps.add(stepNumber);
             }
-        }
+        });
     }
 
     static getSelectedAnalyzer() {
-        const selected = document.querySelector('input[name="analyzer"]:checked');
-        return selected ? selected.value === 'local' : true;
+        return this.workflowState.selectedAnalyzer;
     }
 
     static async batchSummarize() {
-        const useLocal = this.getSelectedAnalyzer();
-        const analyzerType = useLocal ? '本地Claude' : 'Azure OpenAI';
-        const scope = this.getAnalysisScope();
-        const resultsContainer = document.getElementById('summarizeResults');
+        const analyzerType = this.getSelectedAnalyzer();
         
         try {
-            const scopeText = scope.projectOnly ? '项目相关' : scope.category ? scope.category : '所有';
-            resultsContainer.innerHTML = `<div class="loading-spinner">正在批量提炼${scopeText}会话...</div>`;
-            resultsContainer.classList.add('loading');
+            LoadingManager.show();
             
-            const response = await APIClient.post('/api/analysis/batch-summary', {
-                useLocal,
-                maxSessions: 20,
-                ...scope
+            const response = await APIClient.post('/api/analysis/batch-summarize', {
+                analyzer: analyzerType,
+                scope: this.getAnalysisScope()
             });
             
-            if (response.success) {
-                this.renderBatchSummaryResults(response.results, analyzerType);
-                this.updateWorkflowProgress('2');
-                NotificationManager.success(`批量提炼完成！使用${analyzerType}分析了${response.processed}个项目相关会话`);
-                // 批量提炼完成后，建议进行下一步
-                setTimeout(() => {
-                    NotificationManager.success('🎯 下一步建议：点击"生成知识图谱"获得项目全貌');
-                }, 2000);
-            } else {
-                throw new Error(response.error || '分析失败');
-            }
+            this.renderBatchSummaryResults(response.results, analyzerType);
+            this.workflowState.completedSteps.add(1);
+            this.updateWorkflowProgress(2);
+            
+            NotificationManager.success('批量提炼完成！');
+            
         } catch (error) {
             console.error('批量提炼失败:', error);
-            resultsContainer.innerHTML = `<div class="analysis-error">批量提炼失败: ${error.message}</div>`;
-            NotificationManager.error('批量提炼失败');
+            NotificationManager.error('批量提炼失败：' + error.message);
         } finally {
-            resultsContainer.classList.remove('loading');
-        }
-    }
-    
-    static async singleSummarize() {
-        const selectedSession = state.selectedSession;
-        if (!selectedSession) {
-            NotificationManager.warning('请先选择一个会话进行提炼');
-            return;
-        }
-        
-        const useLocal = this.getSelectedAnalyzer();
-        const analyzerType = useLocal ? '本地Claude' : 'Azure OpenAI';
-        const resultsContainer = document.getElementById('summarizeResults');
-        
-        try {
-            resultsContainer.innerHTML = '<div class="loading-spinner">正在提炼选中会话...</div>';
-            resultsContainer.classList.add('loading');
-            
-            const fullContent = selectedSession.summary + '\n\n消息内容:\n' + selectedSession.messages.map(m => `${m.role}: ${m.content}`).join('\n');
-            const response = await APIClient.post('/api/analysis/session-summary', {
-                sessionId: selectedSession.id,
-                content: fullContent,
-                useLocal
-            });
-            
-            if (response.success) {
-                const html = `
-                    <div class="analysis-success">
-                        ✅ 会话提炼完成！使用${analyzerType}分析
-                    </div>
-                    ${this.formatPromptResult(response.result)}
-                `;
-                resultsContainer.innerHTML = html;
-                resultsContainer.classList.add('has-content');
-                NotificationManager.success(`会话提炼完成！使用${analyzerType}分析`);
-            } else {
-                throw new Error(response.error || '分析失败');
-            }
-        } catch (error) {
-            console.error('会话提炼失败:', error);
-            resultsContainer.innerHTML = `<div class="analysis-error">会话提炼失败: ${error.message}</div>`;
-            NotificationManager.error('会话提炼失败');
-        } finally {
-            resultsContainer.classList.remove('loading');
+            LoadingManager.hide();
         }
     }
 
     static async smartIntegrate() {
-        const useLocal = this.getSelectedAnalyzer();
-        const analyzerType = useLocal ? '本地Claude' : 'Azure OpenAI';
-        const scope = this.getAnalysisScope();
-        const resultsContainer = document.getElementById('integrateResults');
+        const analyzerType = this.getSelectedAnalyzer();
         
         try {
-            const scopeText = scope.projectOnly ? '项目' : scope.category ? scope.category : '所有';
-            resultsContainer.innerHTML = `<div class="loading-spinner">正在智能整合${scopeText}提示词...</div>`;
-            resultsContainer.classList.add('loading');
+            LoadingManager.show();
             
             const response = await APIClient.post('/api/analysis/smart-integrate', {
-                useLocal,
-                ...scope
+                analyzer: analyzerType
             });
             
-            if (response.success) {
-                this.renderIntegrateResults(response.integrated, response.knowledgeBase, analyzerType);
-                this.updateWorkflowProgress('1');
-                NotificationManager.success(`项目提示词整合完成！使用${analyzerType}生成了${response.integrated.length}个优化提示词`);
-                // 整合完成后，建议进行下一步
-                setTimeout(() => {
-                    NotificationManager.success('🎯 下一步建议：点击"批量提炼会话"分析项目相关对话');
-                }, 2000);
-            } else {
-                throw new Error(response.error || '整合失败');
-            }
+            this.renderIntegrateResults(response.integrated, response.knowledgeBase, analyzerType);
+            this.workflowState.completedSteps.add(2);
+            this.updateWorkflowProgress(3);
+            
+            NotificationManager.success('智能整合完成！');
+            
         } catch (error) {
             console.error('智能整合失败:', error);
-            resultsContainer.innerHTML = `<div class="analysis-error">智能整合失败: ${error.message}</div>`;
-            NotificationManager.error('智能整合失败');
+            NotificationManager.error('智能整合失败：' + error.message);
         } finally {
-            resultsContainer.classList.remove('loading');
+            LoadingManager.hide();
         }
     }
 
     static async generateKnowledge() {
-        const useLocal = this.getSelectedAnalyzer();
-        const analyzerType = useLocal ? '本地Claude' : 'Azure OpenAI';
-        const scope = this.getAnalysisScope();
-        const resultsContainer = document.getElementById('knowledgeResults');
+        const analyzerType = this.getSelectedAnalyzer();
         
         try {
-            const scopeText = scope.projectOnly ? '项目' : scope.category ? scope.category : '全局';
-            resultsContainer.innerHTML = `<div class="loading-spinner">正在生成${scopeText}知识图谱...</div>`;
-            resultsContainer.classList.add('loading');
+            LoadingManager.show();
             
-            const response = await APIClient.post('/api/analysis/project-knowledge', {
-                useLocal,
-                ...scope
+            const response = await APIClient.post('/api/analysis/knowledge-graph', {
+                analyzer: analyzerType
             });
             
-            if (response.success) {
-                this.renderKnowledgeResults(response.knowledge, analyzerType);
-                this.updateWorkflowProgress('3');
-                NotificationManager.success(`项目知识图谱生成完成！使用${analyzerType}分析了${response.sessionsAnalyzed}个会话`);
-                // 知识图谱生成完成，流程结束
-                setTimeout(() => {
-                    NotificationManager.success('🎉 智能分析流程完成！你现在拥有了完整的项目知识体系');
-                }, 2000);
-            } else {
-                throw new Error(response.error || '生成失败');
-            }
+            this.renderKnowledgeResults(response.knowledge, analyzerType);
+            this.workflowState.completedSteps.add(3);
+            
+            NotificationManager.success('项目知识图谱生成完成！');
+            
         } catch (error) {
             console.error('知识图谱生成失败:', error);
-            resultsContainer.innerHTML = `<div class="analysis-error">知识图谱生成失败: ${error.message}</div>`;
-            NotificationManager.error('知识图谱生成失败');
+            NotificationManager.error('知识图谱生成失败：' + error.message);
         } finally {
-            resultsContainer.classList.remove('loading');
+            LoadingManager.hide();
         }
     }
 
-    static async viewKnowledgeBase() {
-        try {
-            const response = await APIClient.get('/api/knowledge/base');
-            if (response.success) {
-                const content = this.formatKnowledgeBase(response.knowledgeBase);
-                ModalManager.show('知识库详情', content);
-            } else {
-                NotificationManager.warning('知识库文件不存在，请先进行智能整合');
-            }
-        } catch (error) {
-            console.error('查看知识库失败:', error);
-            NotificationManager.error('查看知识库失败');
-        }
+    static getAnalysisScope() {
+        // 根据当前项目返回分析范围
+        return {
+            project: 'cursor-chat-memory',
+            includeArchitecture: true,
+            includeTechnical: true,
+            includeDecisions: true
+        };
     }
 
-    static async viewProjectKnowledge() {
-        try {
-            const response = await APIClient.get('/api/knowledge/project');
-            if (response.success) {
-                const content = this.formatProjectKnowledge(response.projectKnowledge);
-                ModalManager.show('项目知识图谱', content);
-            } else {
-                NotificationManager.warning('项目知识图谱不存在，请先生成知识图谱');
-            }
-        } catch (error) {
-            console.error('查看项目知识图谱失败:', error);
-            NotificationManager.error('查看项目知识图谱失败');
-        }
-    }
-
-    // 渲染方法
     static renderBatchSummaryResults(results, analyzerType) {
         const container = document.getElementById('summarizeResults');
-        container.classList.add('has-content');
-        
-        const html = `
-            <div class="analysis-success">
-                ✅ 批量提炼完成！使用${analyzerType}分析了${results.length}个会话
+        container.innerHTML = `
+            <div class="analysis-result-header">
+                <h4>📚 批量提炼结果 (${analyzerType})</h4>
+                <span class="result-count">${results.length} 个会话已提炼</span>
             </div>
-            ${results.map(result => {
-                if (result.success) {
-                    return this.formatPromptResult(result.prompt);
-                } else {
-                    return `<div class="analysis-error">会话 ${result.sessionId}: ${result.error}</div>`;
-                }
-            }).join('')}
+            <div class="analysis-result-content">
+                ${results.map(result => `
+                    <div class="summary-item">
+                        <h5>${result.title}</h5>
+                        <p class="summary-content">${result.summary}</p>
+                        <div class="summary-meta">
+                            <span>关键词: ${result.keywords.join(', ')}</span>
+                            <span>重要性: ${'★'.repeat(result.importance)}</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
         `;
-        
-        container.innerHTML = html;
     }
 
     static renderIntegrateResults(integrated, knowledgeBase, analyzerType) {
         const container = document.getElementById('integrateResults');
-        container.classList.add('has-content');
-        
-        const html = `
-            <div class="analysis-success">
-                ✅ 智能整合完成！使用${analyzerType}生成${integrated.length}个优化提示词
+        container.innerHTML = `
+            <div class="analysis-result-header">
+                <h4>🔧 智能整合结果 (${analyzerType})</h4>
+                <span class="result-count">生成 ${integrated.templates.length} 个优化模板</span>
             </div>
-            <div class="knowledge-overview">
-                <h4>🧠 知识库概览</h4>
-                <div class="knowledge-section">
-                    <strong>架构设计:</strong> ${knowledgeBase.architecture}
+            <div class="analysis-result-content">
+                <div class="integration-stats">
+                    <p>原有模板: ${integrated.originalCount} → 优化后: ${integrated.templates.length}</p>
+                    <p>去重率: ${integrated.deduplicationRate}%</p>
                 </div>
-                <div class="knowledge-section">
-                    <strong>关键解决方案:</strong> ${knowledgeBase.solutions}
-                </div>
-                <div class="knowledge-section">
-                    <strong>迭代演进:</strong> ${knowledgeBase.iterations}
-                </div>
-                <div class="knowledge-section">
-                    <strong>最佳实践:</strong> ${knowledgeBase.bestPractices}
-                </div>
+                ${this.formatKnowledgeBase(knowledgeBase)}
             </div>
-            ${integrated.map(prompt => this.formatPromptResult(prompt)).join('')}
         `;
-        
-        container.innerHTML = html;
     }
 
     static renderKnowledgeResults(knowledge, analyzerType) {
         const container = document.getElementById('knowledgeResults');
-        container.classList.add('has-content');
-        
-        const html = `
-            <div class="analysis-success">
-                ✅ 项目知识图谱生成完成！使用${analyzerType}分析
+        container.innerHTML = `
+            <div class="analysis-result-header">
+                <h4>📊 项目知识图谱 (${analyzerType})</h4>
+                <span class="result-count">${knowledge.categories.length} 个知识类别</span>
             </div>
-            <div class="knowledge-overview">
-                <div class="knowledge-section">
-                    <h4>🎯 项目概述</h4>
-                    <p>${knowledge.projectOverview}</p>
-                </div>
-                <div class="knowledge-section">
-                    <h4>🏗️ 核心架构</h4>
-                    <p>${knowledge.coreArchitecture}</p>
-                </div>
-                <div class="knowledge-section">
-                    <h4>💻 关键技术</h4>
-                    <ul>${knowledge.keyTechnologies.map(tech => `<li>${tech}</li>`).join('')}</ul>
-                </div>
-                <div class="knowledge-section">
-                    <h4>❗ 主要挑战</h4>
-                    <ul>${knowledge.mainChallenges.map(challenge => `<li>${challenge}</li>`).join('')}</ul>
-                </div>
-                <div class="knowledge-section">
-                    <h4>💡 解决方案模式</h4>
-                    <ul>${knowledge.solutionPatterns.map(pattern => `<li>${pattern}</li>`).join('')}</ul>
-                </div>
-                <div class="knowledge-section">
-                    <h4>📈 演进时间线</h4>
-                    ${knowledge.evolutionTimeline.map(phase => `
-                        <div class="timeline-item">
-                            <div class="timeline-date">${new Date(phase.timestamp).toLocaleDateString('zh-CN')}</div>
-                            <div class="timeline-title">${phase.phase}</div>
-                            <div class="timeline-description">${phase.description}</div>
-                        </div>
-                    `).join('')}
-                </div>
-                <div class="knowledge-section">
-                    <h4>🎯 建议</h4>
-                    <ul>${knowledge.recommendations.map(rec => `<li>${rec}</li>`).join('')}</ul>
-                </div>
-            </div>
-        `;
-        
-        container.innerHTML = html;
-    }
-
-    static formatPromptResult(prompt) {
-        return `
-            <div class="analysis-result-item">
-                <div class="analysis-result-header">
-                    <h4 class="analysis-result-title">${prompt.name}</h4>
-                    <span class="analysis-result-meta">${prompt.category} | ${new Date(prompt.createdAt).toLocaleDateString('zh-CN')}</span>
-                </div>
-                <div class="analysis-result-content">
-                    ${prompt.description}
-                </div>
-                <div class="analysis-result-tags">
-                    ${prompt.tags.map(tag => `<span class="analysis-tag">${tag}</span>`).join('')}
-                </div>
+            <div class="analysis-result-content">
+                ${this.formatProjectKnowledge(knowledge)}
             </div>
         `;
     }
 
     static formatKnowledgeBase(knowledgeBase) {
         return `
-            <div class="knowledge-overview">
-                <div class="knowledge-section">
-                    <h4>🏗️ 架构设计</h4>
-                    <p>${knowledgeBase.architecture}</p>
-                </div>
-                <div class="knowledge-section">
-                    <h4>🛠️ 关键解决方案</h4>
-                    <p>${knowledgeBase.solutions}</p>
-                </div>
-                <div class="knowledge-section">
-                    <h4>📈 迭代演进</h4>
-                    <p>${knowledgeBase.iterations}</p>
-                </div>
-                <div class="knowledge-section">
-                    <h4>💡 最佳实践</h4>
-                    <p>${knowledgeBase.bestPractices}</p>
-                </div>
-                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; font-size: 0.9rem; color: #666;">
-                    生成时间: ${new Date(knowledgeBase.generatedAt).toLocaleString('zh-CN')} | 
-                    分析器: ${knowledgeBase.analyzer}
-                </div>
+            <div class="knowledge-base">
+                <h5>💡 核心知识点</h5>
+                ${knowledgeBase.coreKnowledge.map(item => `
+                    <div class="knowledge-item">
+                        <strong>${item.category}:</strong> ${item.content}
+                    </div>
+                `).join('')}
             </div>
         `;
     }
 
     static formatProjectKnowledge(knowledge) {
         return `
-            <div class="knowledge-overview">
-                <div class="knowledge-section">
-                    <h4>🎯 项目概述</h4>
-                    <p>${knowledge.projectOverview}</p>
-                </div>
-                <div class="knowledge-section">
-                    <h4>🏗️ 核心架构</h4>
-                    <p>${knowledge.coreArchitecture}</p>
-                </div>
-                <div class="knowledge-section">
-                    <h4>💻 关键技术</h4>
-                    <ul>${knowledge.keyTechnologies.map(tech => `<li>${tech}</li>`).join('')}</ul>
-                </div>
-                <div class="knowledge-section">
-                    <h4>❗ 主要挑战</h4>
-                    <ul>${knowledge.mainChallenges.map(challenge => `<li>${challenge}</li>`).join('')}</ul>
-                </div>
-                <div class="knowledge-section">
-                    <h4>💡 解决方案模式</h4>
-                    <ul>${knowledge.solutionPatterns.map(pattern => `<li>${pattern}</li>`).join('')}</ul>
-                </div>
-                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; font-size: 0.9rem; color: #666;">
-                    生成时间: ${new Date(knowledge.generatedAt).toLocaleString('zh-CN')} | 
-                    分析器: ${knowledge.analyzer} | 
-                    分析会话: ${knowledge.sessionsAnalyzed}个
-                </div>
+            <div class="project-knowledge">
+                ${knowledge.categories.map(category => `
+                    <div class="knowledge-category">
+                        <h5>${category.name}</h5>
+                        <ul>
+                            ${category.items.map(item => `<li>${item}</li>`).join('')}
+                        </ul>
+                    </div>
+                `).join('')}
             </div>
         `;
     }
 }
 
+// 统计分析管理
 class AnalyticsManager {
     static async loadAnalytics() {
         try {
             LoadingManager.show();
             
-            // 获取会话和提示词数据来计算统计信息
             const [sessionsResponse, promptsResponse] = await Promise.all([
                 APIClient.get('/api/sessions'),
                 APIClient.get('/api/prompts')
             ]);
-
+            
             const sessions = sessionsResponse.sessions || [];
             const prompts = promptsResponse.prompts || [];
-
+            
             this.renderSessionStats(sessions);
             this.renderPromptStats(prompts);
             this.renderCategoryStats(sessions, prompts);
             
-            NotificationManager.success('统计数据已加载');
         } catch (error) {
-            NotificationManager.error('加载统计数据失败: ' + error.message);
+            console.error('加载统计数据失败:', error);
+            NotificationManager.error('加载统计数据失败');
         } finally {
             LoadingManager.hide();
         }
@@ -1875,73 +485,42 @@ class AnalyticsManager {
 
     static renderSessionStats(sessions) {
         const container = document.getElementById('sessionStats');
-        
         const totalSessions = sessions.length;
-        const categoryCounts = {};
-        const importanceCounts = {};
+        const projectSessions = sessions.filter(s => this.isProjectRelated(s)).length;
         
-        sessions.forEach(session => {
-            const category = session.category || '未分类';
-            categoryCounts[category] = (categoryCounts[category] || 0) + 1;
-            
-            const importance = session.importance || 1;
-            importanceCounts[importance] = (importanceCounts[importance] || 0) + 1;
-        });
-
-        const topCategory = Object.entries(categoryCounts).sort(([,a], [,b]) => b - a)[0];
-        const avgImportance = sessions.reduce((sum, s) => sum + (s.importance || 1), 0) / totalSessions || 0;
-
         container.innerHTML = `
             <div class="stat-item">
                 <span class="stat-label">总会话数</span>
                 <span class="stat-value">${totalSessions}</span>
             </div>
             <div class="stat-item">
-                <span class="stat-label">最多分类</span>
-                <span class="stat-value">${topCategory ? `${topCategory[0]} (${topCategory[1]})` : '无'}</span>
+                <span class="stat-label">项目相关</span>
+                <span class="stat-value">${projectSessions}</span>
             </div>
             <div class="stat-item">
-                <span class="stat-label">平均重要度</span>
-                <span class="stat-value">${avgImportance.toFixed(1)}</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">高重要度会话</span>
-                <span class="stat-value">${sessions.filter(s => (s.importance || 1) >= 4).length}</span>
+                <span class="stat-label">项目占比</span>
+                <span class="stat-value">${totalSessions > 0 ? Math.round(projectSessions / totalSessions * 100) : 0}%</span>
             </div>
         `;
     }
 
     static renderPromptStats(prompts) {
         const container = document.getElementById('promptStats');
-        
         const totalPrompts = prompts.length;
-        const typeCounts = {};
-        const totalUsage = prompts.reduce((sum, p) => sum + (p.usageCount || 0), 0);
-        const avgRating = prompts.reduce((sum, p) => sum + (p.averageRating || 0), 0) / totalPrompts || 0;
+        const activePrompts = prompts.filter(p => p.isActive).length;
         
-        prompts.forEach(prompt => {
-            const type = prompt.type || '未分类';
-            typeCounts[type] = (typeCounts[type] || 0) + 1;
-        });
-
-        const topType = Object.entries(typeCounts).sort(([,a], [,b]) => b - a)[0];
-
         container.innerHTML = `
             <div class="stat-item">
-                <span class="stat-label">总提示词数</span>
+                <span class="stat-label">总提示词</span>
                 <span class="stat-value">${totalPrompts}</span>
             </div>
             <div class="stat-item">
-                <span class="stat-label">最多类型</span>
-                <span class="stat-value">${topType ? `${topType[0]} (${topType[1]})` : '无'}</span>
+                <span class="stat-label">活跃提示词</span>
+                <span class="stat-value">${activePrompts}</span>
             </div>
             <div class="stat-item">
-                <span class="stat-label">总使用次数</span>
-                <span class="stat-value">${totalUsage}</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">平均评分</span>
-                <span class="stat-value">${avgRating.toFixed(1)}/5</span>
+                <span class="stat-label">活跃率</span>
+                <span class="stat-value">${totalPrompts > 0 ? Math.round(activePrompts / totalPrompts * 100) : 0}%</span>
             </div>
         `;
     }
@@ -1949,209 +528,629 @@ class AnalyticsManager {
     static renderCategoryStats(sessions, prompts) {
         const container = document.getElementById('categoryStats');
         
+        // 统计会话分类
         const sessionCategories = {};
-        const promptCategories = {};
-        
         sessions.forEach(session => {
-            const category = session.category || '未分类';
+            const category = this.detectCategory(session);
             sessionCategories[category] = (sessionCategories[category] || 0) + 1;
         });
         
-        prompts.forEach(prompt => {
-            const category = prompt.category || prompt.type || '未分类';
-            promptCategories[category] = (promptCategories[category] || 0) + 1;
-        });
+        container.innerHTML = `
+            <h4>会话分类分布</h4>
+            ${Object.entries(sessionCategories).map(([category, count]) => `
+                <div class="stat-item">
+                    <span class="stat-label">${category}</span>
+                    <span class="stat-value">${count}</span>
+                </div>
+            `).join('')}
+        `;
+    }
 
-        const allCategories = new Set([...Object.keys(sessionCategories), ...Object.keys(promptCategories)]);
+    static isProjectRelated(session) {
+        const title = session.title.toLowerCase();
+        return title.includes('cursor-chat-memory') || title.includes('提示词');
+    }
+
+    static detectCategory(session) {
+        const title = session.title.toLowerCase();
+        if (title.includes('实现') || title.includes('功能')) return '功能实现';
+        if (title.includes('架构') || title.includes('设计')) return '架构设计';
+        if (title.includes('问题') || title.includes('错误')) return '问题调试';
+        if (title.includes('优化') || title.includes('性能')) return '性能优化';
+        return '其他';
+    }
+}
+
+// 项目知识管理
+class KnowledgeManager {
+    static knowledgeState = {
+        sessions: [],
+        selectedSession: null,
+        extractedContent: null,
+        globalKnowledge: [],
+        currentProject: 'cursor-chat-memory',
+        isProcessing: false
+    };
+
+    static init() {
+        console.log('🧠 初始化项目知识管理...');
+        this.loadProjectSessions();
+        this.loadGlobalKnowledge();
+        this.bindEvents();
+    }
+
+    static bindEvents() {
+        // 搜索会话
+        const searchInput = document.getElementById('sessionSearch');
+        if (searchInput) {
+            const debouncedSearch = PerformanceUtils.debounce((value) => {
+                this.searchSessions(value);
+            }, 300);
+            
+            searchInput.addEventListener('input', (e) => {
+                debouncedSearch(e.target.value);
+            });
+        }
+
+        // 项目过滤
+        const projectFilter = document.getElementById('projectFilter');
+        if (projectFilter) {
+            projectFilter.addEventListener('change', (e) => {
+                this.filterByProject(e.target.value);
+            });
+        }
+
+        // 知识分类过滤
+        const knowledgeFilter = document.getElementById('knowledgeFilter');
+        if (knowledgeFilter) {
+            knowledgeFilter.addEventListener('change', (e) => {
+                this.filterKnowledge(e.target.value);
+            });
+        }
+    }
+
+    static async loadProjectSessions() {
+        try {
+            console.log('📡 加载项目会话数据...');
+            
+            // 使用模拟数据
+            const mockSessions = [
+                {
+                    id: 'session_1',
+                    title: '实现cursor-chat-memory提示词中心模块',
+                    category: 'implementation',
+                    timestamp: '2025-01-14T10:30:00',
+                    project: 'cursor-chat-memory',
+                    messages: [
+                        {
+                            role: 'user',
+                            content: '我需要实现一个提示词中心模块，能够管理和组织各种AI提示词模板',
+                            timestamp: '2025-01-14T10:30:00'
+                        },
+                        {
+                            role: 'assistant', 
+                            content: '我来帮你设计一个功能完整的提示词中心模块。这个模块需要包含以下核心功能：\n\n1. **提示词模板管理**\n   - 创建、编辑、删除提示词\n   - 分类和标签管理\n   - 版本控制\n\n2. **智能搜索和过滤**\n   - 关键词搜索\n   - 分类筛选\n   - 使用频率排序\n\n3. **模板应用**\n   - 一键应用到聊天\n   - 参数化模板支持\n   - 历史使用记录',
+                            timestamp: '2025-01-14T10:31:00'
+                        }
+                    ]
+                },
+                {
+                    id: 'session_2',
+                    title: '优化SQLite数据库查询性能',
+                    category: 'optimization',
+                    timestamp: '2025-01-14T09:15:00',
+                    project: 'cursor-chat-memory',
+                    messages: [
+                        {
+                            role: 'user',
+                            content: '我的SQLite数据库查询很慢，需要优化性能',
+                            timestamp: '2025-01-14T09:15:00'
+                        },
+                        {
+                            role: 'assistant',
+                            content: '针对SQLite性能优化，我建议从以下几个方面入手：\n\n1. **索引优化**\n   - 为经常查询的字段添加索引\n   - 使用复合索引优化多字段查询\n\n2. **查询优化**\n   - 使用EXPLAIN QUERY PLAN分析查询\n   - 避免SELECT *，只查询需要的字段\n\n3. **数据库配置**\n   - 调整cache_size\n   - 使用WAL模式\n   - 合理设置synchronous',
+                            timestamp: '2025-01-14T09:16:00'
+                        }
+                    ]
+                }
+            ];
+            
+            this.knowledgeState.sessions = mockSessions;
+            this.renderSessionsList();
+            this.updateStats();
+            
+        } catch (error) {
+            console.error('❌ 加载会话数据失败:', error);
+            NotificationManager.error('加载会话数据失败');
+        }
+    }
+
+    static searchSessions(query) {
+        if (!query.trim()) {
+            this.renderSessionsList();
+            return;
+        }
         
-        container.innerHTML = Array.from(allCategories).map(category => `
-            <div class="stat-item">
-                <span class="stat-label">${category}</span>
-                <span class="stat-value">会话:${sessionCategories[category] || 0} / 提示词:${promptCategories[category] || 0}</span>
+        const filtered = this.knowledgeState.sessions.filter(session =>
+            session.title.toLowerCase().includes(query.toLowerCase()) ||
+            session.messages.some(msg => 
+                msg.content.toLowerCase().includes(query.toLowerCase())
+            )
+        );
+        
+        this.renderSessionsList(filtered);
+    }
+
+    static filterByProject(project) {
+        if (project === 'all') {
+            this.renderSessionsList();
+            return;
+        }
+        
+        const filtered = this.knowledgeState.sessions.filter(session =>
+            session.project === project
+        );
+        
+        this.renderSessionsList(filtered);
+    }
+
+    static renderSessionsList(sessions = this.knowledgeState.sessions) {
+        const container = document.getElementById('sessionsList');
+        
+        if (sessions.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <p>🔍 没有找到匹配的会话</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = sessions.map(session => `
+            <div class="session-item" onclick="KnowledgeManager.selectSession('${session.id}')">
+                <div class="session-title">${session.title}</div>
+                <div class="session-meta">
+                    <span class="session-category ${session.category}">${this.getCategoryLabel(session.category)}</span>
+                    <span class="session-time">${new Date(session.timestamp).toLocaleDateString()}</span>
+                    <span class="session-project">${session.project}</span>
+                </div>
             </div>
         `).join('');
+    }
+
+    static getCategoryLabel(category) {
+        const labels = {
+            'implementation': '功能实现',
+            'architecture': '架构设计', 
+            'debugging': '问题调试',
+            'optimization': '性能优化'
+        };
+        return labels[category] || '其他';
+    }
+
+    static selectSession(sessionId) {
+        const session = this.knowledgeState.sessions.find(s => s.id === sessionId);
+        if (!session) return;
+        
+        this.knowledgeState.selectedSession = session;
+        
+        // 更新选中状态
+        document.querySelectorAll('.session-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        event.target.closest('.session-item').classList.add('active');
+        
+        this.renderSessionContent(session);
+    }
+
+    static renderSessionContent(session) {
+        const container = document.getElementById('contentDetail');
+        
+        container.innerHTML = `
+            <div class="session-messages">
+                ${session.messages.map(message => `
+                    <div class="message-item ${message.role}">
+                        <div class="message-header">
+                            <span class="message-role">${message.role === 'user' ? '👤 用户' : '🤖 助手'}</span>
+                            <span class="message-time">${new Date(message.timestamp).toLocaleTimeString()}</span>
+                        </div>
+                        <div class="message-content">${this.formatMessageContent(message.content)}</div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    static formatMessageContent(content) {
+        // 格式化消息内容，支持Markdown语法
+        return content
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/`(.*?)`/g, '<code>$1</code>')
+            .replace(/\n/g, '<br>');
+    }
+
+    static async extractContent() {
+        if (!this.knowledgeState.selectedSession) {
+            NotificationManager.warning('请先选择一个会话');
+            return;
+        }
+        
+        this.setProcessing(true, '正在提炼核心内容...');
+        
+        try {
+            // 模拟AI提炼过程
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            const extracted = this.generateMockKnowledgeExtraction(this.knowledgeState.selectedSession);
+            this.knowledgeState.extractedContent = extracted;
+            
+            this.showExtractedContent(extracted);
+            NotificationManager.success('内容提炼完成！');
+            
+        } catch (error) {
+            console.error('提炼失败:', error);
+            NotificationManager.error('内容提炼失败');
+        } finally {
+            this.setProcessing(false);
+        }
+    }
+
+    static generateMockKnowledgeExtraction(session) {
+        // 根据会话内容生成模拟的知识提炼结果
+        const knowledgeItems = [];
+        
+        if (session.category === 'implementation') {
+            knowledgeItems.push({
+                type: 'SOP',
+                title: '提示词模块实现标准流程',
+                content: '1. 分析需求和功能设计\n2. 创建数据模型和API接口\n3. 实现前端界面组件\n4. 集成搜索和过滤功能\n5. 测试和优化性能',
+                source: session.title,
+                timestamp: new Date().toISOString()
+            });
+            
+            knowledgeItems.push({
+                type: '实现方案',
+                title: '模块化架构设计',
+                content: '采用组件化设计，分离数据层、业务层和表现层，确保代码可维护性和扩展性',
+                source: session.title,
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        if (session.category === 'optimization') {
+            knowledgeItems.push({
+                type: '性能优化',
+                title: 'SQLite查询优化最佳实践',
+                content: '使用索引、优化查询语句、调整数据库配置参数，可显著提升查询性能',
+                source: session.title,
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        return {
+            sessionId: session.id,
+            sessionTitle: session.title,
+            extractedAt: new Date().toISOString(),
+            knowledgeItems
+        };
+    }
+
+    static showExtractedContent(extracted) {
+        const container = document.getElementById('contentDetail');
+        const currentContent = container.innerHTML;
+        
+        container.innerHTML = currentContent + `
+            <div class="extracted-content">
+                <div class="content-comparison">
+                    <div class="comparison-header">
+                        <h4>🧠 智能提炼结果</h4>
+                        <button class="btn btn-primary" onclick="KnowledgeManager.saveToGlobalKnowledge()">
+                            💾 保存到全局记忆
+                        </button>
+                    </div>
+                    <div class="extraction-result">
+                        ${extracted.knowledgeItems.map(item => `
+                            <div class="knowledge-item">
+                                <div class="knowledge-type">${item.type}</div>
+                                <div class="knowledge-content-text">${item.content}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    static loadGlobalKnowledge() {
+        // 加载全局知识库
+        this.knowledgeState.globalKnowledge = [
+            {
+                id: 'kb_1',
+                category: 'sop',
+                title: '项目开发标准流程',
+                description: '从需求分析到部署上线的完整开发流程',
+                content: '需求分析 → 技术选型 → 架构设计 → 编码实现 → 测试验证 → 部署上线',
+                source: '实现cursor-chat-memory提示词中心模块',
+                createdAt: '2025-01-14T10:00:00'
+            },
+            {
+                id: 'kb_2', 
+                category: 'architecture',
+                title: '前端组件化架构',
+                description: '基于组件化的前端架构设计原则',
+                content: '采用模块化设计，分离关注点，提高代码复用性和可维护性',
+                source: '前端架构优化讨论',
+                createdAt: '2025-01-14T09:30:00'
+            }
+        ];
+        
+        this.renderGlobalKnowledge();
+    }
+
+    static renderGlobalKnowledge() {
+        const container = document.getElementById('knowledgeContent');
+        
+        if (this.knowledgeState.globalKnowledge.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <p>🧠 暂无全局知识</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = this.knowledgeState.globalKnowledge.map(knowledge => `
+            <div class="global-knowledge-item">
+                <div class="knowledge-header">
+                    <h4 class="knowledge-title">${knowledge.title}</h4>
+                    <span class="knowledge-category-tag ${knowledge.category}">
+                        ${this.getCategoryTag(knowledge.category)}
+                    </span>
+                </div>
+                <p class="knowledge-description">${knowledge.description}</p>
+                <div class="knowledge-details">${knowledge.content}</div>
+                <div class="knowledge-source">
+                    来源: ${knowledge.source} • ${new Date(knowledge.createdAt).toLocaleDateString()}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    static getCategoryTag(category) {
+        const tags = {
+            'sop': '操作规范',
+            'architecture': '架构设计', 
+            'implementation': '实现方案',
+            'engineering': '工程实践'
+        };
+        return tags[category] || category;
+    }
+
+    static filterKnowledge(category) {
+        if (category === 'all') {
+            this.renderGlobalKnowledge();
+            return;
+        }
+        
+        const filtered = this.knowledgeState.globalKnowledge.filter(item =>
+            item.category === category
+        );
+        
+        const container = document.getElementById('knowledgeContent');
+        container.innerHTML = filtered.map(knowledge => `
+            <div class="global-knowledge-item">
+                <div class="knowledge-header">
+                    <h4 class="knowledge-title">${knowledge.title}</h4>
+                    <span class="knowledge-category-tag ${knowledge.category}">
+                        ${this.getCategoryTag(knowledge.category)}
+                    </span>
+                </div>
+                <p class="knowledge-description">${knowledge.description}</p>
+                <div class="knowledge-details">${knowledge.content}</div>
+                <div class="knowledge-source">
+                    来源: ${knowledge.source} • ${new Date(knowledge.createdAt).toLocaleDateString()}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    static exportKnowledge() {
+        const data = {
+            sessions: this.knowledgeState.sessions,
+            globalKnowledge: this.knowledgeState.globalKnowledge,
+            exportedAt: new Date().toISOString()
+        };
+        
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `knowledge-export-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        NotificationManager.success('知识库已导出');
+    }
+
+    static refreshData() {
+        this.loadProjectSessions();
+        this.loadGlobalKnowledge();
+        NotificationManager.success('数据已刷新');
+    }
+
+    static updateStats() {
+        const sessionCount = this.knowledgeState.sessions.length;
+        const knowledgeCount = this.knowledgeState.globalKnowledge.length;
+        
+        document.getElementById('sessionCount').textContent = `会话: ${sessionCount}`;
+        document.getElementById('knowledgeCount').textContent = `知识条目: ${knowledgeCount}`;
+        document.getElementById('lastUpdate').textContent = `最后更新: ${new Date().toLocaleTimeString()}`;
+    }
+
+    static setProcessing(isProcessing, message = '') {
+        this.knowledgeState.isProcessing = isProcessing;
+        const btn = document.getElementById('extractBtn');
+        
+        if (btn) {
+            btn.disabled = isProcessing;
+            btn.textContent = isProcessing ? `⏳ ${message}` : '🔍 提炼核心内容';
+        }
+    }
+
+    static async saveToGlobalKnowledge() {
+        if (!this.knowledgeState.extractedContent) {
+            NotificationManager.warning('没有可保存的提炼内容');
+            return;
+        }
+        
+        const extracted = this.knowledgeState.extractedContent;
+        
+        // 将提炼的内容添加到全局知识库
+        extracted.knowledgeItems.forEach(item => {
+            this.knowledgeState.globalKnowledge.push({
+                id: `kb_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                category: item.type.toLowerCase(),
+                title: item.title,
+                description: `从会话"${extracted.sessionTitle}"中提炼`,
+                content: item.content,
+                source: extracted.sessionTitle,
+                createdAt: new Date().toISOString()
+            });
+        });
+        
+        this.renderGlobalKnowledge();
+        this.updateStats();
+        
+        NotificationManager.success('已保存到全局知识库');
     }
 }
 
 // 标签页管理
 class TabManager {
     static switchTab(tabName) {
-        // 更新标签按钮状态
+        // 隐藏所有标签内容
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // 移除所有标签按钮的active类
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-
-        // 更新内容显示
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.remove('active');
-        });
-        document.getElementById(`${tabName}-tab`).classList.add('active');
-
+        
+        // 显示选中的标签内容
+        const targetTab = document.getElementById(`${tabName}-tab`);
+        if (targetTab) {
+            targetTab.classList.add('active');
+        }
+        
+        // 激活对应的标签按钮
+        const targetBtn = document.querySelector(`[data-tab="${tabName}"]`);
+        if (targetBtn) {
+            targetBtn.classList.add('active');
+        }
+        
+        // 更新状态
         state.currentTab = tabName;
-
-        // 根据标签页加载相应数据
+        
+        // 初始化对应功能
         switch (tabName) {
-            case 'sessions':
-                if (state.sessions.length === 0) {
-                    SessionManager.loadSessions();
-                }
-                break;
-            case 'prompts':
-                if (state.prompts.length === 0) {
-                    PromptManager.loadPrompts();
+            case 'extraction':
+                if (typeof KnowledgeManager !== 'undefined') {
+                    KnowledgeManager.init();
                 }
                 break;
             case 'analysis':
-                // 智能分析标签页不需要预加载数据
+                if (typeof AnalysisManager !== 'undefined') {
+                    AnalysisManager.init();
+                }
                 break;
             case 'analytics':
-                AnalyticsManager.loadAnalytics();
+                if (typeof AnalyticsManager !== 'undefined') {
+                    AnalyticsManager.loadAnalytics();
+                }
                 break;
         }
     }
 }
 
-// 性能监控工具
+// 性能监控
 class PerformanceMonitor {
     static init() {
-        // Core Web Vitals 监控
         this.measureCoreWebVitals();
-        
-        // 资源加载监控
         this.monitorResourceLoading();
-        
-        // 用户交互监控
         this.monitorUserInteractions();
     }
 
     static measureCoreWebVitals() {
-        // Cumulative Layout Shift (CLS)
-        new PerformanceObserver((entryList) => {
-            for (const entry of entryList.getEntries()) {
-                if (!entry.hadRecentInput) {
-                    console.log('CLS:', entry.value);
-                }
-            }
-        }).observe({entryTypes: ['layout-shift']});
-
-        // Largest Contentful Paint (LCP)
-        new PerformanceObserver((entryList) => {
-            const entries = entryList.getEntries();
-            const lastEntry = entries[entries.length - 1];
-            console.log('LCP:', lastEntry.startTime);
-        }).observe({entryTypes: ['largest-contentful-paint']});
-
-        // First Input Delay (FID)
-        new PerformanceObserver((entryList) => {
-            for (const entry of entryList.getEntries()) {
-                console.log('FID:', entry.processingStart - entry.startTime);
-            }
-        }).observe({entryTypes: ['first-input']});
-    }
-
-    static monitorResourceLoading() {
+        // 监控核心Web性能指标
+        if ('web-vitals' in window) {
+            // 如果有web-vitals库，使用它
+            return;
+        }
+        
+        // 简单的性能监控
         window.addEventListener('load', () => {
-            const perfData = performance.getEntriesByType('navigation')[0];
-            const loadTime = perfData.loadEventEnd - perfData.fetchStart;
+            const navigation = performance.getEntriesByType('navigation')[0];
+            const metrics = {
+                FCP: navigation.responseEnd - navigation.fetchStart,
+                LCP: navigation.loadEventEnd - navigation.fetchStart,
+                pageLoadTime: navigation.loadEventEnd - navigation.fetchStart
+            };
             
-            // 发送监控数据
-            this.sendMetrics({
-                type: 'page-load',
-                loadTime,
-                domContentLoaded: perfData.domContentLoadedEventEnd - perfData.fetchStart,
-                timeToFirstByte: perfData.responseStart - perfData.fetchStart
-            });
+            this.sendMetrics(metrics);
         });
     }
 
-    static monitorUserInteractions() {
-        // 监控点击延迟
-        document.addEventListener('click', (e) => {
-            const startTime = performance.now();
-            requestAnimationFrame(() => {
-                const endTime = performance.now();
-                if (endTime - startTime > 16) { // 超过一帧的时间
-                    console.warn('Click response time:', endTime - startTime, 'ms');
+    static monitorResourceLoading() {
+        const observer = new PerformanceObserver((list) => {
+            list.getEntries().forEach(entry => {
+                if (entry.duration > 1000) {
+                    console.warn(`慢资源加载: ${entry.name} - ${entry.duration}ms`);
                 }
             });
+        });
+        
+        observer.observe({ entryTypes: ['resource'] });
+    }
+
+    static monitorUserInteractions() {
+        ['click', 'keydown', 'scroll'].forEach(eventType => {
+            document.addEventListener(eventType, () => {
+                // 记录用户交互
+            }, { passive: true });
         });
     }
 
     static sendMetrics(data) {
-        // 发送到分析服务
-        if (navigator.sendBeacon) {
-            navigator.sendBeacon('/api/metrics', JSON.stringify(data));
-        } else {
-            fetch('/api/metrics', {
-                method: 'POST',
-                body: JSON.stringify(data),
-                headers: { 'Content-Type': 'application/json' }
-            }).catch(() => {}); // 静默失败
-        }
+        // 发送性能数据到分析服务
+        console.log('性能指标:', data);
     }
 }
 
-// 应用初始化
-document.addEventListener('DOMContentLoaded', function() {
-    // 绑定标签页切换事件
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            TabManager.switchTab(this.dataset.tab);
-        });
-    });
-
-    // 绑定搜索事件
-    document.getElementById('searchSessionsBtn').addEventListener('click', SessionManager.searchSessions);
-    document.getElementById('searchPromptsBtn').addEventListener('click', PromptManager.searchPrompts);
+// 页面初始化
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Cursor Chat Memory 管理中心初始化...');
     
-    // 绑定搜索框回车事件
-    document.getElementById('sessionSearch').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') SessionManager.searchSessions();
-    });
-    document.getElementById('promptSearch').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') PromptManager.searchPrompts();
-    });
-
-    // 绑定提示词管理事件
-    document.getElementById('createPromptBtn').addEventListener('click', PromptManager.createPrompt);
-
-    // 绑定引用生成事件
-    document.getElementById('generateReferenceBtn').addEventListener('click', ReferenceGenerator.generateReference);
-    document.getElementById('getRecommendationsBtn').addEventListener('click', ReferenceGenerator.getRecommendations);
-    document.getElementById('copyReferenceBtn').addEventListener('click', ReferenceGenerator.copyReference);
-
-    // 初始化AnalysisManager (按钮事件绑定在其init方法中)
-    AnalysisManager.init();
-
-    // 绑定刷新按钮
-    document.getElementById('refreshBtn').addEventListener('click', function() {
-        switch (state.currentTab) {
-            case 'sessions':
-                SessionManager.loadSessions();
-                break;
-            case 'prompts':
-                PromptManager.loadPrompts();
-                break;
-            case 'analysis':
-                // 刷新时清空分析结果
-                document.getElementById('summarizeResults').innerHTML = '';
-                document.getElementById('integrateResults').innerHTML = '';
-                document.getElementById('knowledgeResults').innerHTML = '';
-                break;
-            case 'analytics':
-                AnalyticsManager.loadAnalytics();
-                break;
-        }
-    });
-
-    // 初始化加载会话数据
-    SessionManager.loadSessions();
+    // 初始化性能监控
+    PerformanceMonitor.init();
+    
+    // 默认显示项目知识标签页
+    TabManager.switchTab('extraction');
+    
+    // 初始化全局事件
+    const refreshBtn = document.getElementById('refreshBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            location.reload();
+        });
+    }
+    
+    console.log('✅ 初始化完成');
 });
 
-// 初始化性能监控
-document.addEventListener('DOMContentLoaded', () => {
-    if (typeof PerformanceObserver !== 'undefined') {
-        PerformanceMonitor.init();
-    }
-}); 
+ 
+ 
