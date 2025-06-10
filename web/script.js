@@ -198,13 +198,19 @@ class ModalManager {
 // 会话管理
 class SessionManager {
     static async loadSessions() {
+        console.log('🔍 SessionManager.loadSessions() 开始执行...');
         try {
             LoadingManager.show();
+            console.log('📡 发送API请求到 /api/sessions...');
             const response = await APIClient.get('/api/sessions');
+            console.log('📥 API响应:', response);
             state.sessions = response.sessions || [];
+            console.log('💾 会话数据已保存到state:', state.sessions.length, '个会话');
             this.renderSessions();
+            console.log('🎨 会话渲染完成');
             NotificationManager.success(`已加载 ${state.sessions.length} 个会话`);
         } catch (error) {
+            console.error('❌ 加载会话失败:', error);
             NotificationManager.error('加载会话失败: ' + error.message);
         } finally {
             LoadingManager.hide();
@@ -241,39 +247,43 @@ class SessionManager {
     static debouncedSearchSessions = PerformanceUtils.debounce(SessionManager.searchSessions.bind(SessionManager), 300);
 
     static renderSessions(sessions = state.sessions) {
+        console.log('🎨 renderSessions() 开始执行，会话数量:', sessions.length);
         const container = document.getElementById('sessionsContainer');
+        console.log('📦 找到容器元素:', container);
         
-        if (sessions.length === 0) {
+        if (!sessions || sessions.length === 0) {
+            console.log('⚠️ 没有会话数据，显示空状态');
             container.innerHTML = `
                 <div class="empty-state">
-                    <p>暂无会话记录</p>
+                    <p>📝 暂无会话记录</p>
+                    <p>开始使用Cursor聊天功能，这里将显示您的对话历史</p>
                 </div>
             `;
             return;
         }
 
         container.innerHTML = sessions.map(session => {
-            // 生成内容摘要
-            const summary = this.generateSessionSummary(session);
+            // 🆕 判断会话来源类型
+            const isProjectRelated = this.isSessionProjectRelated(session);
+            const sourceIcon = isProjectRelated ? '📁' : '🌐';
+            const sourceLabel = isProjectRelated ? 'PROJECT' : 'GLOBAL';
             
+            const summary = this.generateSessionSummary(session);
             return `
-                <div class="session-item" data-id="${session.id}" onclick="SessionManager.showFullscreenDetail('${session.id}')">
+                <div class="session-item" data-session-id="${session.id}" onclick="SessionManager.selectSession('${session.id}')">
                     <div class="session-header">
                         <div class="session-title">${session.title || session.summary || session.id}</div>
-                        <div class="session-meta">
-                            <span class="importance-stars">${'★'.repeat(Math.round((session.importance || 0.5) * 5))}</span>
-                            ${session.category ? `<span class="tag category-tag">${session.category}</span>` : ''}
-                        </div>
+                        <div class="session-source-tag ${isProjectRelated ? 'project' : 'global'}">${sourceIcon} ${sourceLabel}</div>
                     </div>
-                    <div class="session-content">
-                        <div class="session-summary">${summary}</div>
-                    </div>
-                    <div class="session-footer">
-                        <div class="session-stats">
-                            <span class="tag">${session.messages ? session.messages.length : 0}条消息</span>
-                            <span class="tag">${session.tokens || 0} tokens</span>
-                        </div>
-                        <div class="session-date">${new Date(session.lastActivity || session.timestamp).toLocaleDateString()}</div>
+                    <div class="session-summary">${summary}</div>
+                    <div class="session-meta">
+                        <span class="importance-stars">${'★'.repeat(Math.round((session.importance || 0.5) * 5))}</span>
+                        ${session.category ? `<span class="meta-tag">${session.category}</span>` : ''}
+                        <span class="meta-tag">${new Date(session.lastActivity || session.timestamp).toLocaleDateString()}</span>
+                        <span class="meta-tag">${session.messages ? session.messages.length : 0}条消息</span>
+                        ${session.tags && session.tags.length > 0 ? 
+                            `<span class="meta-tag tags">🏷️ ${session.tags.map(t => t.name || t).slice(0, 2).join(', ')}</span>` : ''
+                        }
                     </div>
                 </div>
             `;
@@ -312,7 +322,7 @@ class SessionManager {
             item.classList.remove('active');
         });
         
-        const selectedItem = document.querySelector(`[data-id="${sessionId}"]`);
+        const selectedItem = document.querySelector(`[data-session-id="${sessionId}"]`);
         if (selectedItem) {
             selectedItem.classList.add('active');
         }
@@ -327,6 +337,11 @@ class SessionManager {
 
     static renderSessionDetail(session) {
         const container = document.getElementById('sessionDetailContainer');
+        
+        // 🆕 判断会话来源类型
+        const isProjectRelated = this.isSessionProjectRelated(session);
+        const sourceIcon = isProjectRelated ? '📁' : '🌐';
+        const sourceLabel = isProjectRelated ? 'PROJECT' : 'GLOBAL';
         
         // 构建消息内容
         let messagesHtml = '';
@@ -354,9 +369,13 @@ class SessionManager {
                 <div class="detail-title">${session.title || session.summary || session.id}</div>
                 <div class="session-meta">
                     <span class="importance-stars">${'★'.repeat(Math.round((session.importance || 0.5) * 5))}</span>
+                    <span class="source-tag ${isProjectRelated ? 'project' : 'global'}">${sourceIcon} ${sourceLabel}</span>
                     ${session.category ? `<span class="tag category-tag">${session.category}</span>` : ''}
                     <span class="tag">${new Date(session.lastActivity || session.timestamp).toLocaleDateString()}</span>
                     <span class="tag">${session.messages ? session.messages.length : 0}条消息</span>
+                    ${session.tags && session.tags.length > 0 ? 
+                        `<span class="tag tags-preview">🏷️ ${session.tags.map(t => t.name || t).slice(0, 3).join(', ')}</span>` : ''
+                    }
                 </div>
             </div>
             <div class="detail-content">
@@ -536,6 +555,74 @@ class SessionManager {
             }
         };
         document.addEventListener('keydown', this.handleModalKeydown);
+    }
+
+    // 🆕 判断会话是否与项目相关
+    static isSessionProjectRelated(session) {
+        const sessionContent = (session.title + ' ' + session.summary).toLowerCase();
+        
+        // 🎯 严格的项目相关性判断
+        const projectKeywords = [
+            'cursor-chat-memory',
+            'chat memory',
+            'memory service',
+            'chat服务',
+            '聊天记忆',
+            '引用生成',
+            '提示词中心',
+            'vs code插件',
+            'vscode扩展',
+            'sqlite聊天',
+            'prompt center',
+            'reference generator'
+        ];
+        
+        // 检查是否包含明确的项目关键词
+        const hasProjectKeywords = projectKeywords.some(keyword => 
+            sessionContent.includes(keyword.toLowerCase())
+        );
+        
+        // 检查标签中是否有项目相关标识
+        const hasProjectTags = session.tags && session.tags.some(tag => 
+            (tag.name || tag).toLowerCase().includes('项目') ||
+            (tag.name || tag).toLowerCase().includes('project') ||
+            (tag.name || tag).toLowerCase().includes('cursor-chat-memory')
+        );
+        
+        // 检查是否是技术开发相关（仅当包含项目关键词时才考虑）
+        const isDevelopmentRelated = hasProjectKeywords && (
+            sessionContent.includes('代码') ||
+            sessionContent.includes('开发') ||
+            sessionContent.includes('功能') ||
+            sessionContent.includes('实现') ||
+            sessionContent.includes('优化') ||
+            sessionContent.includes('修复') ||
+            sessionContent.includes('插件') ||
+            sessionContent.includes('扩展') ||
+            sessionContent.includes('web界面') ||
+            sessionContent.includes('api') ||
+            sessionContent.includes('typescript')
+        );
+        
+        // 排除明显无关的会话
+        const isUnrelated = (
+            sessionContent.includes('客户') ||
+            sessionContent.includes('汽车') ||
+            sessionContent.includes('家电') ||
+            sessionContent.includes('手机') ||
+            sessionContent.includes('行业') ||
+            sessionContent.includes('25年') ||
+            sessionContent.includes('同步空间') ||
+            sessionContent.includes('文件都没了') ||
+            sessionContent.includes('git') && !sessionContent.includes('cursor') ||
+            sessionContent.includes('分支') && !sessionContent.includes('cursor')
+        );
+        
+        if (isUnrelated) {
+            return false;
+        }
+        
+        return hasProjectKeywords || hasProjectTags || isDevelopmentRelated;
     }
 }
 
@@ -1129,23 +1216,53 @@ class ReferenceGenerator {
             <div>
                 <h4>推荐会话 (${recommendations.sessions.length})</h4>
                 ${recommendations.sessions.length > 0 ? 
-                    recommendations.sessions.map(session => `
-                        <div style="margin: 0.5rem 0; padding: 0.75rem; background: #f7fafc; border-radius: 6px; cursor: pointer;" onclick="ReferenceGenerator.selectRecommendation('session', '${session.id}')">
-                            <strong>${session.summary || session.id}</strong><br>
-                            <small>${session.content?.substring(0, 100)}...</small>
-                        </div>
-                    `).join('') : 
+                    recommendations.sessions.map(session => {
+                        // 🆕 判断会话来源类型
+                        const isProjectRelated = SessionManager.isSessionProjectRelated(session);
+                        const sourceIcon = isProjectRelated ? '📁' : '🌐';
+                        const sourceLabel = isProjectRelated ? 'PROJECT' : 'GLOBAL';
+                        
+                        return `
+                            <div style="margin: 0.5rem 0; padding: 0.75rem; background: #f7fafc; border-radius: 6px; cursor: pointer; border-left: 4px solid ${isProjectRelated ? '#3182ce' : '#38a169'};" onclick="ReferenceGenerator.selectRecommendation('session', '${session.id}')">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                                    <strong style="flex: 1;">${session.summary || session.title || session.id}</strong>
+                                    <span style="background: ${isProjectRelated ? '#e6f3ff' : '#e6fffa'}; color: ${isProjectRelated ? '#1e40af' : '#059669'}; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-left: 8px;">
+                                        ${sourceIcon} ${sourceLabel}
+                                    </span>
+                                </div>
+                                <div style="color: #666; font-size: 13px; line-height: 1.4;">
+                                    ${(session.content || session.summary || '').substring(0, 120)}${session.content && session.content.length > 120 ? '...' : ''}
+                                </div>
+                                ${session.category ? `<div style="margin-top: 0.5rem;"><span style="background: #e2e8f0; color: #4a5568; padding: 2px 6px; border-radius: 8px; font-size: 11px;">${session.category}</span></div>` : ''}
+                            </div>
+                        `;
+                    }).join('') : 
                     '<p style="color: #666;">暂无推荐会话</p>'
                 }
                 
                 <h4 style="margin-top: 2rem;">推荐提示词 (${recommendations.prompts.length})</h4>
                 ${recommendations.prompts.length > 0 ? 
-                    recommendations.prompts.map(prompt => `
-                        <div style="margin: 0.5rem 0; padding: 0.75rem; background: #f7fafc; border-radius: 6px; cursor: pointer;" onclick="ReferenceGenerator.selectRecommendation('prompt', '${prompt.id}')">
-                            <strong>${prompt.title}</strong><br>
-                            <small>${prompt.description?.substring(0, 100)}...</small>
-                        </div>
-                    `).join('') : 
+                    recommendations.prompts.map(prompt => {
+                        // 🆕 判断提示词来源类型
+                        const isProjectPrompt = prompt.type === 'project';
+                        const sourceIcon = isProjectPrompt ? '📁' : prompt.type === 'iteration' ? '🔄' : '🌐';
+                        const sourceLabel = isProjectPrompt ? 'PROJECT' : prompt.type === 'iteration' ? 'ITERATION' : 'GLOBAL';
+                        
+                        return `
+                            <div style="margin: 0.5rem 0; padding: 0.75rem; background: #f7fafc; border-radius: 6px; cursor: pointer; border-left: 4px solid ${isProjectPrompt ? '#7c3aed' : prompt.type === 'iteration' ? '#f59e0b' : '#10b981'};" onclick="ReferenceGenerator.selectRecommendation('prompt', '${prompt.id}')">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                                    <strong style="flex: 1;">${prompt.title || prompt.name}</strong>
+                                    <span style="background: ${isProjectPrompt ? '#f3e8ff' : prompt.type === 'iteration' ? '#fef3c7' : '#d1fae5'}; color: ${isProjectPrompt ? '#7c2d12' : prompt.type === 'iteration' ? '#92400e' : '#065f46'}; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-left: 8px;">
+                                        ${sourceIcon} ${sourceLabel}
+                                    </span>
+                                </div>
+                                <div style="color: #666; font-size: 13px; line-height: 1.4;">
+                                    ${(prompt.description || '').substring(0, 120)}${prompt.description && prompt.description.length > 120 ? '...' : ''}
+                                </div>
+                                ${prompt.category ? `<div style="margin-top: 0.5rem;"><span style="background: #e2e8f0; color: #4a5568; padding: 2px 6px; border-radius: 8px; font-size: 11px;">${prompt.category}</span></div>` : ''}
+                            </div>
+                        `;
+                    }).join('') : 
                     '<p style="color: #666;">暂无推荐提示词</p>'
                 }
             </div>
@@ -1184,6 +1301,27 @@ class AnalysisManager {
     };
     
     static init() {
+        // 绑定项目选择器事件
+        const projectScope = document.getElementById('projectScope');
+        const categoryFilter = document.getElementById('categoryFilter');
+        
+        if (projectScope) {
+            projectScope.addEventListener('change', (e) => {
+                if (e.target.value === 'category') {
+                    categoryFilter.style.display = 'inline-block';
+                } else {
+                    categoryFilter.style.display = 'none';
+                }
+                this.updateProjectInfo();
+            });
+        }
+        
+        if (categoryFilter) {
+            categoryFilter.addEventListener('change', () => {
+                this.updateProjectInfo();
+            });
+        }
+        
         // 绑定分析按钮事件
         const batchSummarizeBtn = document.getElementById('batchSummarizeBtn');
         const singleSummarizeBtn = document.getElementById('singleSummarizeBtn');
@@ -1246,17 +1384,59 @@ class AnalysisManager {
     }
     
     static async loadProjectInfo() {
+        this.updateProjectInfo();
+    }
+    
+    static async updateProjectInfo() {
         try {
-            const response = await APIClient.get('/api/sessions/count');
+            const scope = this.getAnalysisScope();
+            const response = await APIClient.post('/api/sessions/count-by-scope', scope);
             if (response.success) {
                 const countElement = document.getElementById('projectSessionCount');
                 if (countElement) {
-                    countElement.textContent = `📊 项目会话: ${response.count}个`;
+                    let text = `📊 分析范围: ${response.count}个会话`;
+                    if (scope.projectOnly) {
+                        text += ` (项目相关)`;
+                    } else if (scope.category) {
+                        text += ` (${scope.category}分类)`;
+                    } else {
+                        text += ` (全部)`;
+                    }
+                    countElement.textContent = text;
                 }
             }
         } catch (error) {
             console.error('加载项目信息失败:', error);
         }
+    }
+    
+    static getAnalysisScope() {
+        const projectScope = document.getElementById('projectScope');
+        const categoryFilter = document.getElementById('categoryFilter');
+        
+        const scope = {
+            projectOnly: false,
+            category: null
+        };
+        
+        if (projectScope) {
+            switch (projectScope.value) {
+                case 'project':
+                    scope.projectOnly = true;
+                    break;
+                case 'category':
+                    if (categoryFilter && categoryFilter.value) {
+                        scope.category = categoryFilter.value;
+                    }
+                    break;
+                case 'all':
+                default:
+                    // 使用默认值
+                    break;
+            }
+        }
+        
+        return scope;
     }
     
     static handleWorkflowStepClick(step) {
@@ -1311,16 +1491,18 @@ class AnalysisManager {
     static async batchSummarize() {
         const useLocal = this.getSelectedAnalyzer();
         const analyzerType = useLocal ? '本地Claude' : 'Azure OpenAI';
+        const scope = this.getAnalysisScope();
         const resultsContainer = document.getElementById('summarizeResults');
         
         try {
-            resultsContainer.innerHTML = '<div class="loading-spinner">正在批量提炼项目相关会话...</div>';
+            const scopeText = scope.projectOnly ? '项目相关' : scope.category ? scope.category : '所有';
+            resultsContainer.innerHTML = `<div class="loading-spinner">正在批量提炼${scopeText}会话...</div>`;
             resultsContainer.classList.add('loading');
             
             const response = await APIClient.post('/api/analysis/batch-summary', {
                 useLocal,
                 maxSessions: 20,
-                projectOnly: true  // 只分析项目相关的会话
+                ...scope
             });
             
             if (response.success) {
@@ -1390,15 +1572,17 @@ class AnalysisManager {
     static async smartIntegrate() {
         const useLocal = this.getSelectedAnalyzer();
         const analyzerType = useLocal ? '本地Claude' : 'Azure OpenAI';
+        const scope = this.getAnalysisScope();
         const resultsContainer = document.getElementById('integrateResults');
         
         try {
-            resultsContainer.innerHTML = '<div class="loading-spinner">正在智能整合项目提示词...</div>';
+            const scopeText = scope.projectOnly ? '项目' : scope.category ? scope.category : '所有';
+            resultsContainer.innerHTML = `<div class="loading-spinner">正在智能整合${scopeText}提示词...</div>`;
             resultsContainer.classList.add('loading');
             
             const response = await APIClient.post('/api/analysis/smart-integrate', {
                 useLocal,
-                projectOnly: true  // 只整合项目相关的提示词
+                ...scope
             });
             
             if (response.success) {
@@ -1424,15 +1608,17 @@ class AnalysisManager {
     static async generateKnowledge() {
         const useLocal = this.getSelectedAnalyzer();
         const analyzerType = useLocal ? '本地Claude' : 'Azure OpenAI';
+        const scope = this.getAnalysisScope();
         const resultsContainer = document.getElementById('knowledgeResults');
         
         try {
-            resultsContainer.innerHTML = '<div class="loading-spinner">正在生成项目知识图谱...</div>';
+            const scopeText = scope.projectOnly ? '项目' : scope.category ? scope.category : '全局';
+            resultsContainer.innerHTML = `<div class="loading-spinner">正在生成${scopeText}知识图谱...</div>`;
             resultsContainer.classList.add('loading');
             
             const response = await APIClient.post('/api/analysis/project-knowledge', {
                 useLocal,
-                projectOnly: true  // 只分析项目相关的会话
+                ...scope
             });
             
             if (response.success) {

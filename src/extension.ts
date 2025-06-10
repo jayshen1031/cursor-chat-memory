@@ -307,9 +307,9 @@ async function showGlobalPromptReference(): Promise<void> {
   }
 
   const items: vscode.QuickPickItem[] = globalPrompts.map(prompt => ({
-    label: `🧠 ${prompt.name}`,
-    description: prompt.description,
-    detail: `标签: ${prompt.tags.join(', ')}`,
+    label: `🌐 ${prompt.name}`,
+    description: `[GLOBAL] ${prompt.description}`,
+    detail: `🏷️ 标签: ${prompt.tags.join(', ')} | 📅 ${new Date(prompt.createdAt).toLocaleDateString()}`,
     alwaysShow: true
   }));
 
@@ -319,7 +319,7 @@ async function showGlobalPromptReference(): Promise<void> {
   });
 
   if (selected) {
-    const prompt = globalPrompts.find(p => p.name === selected.label.replace('🧠 ', ''));
+    const prompt = globalPrompts.find(p => p.name === selected.label.replace('🌐 ', ''));
     if (prompt) {
       await copyReferenceToClipboard(prompt.content, '全局工程知识');
     }
@@ -348,18 +348,77 @@ async function showProjectContextReference(): Promise<void> {
   projectPrompts.forEach((prompt: any) => {
     items.push({
       label: `📁 ${prompt.name}`,
-      description: prompt.description,
-      detail: `项目提示词 | ${prompt.tags.join(', ')}`,
+      description: `[PROJECT] ${prompt.description}`,
+      detail: `🏷️ 项目提示词 | ${prompt.tags.join(', ')} | 📅 ${new Date(prompt.createdAt || Date.now()).toLocaleDateString()}`,
       alwaysShow: true
     });
   });
 
   // 添加最近会话
   recentSessions.forEach((session: any, index: number) => {
+    // 🆕 严格的项目相关性判断
+    const sessionContent = (session.title + ' ' + session.summary).toLowerCase();
+    
+    const projectKeywords = [
+      'cursor-chat-memory',
+      'chat memory',
+      'memory service',
+      'chat服务',
+      '聊天记忆',
+      '引用生成',
+      '提示词中心',
+      'vs code插件',
+      'vscode扩展',
+      'sqlite聊天',
+      'prompt center',
+      'reference generator'
+    ];
+    
+    const hasProjectKeywords = projectKeywords.some(keyword => 
+      sessionContent.includes(keyword.toLowerCase())
+    );
+    
+    const hasProjectTags = session.tags?.some((tag: any) => 
+      (tag.name || tag).toLowerCase().includes('项目') ||
+      (tag.name || tag).toLowerCase().includes('project') ||
+      (tag.name || tag).toLowerCase().includes('cursor-chat-memory')
+    );
+    
+    const isDevelopmentRelated = hasProjectKeywords && (
+      sessionContent.includes('代码') ||
+      sessionContent.includes('开发') ||
+      sessionContent.includes('功能') ||
+      sessionContent.includes('实现') ||
+      sessionContent.includes('优化') ||
+      sessionContent.includes('修复') ||
+      sessionContent.includes('插件') ||
+      sessionContent.includes('扩展') ||
+      sessionContent.includes('web界面') ||
+      sessionContent.includes('api') ||
+      sessionContent.includes('typescript')
+    );
+    
+    const isUnrelated = (
+      sessionContent.includes('客户') ||
+      sessionContent.includes('汽车') ||
+      sessionContent.includes('家电') ||
+      sessionContent.includes('手机') ||
+      sessionContent.includes('行业') ||
+      sessionContent.includes('25年') ||
+      sessionContent.includes('同步空间') ||
+      sessionContent.includes('文件都没了') ||
+      sessionContent.includes('git') && !sessionContent.includes('cursor') ||
+      sessionContent.includes('分支') && !sessionContent.includes('cursor')
+    );
+    
+    const isProjectRelated = !isUnrelated && (hasProjectKeywords || hasProjectTags || isDevelopmentRelated);
+    const sourceIcon = isProjectRelated ? '📁' : '🌐';
+    const sourceLabel = isProjectRelated ? 'PROJECT' : 'GLOBAL';
+    
     items.push({
-      label: `💬 ${session.title}`,
-      description: `[${session.category}] ${'⭐'.repeat(Math.floor(session.importance * 5))}`,
-      detail: `最近会话 | ${session.summary}`,
+      label: `${sourceIcon} ${session.title}`,
+      description: `[${sourceLabel}] [${session.category}] ${'⭐'.repeat(Math.floor(session.importance * 5))}`,
+      detail: `💬 历史会话 | ${session.summary}`,
       alwaysShow: true
     });
   });
@@ -370,15 +429,17 @@ async function showProjectContextReference(): Promise<void> {
   });
 
   if (selected) {
-    if (selected.label.startsWith('📁')) {
-      // 项目提示词
-      const prompt = projectPrompts.find((p: any) => p.name === selected.label.replace('📁 ', ''));
+    if (selected.detail?.includes('项目提示词')) {
+      // 项目提示词 - 从label中提取名称，移除📁前缀
+      const promptName = selected.label.replace('📁 ', '');
+      const prompt = projectPrompts.find((p: any) => p.name === promptName);
       if (prompt) {
         await copyReferenceToClipboard(prompt.content, '项目上下文');
       }
-    } else {
-      // 最近会话
-      const session = recentSessions.find((s: any) => s.title === selected.label.replace('💬 ', ''));
+    } else if (selected.detail?.includes('会话')) {
+      // 最近会话 - 从label中提取标题，移除图标前缀
+      const sessionTitle = selected.label.replace(/^[📁🌐]\s/, '');
+      const session = recentSessions.find((s: any) => s.title === sessionTitle);
       if (session) {
         const reference = memoryService.getCustomReference([session.id], '最近会话');
         await copyReferenceToClipboard(reference, '最近会话');
@@ -401,8 +462,8 @@ async function showIterationReference(): Promise<void> {
 
   const items: vscode.QuickPickItem[] = iterationPrompts.map((iteration: any) => ({
     label: `🔄 ${iteration.name}`,
-    description: iteration.description,
-    detail: `标签: ${iteration.tags.join(', ')} | ${new Date(iteration.updatedAt).toLocaleDateString()}`,
+    description: `[ITERATION] ${iteration.description}`,
+    detail: `🏷️ 标签: ${iteration.tags.join(', ')} | 📅 ${new Date(iteration.updatedAt).toLocaleDateString()}`,
     alwaysShow: true
   }));
 
@@ -475,20 +536,82 @@ async function showKeywordBasedReference(): Promise<void> {
   
   // 添加相关会话
   sessions.forEach((session: any, index: number) => {
+    // 🆕 严格的项目相关性判断
+    const sessionContent = (session.title + ' ' + session.summary).toLowerCase();
+    
+    const projectKeywords = [
+      'cursor-chat-memory',
+      'chat memory',
+      'memory service',
+      'chat服务',
+      '聊天记忆',
+      '引用生成',
+      '提示词中心',
+      'vs code插件',
+      'vscode扩展',
+      'sqlite聊天',
+      'prompt center',
+      'reference generator'
+    ];
+    
+    const hasProjectKeywords = projectKeywords.some(keyword => 
+      sessionContent.includes(keyword.toLowerCase())
+    );
+    
+    const hasProjectTags = session.tags?.some((tag: any) => 
+      (tag.name || tag).toLowerCase().includes('项目') ||
+      (tag.name || tag).toLowerCase().includes('project') ||
+      (tag.name || tag).toLowerCase().includes('cursor-chat-memory')
+    );
+    
+    const isDevelopmentRelated = hasProjectKeywords && (
+      sessionContent.includes('代码') ||
+      sessionContent.includes('开发') ||
+      sessionContent.includes('功能') ||
+      sessionContent.includes('实现') ||
+      sessionContent.includes('优化') ||
+      sessionContent.includes('修复') ||
+      sessionContent.includes('插件') ||
+      sessionContent.includes('扩展') ||
+      sessionContent.includes('web界面') ||
+      sessionContent.includes('api') ||
+      sessionContent.includes('typescript')
+    );
+    
+    const isUnrelated = (
+      sessionContent.includes('客户') ||
+      sessionContent.includes('汽车') ||
+      sessionContent.includes('家电') ||
+      sessionContent.includes('手机') ||
+      sessionContent.includes('行业') ||
+      sessionContent.includes('25年') ||
+      sessionContent.includes('同步空间') ||
+      sessionContent.includes('文件都没了') ||
+      sessionContent.includes('git') && !sessionContent.includes('cursor') ||
+      sessionContent.includes('分支') && !sessionContent.includes('cursor')
+    );
+    
+    const isProjectRelated = !isUnrelated && (hasProjectKeywords || hasProjectTags || isDevelopmentRelated);
+    const sourceIcon = isProjectRelated ? '📁' : '🌐';
+    const sourceLabel = isProjectRelated ? 'PROJECT' : 'GLOBAL';
+    
     items.push({
-      label: `💬 ${session.title}`,
-      description: `[${session.category}] ${'⭐'.repeat(Math.floor(session.importance * 5))}`,
-      detail: `历史会话 | ${session.summary}`,
+      label: `${sourceIcon} ${session.title}`,
+      description: `[${sourceLabel}] [${session.category}] ${'⭐'.repeat(Math.floor(session.importance * 5))}`,
+      detail: `💬 历史会话 | ${session.summary}`,
       alwaysShow: true
     });
   });
 
   // 添加相关提示词
   prompts.forEach((prompt: any) => {
+    const typeIcon = prompt.type === 'project' ? '📁' : prompt.type === 'iteration' ? '🔄' : '🌐';
+    const typeLabel = prompt.type === 'project' ? 'PROJECT' : prompt.type === 'iteration' ? 'ITERATION' : 'GLOBAL';
+    
     items.push({
-      label: `🧠 ${prompt.name}`,
-      description: prompt.description,
-      detail: `${prompt.type} 提示词 | ${prompt.tags.join(', ')}`,
+      label: `${typeIcon} ${prompt.name}`,
+      description: `[${typeLabel}] ${prompt.description}`,
+      detail: `🧠 ${prompt.type} 提示词 | 🏷️ ${prompt.tags.join(', ')}`,
       alwaysShow: true
     });
   });
@@ -499,16 +622,18 @@ async function showKeywordBasedReference(): Promise<void> {
   });
 
   if (selected) {
-    if (selected.label.startsWith('💬')) {
-      // 历史会话
-      const session = sessions.find((s: any) => s.title === selected.label.replace('💬 ', ''));
+    if (selected.detail?.includes('历史会话')) {
+      // 历史会话 - 从label中提取标题，移除图标前缀
+      const sessionTitle = selected.label.replace(/^[📁🌐]\s/, '');
+      const session = sessions.find((s: any) => s.title === sessionTitle);
       if (session) {
         const reference = memoryService.getCustomReference([session.id], '历史会话');
         await copyReferenceToClipboard(reference, '历史会话');
       }
-    } else {
-      // 提示词
-      const prompt = prompts.find((p: any) => p.name === selected.label.replace('🧠 ', ''));
+    } else if (selected.detail?.includes('提示词')) {
+      // 提示词 - 从label中提取名称，移除图标前缀
+      const promptName = selected.label.replace(/^[📁🌐🔄]\s/, '');
+      const prompt = prompts.find((p: any) => p.name === promptName);
       if (prompt) {
         await copyReferenceToClipboard(prompt.content, '提示词');
       }

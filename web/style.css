@@ -283,8 +283,9 @@ body {
 .content-grid {
     display: grid;
     grid-template-columns: 400px 1fr;
-    gap: 2rem;
-    height: calc(100vh - 300px);
+    gap: 20px;
+    height: calc(100vh - 200px);
+    min-height: 600px;
 }
 
 /* 提示词页面的特殊布局 */
@@ -488,33 +489,40 @@ body {
 
 /* 优化会话卡片 */
 .session-item {
-    background: white;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 1.5rem;
+    padding: 15px;
+    margin-bottom: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    min-height: 200px;
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 0;
+    transition: all 0.2s ease;
+    background: white;
 }
 
 .session-item:hover {
-    border-color: #4299e1;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(66, 153, 225, 0.15);
+    border-color: #3182ce;
+    box-shadow: 0 2px 8px rgba(49, 130, 206, 0.1);
 }
 
 .session-item.active {
-    border-color: #4299e1;
-    background: rgba(66, 153, 225, 0.05);
+    border-color: #3182ce;
+    background: #ebf8ff;
+    box-shadow: 0 2px 12px rgba(49, 130, 206, 0.15);
 }
 
 /* 会话卡片头部 */
 .session-header {
-    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.session-title {
+    flex: 1;
+    font-weight: 600;
+    color: #1a202c;
+    margin-right: 8px;
+    line-height: 1.4;
 }
 
 /* 会话卡片主要内容 */
@@ -1567,10 +1575,45 @@ body {
 }
 
 /* 智能分析样式 */
+.control-panel {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
 .analyzer-selector {
     display: flex;
     gap: 1rem;
     align-items: center;
+}
+
+.project-selector {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.project-selector label {
+    font-weight: 500;
+    color: #4a5568;
+    font-size: 0.9rem;
+}
+
+.project-dropdown, .category-dropdown {
+    padding: 0.5rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    background: white;
+    font-size: 0.9rem;
+    min-width: 200px;
+    transition: border-color 0.2s ease;
+}
+
+.project-dropdown:focus, .category-dropdown:focus {
+    outline: none;
+    border-color: #4299e1;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
 }
 
 /* 流程指导样式 */
@@ -1956,4 +1999,63 @@ body {
     .analysis-card {
         padding: 1.5rem;
     }
+}
+
+/* 来源标签样式 */
+.source-tag {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 8px;
+}
+
+.source-tag.project {
+    background: #e6f3ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+.source-tag.global {
+    background: #e6fffa;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+}
+
+/* 会话列表中的来源标签 */
+.session-source-tag {
+    display: inline-block;
+    padding: 3px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-left: auto;
+}
+
+.session-source-tag.project {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.session-source-tag.global {
+    background: #d1fae5;
+    color: #047857;
+}
+
+/* 标签预览样式 */
+.tags-preview {
+    background: #f7fafc;
+    color: #4a5568;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 } 

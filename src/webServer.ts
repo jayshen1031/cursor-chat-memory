@@ -79,9 +79,7 @@ export class WebServer {
     switch (pathname) {
       case '/api/sessions':
         if (method === 'GET') {
-          await this.memoryService.start();
           const sessions = this.memoryService.getAllSessions();
-          this.memoryService.stop();
           this.sendJSON(res, { sessions });
         }
         break;
@@ -89,9 +87,7 @@ export class WebServer {
       case '/api/sessions/search':
         if (method === 'POST') {
           const { query } = JSON.parse(body);
-          await this.memoryService.start();
           const results = this.memoryService.searchSessions(query);
-          this.memoryService.stop();
           this.sendJSON(res, { results });
         }
         break;
@@ -99,9 +95,7 @@ export class WebServer {
       case '/api/sessions/recommendations':
         if (method === 'POST') {
           const { inputText, maxSessions = 5 } = JSON.parse(body);
-          await this.memoryService.start();
           const recommendations = this.memoryService.getRecommendedSessions(inputText, maxSessions);
-          this.memoryService.stop();
           this.sendJSON(res, { recommendations });
         }
         break;
@@ -109,9 +103,7 @@ export class WebServer {
       case '/api/sessions/reference':
         if (method === 'POST') {
           const { templateId, inputText } = JSON.parse(body);
-          await this.memoryService.start();
           const reference = this.memoryService.getReferenceByTemplate(templateId, inputText);
-          this.memoryService.stop();
           this.sendJSON(res, { reference });
         }
         break;
@@ -119,9 +111,7 @@ export class WebServer {
       case '/api/sessions/enhanced-reference':
         if (method === 'POST') {
           const { templateId, inputText } = JSON.parse(body);
-          await this.memoryService.start();
           const reference = this.memoryService.getEnhancedReference(templateId, inputText, true);
-          this.memoryService.stop();
           this.sendJSON(res, { reference });
         }
         break;
@@ -129,17 +119,42 @@ export class WebServer {
       case '/api/sessions/count':
         if (method === 'GET') {
           try {
-            await this.memoryService.start();
             const allSessions = this.memoryService.getAllSessions();
             const projectSessions = this.memoryService.getProjectSessions(this.projectPath);
-            this.memoryService.stop();
             this.sendJSON(res, { 
               success: true, 
               count: projectSessions.length,
               totalCount: allSessions.length
             });
           } catch (error) {
-            this.memoryService.stop();
+            this.sendJSON(res, { 
+              success: false, 
+              error: error instanceof Error ? error.message : '获取会话数量失败' 
+            });
+          }
+        }
+        break;
+
+      case '/api/sessions/count-by-scope':
+        if (method === 'POST') {
+          const { projectOnly = false, category = null } = JSON.parse(body || '{}');
+          try {
+            let sessions;
+            
+            if (projectOnly) {
+              sessions = this.memoryService.getProjectSessions(this.projectPath);
+            } else if (category) {
+              sessions = this.memoryService.getSessionsByCategory(category);
+            } else {
+              sessions = this.memoryService.getAllSessions();
+            }
+            
+            this.sendJSON(res, { 
+              success: true, 
+              count: sessions.length,
+              scope: { projectOnly, category }
+            });
+          } catch (error) {
             this.sendJSON(res, { 
               success: false, 
               error: error instanceof Error ? error.message : '获取会话数量失败' 
@@ -226,12 +241,19 @@ export class WebServer {
 
       case '/api/analysis/project-knowledge':
         if (method === 'POST') {
-          const { useLocal = true, projectOnly = false } = JSON.parse(body || '{}');
+          const { useLocal = true, projectOnly = false, category = null } = JSON.parse(body || '{}');
           try {
             await this.memoryService.start();
-            const allSessions = this.memoryService.getAllSessions();
-            // 如果是项目模式，只获取项目相关的会话
-            const sessions = projectOnly ? this.memoryService.getProjectSessions(this.projectPath) : allSessions;
+            let sessions;
+            
+            if (projectOnly) {
+              sessions = this.memoryService.getProjectSessions(this.projectPath);
+            } else if (category) {
+              sessions = this.memoryService.getSessionsByCategory(category);
+            } else {
+              sessions = this.memoryService.getAllSessions();
+            }
+            
             const knowledge = await this.promptCenter.generateProjectKnowledge(sessions, useLocal);
             this.memoryService.stop();
             this.sendJSON(res, { 
@@ -239,6 +261,7 @@ export class WebServer {
               knowledge,
               analyzer: useLocal ? '本地Claude' : 'Azure OpenAI',
               projectOnly,
+              category,
               sessionsAnalyzed: sessions.length
             });
           } catch (error) {
@@ -253,16 +276,23 @@ export class WebServer {
 
       case '/api/analysis/batch-summary':
         if (method === 'POST') {
-          const { useLocal = true, maxSessions = 10, projectOnly = false } = JSON.parse(body || '{}');
+          const { useLocal = true, maxSessions = 10, projectOnly = false, category = null } = JSON.parse(body || '{}');
           try {
             await this.memoryService.start();
-            const allSessions = this.memoryService.getAllSessions();
-            // 如果是项目模式，只获取项目相关的会话
-            const projectSessions = projectOnly ? this.memoryService.getProjectSessions(this.projectPath) : allSessions;
-            const sessions = projectSessions.slice(0, maxSessions);
+            let sessions;
+            
+            if (projectOnly) {
+              sessions = this.memoryService.getProjectSessions(this.projectPath);
+            } else if (category) {
+              sessions = this.memoryService.getSessionsByCategory(category);
+            } else {
+              sessions = this.memoryService.getAllSessions();
+            }
+            
+            const limitedSessions = sessions.slice(0, maxSessions);
             const results = [];
             
-            for (const session of sessions) {
+            for (const session of limitedSessions) {
               try {
                 const fullContent = session.summary + '\n\n消息内容:\n' + session.messages.map(m => `${m.role}: ${m.content}`).join('\n');
                 const result = await this.promptCenter.smartSummarizeSession(session, fullContent, useLocal);
@@ -287,7 +317,8 @@ export class WebServer {
               analyzer: useLocal ? '本地Claude' : 'Azure OpenAI',
               processed: results.length,
               projectOnly,
-              totalProjectSessions: projectSessions.length
+              category,
+              totalSessions: sessions.length
             });
           } catch (error) {
             this.memoryService.stop();
@@ -329,9 +360,100 @@ export class WebServer {
               this.sendJSON(res, { success: false, error: '项目知识图谱文件不存在' });
             }
           } catch (error) {
-            this.sendJSON(res, { 
-              success: false, 
-              error: error instanceof Error ? error.message : '读取项目知识图谱失败' 
+            this.sendJSON(res, {
+              success: false,
+              error: error instanceof Error ? error.message : '读取项目知识图谱失败'
+            });
+          }
+        }
+        break;
+
+      case '/api/admin/deduplicate-sessions':
+        if (method === 'POST') {
+          try {
+            const allSessions = this.memoryService.getAllSessions(true); // 包含所有数据
+            
+            // 按标题分组
+            const sessionGroups = new Map<string, any[]>();
+            for (const session of allSessions) {
+              const key = session.title.trim();
+              if (!sessionGroups.has(key)) {
+                sessionGroups.set(key, []);
+              }
+              sessionGroups.get(key)!.push(session);
+            }
+            
+            // 找出重复的会话
+            const duplicates: string[] = [];
+            const toKeep: any[] = [];
+            
+            for (const [title, sessions] of sessionGroups) {
+              if (sessions.length > 1) {
+                // 按消息数量排序，保留消息最多的
+                sessions.sort((a, b) => b.messages.length - a.messages.length);
+                toKeep.push(sessions[0]); // 保留最完整的
+                
+                // 标记其他为重复
+                for (let i = 1; i < sessions.length; i++) {
+                  duplicates.push(sessions[i].id);
+                }
+              } else {
+                toKeep.push(sessions[0]);
+              }
+            }
+            
+            // 删除重复会话
+            let deletedCount = 0;
+            for (const sessionId of duplicates) {
+              if (this.memoryService.deleteSession(sessionId)) {
+                deletedCount++;
+              }
+            }
+            
+            this.sendJSON(res, {
+              success: true,
+              message: `成功删除 ${deletedCount} 个重复会话`,
+              totalSessions: allSessions.length,
+              duplicatesRemoved: deletedCount,
+              remainingSessions: toKeep.length
+            });
+          } catch (error) {
+            this.sendJSON(res, {
+              success: false,
+              error: error instanceof Error ? error.message : '去重失败'
+            });
+          }
+        }
+        break;
+
+      case '/api/admin/force-rescan':
+        if (method === 'POST') {
+          try {
+            // 清除SQLite缓存
+            const sqliteReader = (this.memoryService as any).sqliteReader;
+            if (sqliteReader) {
+              sqliteReader.sessionCache = null;
+              sqliteReader.lastScanTime = 0;
+            }
+            
+            // 停止服务
+            this.memoryService.stop();
+            
+            // 重新启动并扫描
+            await this.memoryService.start();
+            
+            const allSessions = this.memoryService.getAllSessions(true);
+            
+            this.sendJSON(res, {
+              success: true,
+              message: '强制重新扫描完成',
+              totalSessions: allSessions.length,
+              timestamp: new Date().toISOString()
+            });
+          } catch (error) {
+            this.sendJSON(res, {
+              success: false,
+              error: error instanceof Error ? error.message : '重新扫描失败'
             });
           }
         }
@@ -388,6 +510,10 @@ export class WebServer {
   }
 
   public async start(): Promise<void> {
+    // 首先启动内存服务
+    console.log('🔄 初始化内存服务...');
+    await this.memoryService.start();
+    
     return new Promise((resolve) => {
       this.server.listen(this.port, () => {
         console.log(`🌐 Web管理界面启动: http://localhost:${this.port}`);
@@ -397,7 +523,8 @@ export class WebServer {
   }
 
   public stop(): void {
+    this.memoryService.stop();
     this.server.close();
-    console.log('�� Web服务器已停止');
+    console.log('🚫 Web服务器已停止');
   }
 } 

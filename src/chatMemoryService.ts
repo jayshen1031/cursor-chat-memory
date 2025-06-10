@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { EventEmitter } from 'events';
 import { PromptCenter, PromptTemplate } from './promptCenter';
+import { SQLiteChatReader } from './sqliteChatReader';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -64,6 +65,7 @@ export class ChatMemoryService extends EventEmitter {
   private contextCache: ContextCache;
   private currentProject?: string;  // 当前项目路径
   private promptCenter: PromptCenter; // 🆕 提示词中心
+  private sqliteReader: SQLiteChatReader; // 🆕 SQLite聊天读取器
   
   // 上下文控制配置 - 🚀 优化到100K上下文
   private readonly contextLimits = {
@@ -152,6 +154,9 @@ export class ChatMemoryService extends EventEmitter {
     
     // 初始化提示词中心
     this.promptCenter = new PromptCenter(projectPath);
+    
+    // 初始化SQLite读取器
+    this.sqliteReader = new SQLiteChatReader();
   }
 
   /**
@@ -180,6 +185,9 @@ export class ChatMemoryService extends EventEmitter {
       // 当前项目路径下的 .cursor/chat
       candidatePaths.push(path.join(projectPath, '.cursor', 'chat'));
       
+      // 🆕 检查项目目录下的特殊路径（可能是错误创建的）
+      candidatePaths.push(path.join(projectPath, '~', '.cursor', 'chat'));
+      
       // 🆕 搜索可能的项目副本位置
       const possibleProjectPaths = this.findProjectCopies(projectName);
       possibleProjectPaths.forEach(copyPath => {
@@ -190,11 +198,12 @@ export class ChatMemoryService extends EventEmitter {
     // 全局目录作为备选
     candidatePaths.push(path.join(os.homedir(), '.cursor', 'chat'));
     
-    // 选择包含最多聊天文件的目录
+    // 选择最佳聊天目录：优先项目目录，然后是文件数量最多的目录
     let bestPath = candidatePaths[candidatePaths.length - 1]; // 默认使用全局目录
     let maxFiles = 0;
     let totalCandidates = 0;
     let accessiblePaths = 0;
+    let projectPaths: string[] = [];
     
     for (const candidatePath of candidatePaths) {
       totalCandidates++;
@@ -203,6 +212,11 @@ export class ChatMemoryService extends EventEmitter {
           accessiblePaths++;
           const files = fs.readdirSync(candidatePath).filter(f => f.endsWith('.json'));
           console.log(`📂 检查路径: ${candidatePath} (${files.length}个文件)`);
+          
+          // 如果是项目相关路径，记录下来
+          if (projectPath && candidatePath.includes(path.basename(projectPath))) {
+            projectPaths.push(candidatePath);
+          }
           
           if (files.length > maxFiles) {
             maxFiles = files.length;
@@ -213,6 +227,62 @@ export class ChatMemoryService extends EventEmitter {
         }
       } catch (error) {
         console.log(`⚠️  无法访问路径: ${candidatePath} - ${error}`);
+      }
+    }
+    
+    // 🆕 优先使用真实用户数据，而不是测试数据
+    // 检查是否有真实的用户聊天目录（非项目目录下的测试数据）
+    const realUserChatDir = path.join(os.homedir(), '.cursor', 'chat');
+    let hasRealUserData = false;
+    
+    try {
+      if (fs.existsSync(realUserChatDir)) {
+        const realFiles = fs.readdirSync(realUserChatDir).filter(f => f.endsWith('.json'));
+        if (realFiles.length > 0) {
+          // 检查这些文件是否包含真实的项目相关内容
+          for (const file of realFiles) {
+            const filePath = path.join(realUserChatDir, file);
+            try {
+              const content = fs.readFileSync(filePath, 'utf-8');
+              const chatData = JSON.parse(content);
+              // 如果包含项目相关内容，优先使用真实用户数据
+              if (projectPath && this.isRealProjectData(chatData, path.basename(projectPath))) {
+                bestPath = realUserChatDir;
+                maxFiles = realFiles.length;
+                hasRealUserData = true;
+                console.log(`🎯 优先使用真实用户数据: ${realUserChatDir} (${realFiles.length}个文件) - 包含项目相关内容`);
+                break;
+              }
+            } catch (error) {
+              // 忽略解析错误
+            }
+          }
+        }
+      }
+    } catch (error) {
+      // 忽略错误
+    }
+    
+    // 如果没有找到真实的项目相关数据，再考虑项目目录下的数据
+    if (!hasRealUserData && projectPaths.length > 0) {
+      for (const projectPath of projectPaths) {
+        try {
+          const files = fs.readdirSync(projectPath).filter(f => f.endsWith('.json'));
+          if (files.length > 0) {
+            // 检查是否包含测试数据标识
+            const hasTestData = this.checkForTestData(projectPath);
+            if (hasTestData) {
+              console.log(`⚠️  发现测试数据: ${projectPath} (${files.length}个文件) - 将在需要时包含`);
+            } else {
+              bestPath = projectPath;
+              maxFiles = files.length;
+              console.log(`🎯 使用项目目录: ${projectPath} (${files.length}个文件)`);
+              break;
+            }
+          }
+        } catch (error) {
+          // 忽略错误，继续检查其他路径
+        }
       }
     }
     
@@ -230,6 +300,60 @@ export class ChatMemoryService extends EventEmitter {
     }
     
     return bestPath;
+  }
+  
+  /**
+   * 🆕 检查聊天数据是否为真实的项目相关数据
+   */
+  private isRealProjectData(chatData: any, projectName: string): boolean {
+    if (!chatData || !chatData.metadata) return false;
+    
+    // 检查标题或内容是否包含项目名称
+    const title = chatData.title || '';
+    const content = JSON.stringify(chatData).toLowerCase();
+    const projectNameLower = projectName.toLowerCase();
+    
+    // 检查项目相关标识
+    return title.toLowerCase().includes(projectNameLower) ||
+           content.includes(projectNameLower) ||
+           (chatData.metadata.projectPath && 
+            chatData.metadata.projectPath.includes(projectName));
+  }
+  
+  /**
+   * 🆕 检查目录是否包含测试数据
+   */
+  private checkForTestData(dirPath: string): boolean {
+    try {
+      const files = fs.readdirSync(dirPath).filter(f => f.endsWith('.json'));
+      
+      for (const file of files) {
+        // 检查文件名是否包含测试标识
+        if (file.includes('sample') || file.includes('test') || file.includes('demo')) {
+          return true;
+        }
+        
+        // 检查文件内容是否包含测试标识
+        try {
+          const filePath = path.join(dirPath, file);
+          const content = fs.readFileSync(filePath, 'utf-8');
+          const chatData = JSON.parse(content);
+          
+          if (chatData.title && 
+              (chatData.title.includes('🧪') || 
+               chatData.title.includes('[测试数据]') ||
+               chatData.title.includes('Sample'))) {
+            return true;
+          }
+        } catch (error) {
+          // 忽略解析错误
+        }
+      }
+    } catch (error) {
+      // 忽略读取错误
+    }
+    
+    return false;
   }
   
   /**
@@ -870,14 +994,68 @@ export class ChatMemoryService extends EventEmitter {
     const projectName = path.basename(this.currentProject).toLowerCase();
     const sessionContent = (session.title + ' ' + session.summary).toLowerCase();
     
-    // 检查会话内容是否包含项目名称或项目相关标签
-    const hasProjectName = sessionContent.includes(projectName);
-    const hasProjectTags = session.tags.some(tag => 
-      tag.name.toLowerCase().includes(projectName) || 
-      tag.name.toLowerCase().includes('project')
+    // 🎯 严格的项目相关性判断
+    const projectKeywords = [
+      'cursor-chat-memory',
+      'chat memory',
+      'memory service',
+      'chat服务',
+      '聊天记忆',
+      '引用生成',
+      '提示词中心',
+      'vs code插件',
+      'vscode扩展',
+      'sqlite聊天',
+      'prompt center',
+      'reference generator'
+    ];
+    
+    // 检查是否包含明确的项目关键词
+    const hasProjectKeywords = projectKeywords.some(keyword => 
+      sessionContent.includes(keyword.toLowerCase())
     );
     
-    return hasProjectName || hasProjectTags;
+    // 检查标签中是否有项目相关标识
+    const hasProjectTags = session.tags.some(tag => 
+      tag.name.toLowerCase().includes('项目') ||
+      tag.name.toLowerCase().includes('project') ||
+      tag.name.toLowerCase().includes(projectName)
+    );
+    
+    // 检查是否是技术开发相关（仅当包含项目关键词时才考虑）
+    const isDevelopmentRelated = hasProjectKeywords && (
+      sessionContent.includes('代码') ||
+      sessionContent.includes('开发') ||
+      sessionContent.includes('功能') ||
+      sessionContent.includes('实现') ||
+      sessionContent.includes('优化') ||
+      sessionContent.includes('修复') ||
+      sessionContent.includes('插件') ||
+      sessionContent.includes('扩展') ||
+      sessionContent.includes('web界面') ||
+      sessionContent.includes('API') ||
+      sessionContent.includes('typescript')
+    );
+    
+    // 排除明显无关的会话
+    const isUnrelated = (
+      sessionContent.includes('客户') ||
+      sessionContent.includes('汽车') ||
+      sessionContent.includes('家电') ||
+      sessionContent.includes('手机') ||
+      sessionContent.includes('行业') ||
+      sessionContent.includes('25年') ||
+      sessionContent.includes('同步空间') ||
+      sessionContent.includes('文件都没了') ||
+      sessionContent.includes('git') && !sessionContent.includes('cursor') ||
+      sessionContent.includes('分支') && !sessionContent.includes('cursor')
+    );
+    
+    if (isUnrelated) {
+      return false;
+    }
+    
+    return hasProjectKeywords || hasProjectTags || isDevelopmentRelated;
   }
 
   /**
@@ -1107,16 +1285,36 @@ export class ChatMemoryService extends EventEmitter {
    */
   private async scanExistingChats(): Promise<void> {
     try {
-      if (!fs.existsSync(this.chatDir)) return;
+      // 🆕 首先从SQLite数据库加载聊天历史
+      console.log('🔍 扫描SQLite聊天数据库...');
+      const sqliteSessions = await this.sqliteReader.scanAllWorkspaces();
       
-      const files = fs.readdirSync(this.chatDir);
-      const chatFiles = files.filter(file => file.endsWith('.json'));
+      // 将SQLite会话添加到缓存中，使用Set进行去重
+      const existingIds = new Set(this.contextCache.sessions.keys());
+      let newSessionCount = 0;
       
-      console.log(`🔍 Found ${chatFiles.length} existing chat files`);
+      for (const session of sqliteSessions) {
+        if (!existingIds.has(session.id)) {
+          this.contextCache.sessions.set(session.id, session);
+          newSessionCount++;
+        }
+      }
       
-      for (const file of chatFiles) {
-        const filePath = path.join(this.chatDir, file);
-        await this.processChangedFile(filePath);
+      console.log(`✅ 从SQLite加载了 ${newSessionCount} 个新会话 (跳过 ${sqliteSessions.length - newSessionCount} 个重复会话)`);
+
+      // 然后扫描JSON文件（如果存在）
+      if (fs.existsSync(this.chatDir)) {
+        const files = fs.readdirSync(this.chatDir);
+        const chatFiles = files.filter(file => file.endsWith('.json'));
+        
+        console.log(`🔍 Found ${chatFiles.length} existing chat files`);
+        
+        for (const file of chatFiles) {
+          const filePath = path.join(this.chatDir, file);
+          await this.processChangedFile(filePath);
+        }
+      } else {
+        console.log(`⚠️  JSON聊天目录不存在: ${this.chatDir}`);
       }
       
       // 🆕 扫描完成后从对话中提取项目知识
@@ -1192,10 +1390,34 @@ export class ChatMemoryService extends EventEmitter {
     
     const projectName = path.basename(targetProject);
     return this.getAllSessions().filter(session => { // 默认排除测试数据
-      // 检查会话内容是否与项目相关
+      // 1. 检查会话内容是否与项目相关
       const content = (session.title + ' ' + session.summary).toLowerCase();
-      return content.includes(projectName.toLowerCase()) || 
-             session.tags.some(tag => tag.name.toLowerCase().includes(projectName.toLowerCase()));
+      const projectKeywords = [
+        projectName.toLowerCase(),
+        'cursor-chat',
+        'chat-memory',
+        'memory',
+        '提示词',
+        'prompt',
+        '智能分析',
+        'analysis'
+      ];
+      
+      // 2. 检查是否包含项目关键词
+      const hasProjectKeywords = projectKeywords.some(keyword => 
+        content.includes(keyword)
+      );
+      
+      // 3. 检查标签
+      const hasProjectTags = session.tags.some(tag => 
+        projectKeywords.some(keyword => tag.name.toLowerCase().includes(keyword))
+      );
+      
+      // 4. 检查分类
+      const relevantCategories = ['性能优化', '代码实现', '系统设计', '问题解决', '开发工具'];
+      const hasRelevantCategory = relevantCategories.includes(session.category);
+      
+      return hasProjectKeywords || hasProjectTags || hasRelevantCategory;
     });
   }
 
