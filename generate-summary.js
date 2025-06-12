@@ -4,7 +4,7 @@
  * 📝 生成Cursor聊天历史摘要
  */
 
-const fs = require('fs');
+import fs from 'fs';
 
 class SummaryGenerator {
     constructor() {
@@ -27,29 +27,15 @@ class SummaryGenerator {
     }
 
     loadAndFilterData() {
-        const rawData = JSON.parse(fs.readFileSync('./web-chat-data.json', 'utf8'));
-        console.log(`📖 原始数据: ${rawData.length} 条记录`);
+        const chatData = JSON.parse(fs.readFileSync('./chat-data.json', 'utf8'));
+        console.log(`📖 原始数据: ${chatData.conversations.length} 条记录`);
         
-        // 配对对话并过滤有意义的内容
-        const conversations = [];
+        // 过滤有意义的对话
+        const validConversations = chatData.conversations.filter(conv => 
+            this.isValidConversation(conv.prompt, conv.response)
+        );
         
-        for (let i = 0; i < rawData.length; i += 2) {
-            const prompt = rawData[i];
-            const response = rawData[i + 1];
-            
-            if (prompt && response && this.isValidConversation(prompt, response)) {
-                conversations.push({
-                    id: Math.floor(i / 2) + 1,
-                    prompt: prompt,
-                    response: response,
-                    time: prompt.time || new Date(prompt.timestamp).toLocaleString('zh-CN', {
-                        timeZone: 'Asia/Shanghai'
-                    })
-                });
-            }
-        }
-        
-        this.chatData = conversations.reverse().slice(0, 20); // 只取最新的20组对话
+        this.chatData = validConversations.slice(-20); // 只取最新的20组对话
         console.log(`💬 精选对话: ${this.chatData.length} 组`);
     }
 

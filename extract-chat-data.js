@@ -7,10 +7,10 @@
  * 并将其转换为JSON格式用于网页展示
  */
 
-const sqlite3 = require('sqlite3').verbose();
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+import sqlite3 from 'sqlite3';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 // 配置
 const CONFIG = {
@@ -59,12 +59,8 @@ class CursorChatExtractor {
             const conversations = this.analyzeConversations();
             this.chatData.conversations = conversations;
             
-            // 生成网页用数据
-            const webData = this.generateWebData(conversations);
-            
             // 保存到JSON文件
             this.saveToJson();
-            this.saveWebData(webData);
             
             console.log('✅ 数据提取完成!');
             this.printStats();
@@ -240,17 +236,7 @@ class CursorChatExtractor {
         }
     }
 
-    /**
-     * 保存网页用数据
-     */
-    saveWebData(webData) {
-        try {
-            fs.writeFileSync('./web-chat-data.json', JSON.stringify(webData, null, 2), 'utf8');
-            console.log(`🌐 网页数据已保存到: ${path.resolve('./web-chat-data.json')}`);
-        } catch (error) {
-            console.error('❌ 保存网页数据失败:', error.message);
-        }
-    }
+
 
     /**
      * 打印统计信息
@@ -271,37 +257,7 @@ class CursorChatExtractor {
         }
     }
 
-    /**
-     * 生成简化的JSON用于网页
-     */
-    generateWebData(conversations) {
-        const webData = [];
-        
-        conversations.forEach((conv, index) => {
-            // 添加用户提示词
-            webData.push({
-                id: webData.length + 1,
-                type: 'prompt',
-                text: conv.prompt.text,
-                timestamp: conv.prompt.timestamp,
-                time: conv.prompt.time,
-                commandType: 4
-            });
-            
-            // 添加AI回复
-            webData.push({
-                id: webData.length + 1,
-                type: 'generation',
-                text: conv.response.text,
-                timestamp: conv.response.timestamp,
-                time: conv.response.time,
-                uuid: conv.uuid,
-                duration: conv.duration
-            });
-        });
 
-        return webData;
-    }
 
     /**
      * 🔍 分析和匹配对话对（基于generations中的textDescription）
@@ -387,9 +343,7 @@ async function main() {
         
         console.log('\n🎉 所有操作完成！');
         console.log('\n💡 使用说明:');
-        console.log('1. chat-data.json - 完整的原始数据');
-        console.log('2. web-chat-data.json - 网页使用的简化数据');
-        console.log('3. 在网页中加载 web-chat-data.json 即可显示聊天历史');
+        console.log('1. chat-data.json - 完整的原始数据，可用于 MCP Server');
         
     } catch (error) {
         console.error('❌ 程序执行失败:', error.message);
@@ -398,8 +352,8 @@ async function main() {
 }
 
 // 如果直接运行此脚本
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
     main();
 }
 
-module.exports = CursorChatExtractor; 
+export default CursorChatExtractor; 

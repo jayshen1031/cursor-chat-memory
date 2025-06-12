@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "cursor-memory": {
+      "command": "node",
+      "args": [
+        "/Users/jay/Documents/baidu/projects/cursor-chat-memory/src/mcp-server.js"
+      ],
+      "env": {
+        "CURSOR_WORKSPACE_ID": "e76c6a8343ed4d7d7b8f77651bad3214"
+      }
+    }
+  }
+} 

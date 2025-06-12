@@ -16,12 +16,114 @@
 
 *此文件由MCP Server自动维护*
 
+## 🆕 2025-06-12 学习要点
+
+### 新增洞察19: 项目功能精简的战略价值
+**学习要点**: 主动移除非核心功能比添加新功能更需要勇气和智慧。
+
+**深层理解**:
+- 功能膨胀是软件项目的常见问题，每个功能都有维护成本
+- 用户反馈"不需要Web功能"是宝贵的简化信号
+- 专注核心价值比功能全面更重要
+
+**实践应用**:
+```javascript
+// 功能评估矩阵
+const evaluateFeature = (feature) => ({
+    coreValue: feature.alignsWithMainGoal ? 10 : 0,
+    userDemand: feature.userRequestCount,
+    maintenanceCost: feature.codeComplexity + feature.dependencyCount,
+    removalRisk: feature.hasExternalDependents ? 10 : 0
+});
+
+// 移除决策：coreValue低且maintenanceCost高的功能
+```
+
+**设计哲学**: "完美不是无法再添加，而是无法再删除" - 简洁性是复杂性的终极形式
+
+### 新增洞察20: MCP集成的版本兼容性挑战
+**学习要点**: 新兴协议的集成需要考虑目标平台的支持成熟度。
+
+**问题分析**:
+- Cursor中搜索"MCP"显示"no settings found"
+- 可能的原因：版本不支持、功能未启用、配置方式不同
+- 需要多重配置策略应对不确定性
+
+**解决策略**:
+```javascript
+// 渐进式集成策略
+const integrationStrategies = [
+    'ui_configuration',    // 理想：UI配置
+    'config_file',        // 备选：配置文件
+    'environment_vars',   // 兜底：环境变量
+    'command_line'        // 最后：命令行参数
+];
+```
+
+**技术洞察**: 
+- 新技术集成要准备多个备选方案
+- 用户体验要考虑不同技术水平的用户
+- 文档要包含故障排除指南
+
+### 新增洞察21: 数据导出质量的多维度评估
+**学习要点**: 数据质量不仅仅是数量，更重要的是内容的深度和相关性。
+
+**质量维度分析**:
+```javascript
+const qualityDimensions = {
+    quantity: '数据量 (6/11: 95条 vs 6/12: 21条)',
+    depth: '内容深度 (技术讨论 vs 简单问答)',
+    relevance: '相关性 (项目相关 vs 通用回复)',
+    intelligence: '智能化程度 (个性化 vs 模板化)',
+    completeness: '完整性 (问答配对成功率)'
+};
+```
+
+**改进方向**:
+- 量化质量指标，建立评估体系
+- 基于历史数据训练更好的回复生成模型
+- 实现质量反馈循环，持续改进
+
+### 新增洞察22: 记忆库的自我进化机制
+**学习要点**: 好的知识管理系统应该能够自我学习和进化。
+
+**进化机制设计**:
+```javascript
+const memoryBankEvolution = {
+    // 自动分类新内容
+    autoClassify: (newContent) => classifyBySemantics(newContent),
+    
+    // 识别重复模式
+    detectPatterns: (conversations) => extractCommonPatterns(conversations),
+    
+    // 更新最佳实践
+    updateBestPractices: (solutions) => refineBestPractices(solutions),
+    
+    // 淘汰过时信息
+    pruneObsolete: (knowledge) => removeOutdatedInfo(knowledge)
+};
+```
+
+**实现原则**:
+- 增量更新而非全量重写
+- 保持历史版本用于回溯
+- 基于使用频率调整内容优先级
+
 ## 2025-06-12 学习要点
 
-提取 1 个学习要点
+提取 4 个学习要点
 
-- **问题**: 我如何测试已经引用了...
-  **洞察**: ...
+- **问题**: 帮我去掉网页展示历史数据的功能
+  **洞察**: 项目简化的战略价值：主动移除非核心功能体现了产品设计的成熟度
+
+- **问题**: 配置 MCP Server...显示no settings found  
+  **洞察**: 新兴技术集成的兼容性挑战：需要准备多重配置策略应对平台支持的不确定性
+
+- **问题**: 导出的质量在哪里控制的，没有11号的好
+  **洞察**: 数据质量的多维度评估：质量不仅是数量，更重要的是内容深度和相关性
+
+- **问题**: 获取记忆库内容 / 帮我更新记忆库
+  **洞察**: 知识管理系统的自我进化：好的记忆库应该能够自动学习、分类和更新内容
 
 ## 📚 核心技术洞察
 

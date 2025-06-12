@@ -6,12 +6,12 @@
 
 | 文件名 | 大小 | 主要内容 | 适用场景 |
 |--------|------|----------|----------|
-| `learningInsights.md` | 13.0KB | 18个技术洞察 | 🧠 深度学习、架构设计 |
-| `problemSolutions.md` | 7.5KB | 14个问题案例 | 🔧 问题排查、调试 |
-| `codePatterns.md` | 5.8KB | 14个代码模式 | 💻 代码实现、开发 |
-| `technicalDecisions.md` | 0.9KB | 技术决策记录 | 📋 背景了解、决策参考 |
+| `learningInsights.md` | 16.2KB | 22个技术洞察 | 🧠 深度学习、架构设计 |
+| `problemSolutions.md` | 11.8KB | 18个问题案例 | 🔧 问题排查、调试 |
+| `codePatterns.md` | 9.1KB | 17个代码模式 | 💻 代码实现、开发 |
+| `technicalDecisions.md` | 2.3KB | 技术决策记录 | 📋 背景了解、决策参考 |
 | `projectContext.md` | 0.6KB | 项目概览 | 🎯 项目介绍、快速上手 |
-| `recentActivity.md` | 0.4KB | 最近活动 | ⏰ 了解进展、活动跟踪 |
+| `recentActivity.md` | 1.2KB | 最近活动 | ⏰ 了解进展、活动跟踪 |
 
 ## 🎯 按需引用策略
 
@@ -165,7 +165,7 @@
 
 ## 🎯 **总结**
 
-Memory Bank现在是一个**27.3KB的专业技术文档库**，合理使用比全量引用更有效：
+Memory Bank现在是一个**41.2KB的专业技术文档库**，合理使用比全量引用更有效：
 
 - ✅ **选择性引用** - 根据需求精准选择
 - ✅ **组合策略** - 2-3个文件组合最佳

@@ -7,8 +7,8 @@
  * 这个脚本通过分析用户提问来生成有意义的回复描述
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 class AIResponseFixer {
     constructor() {
@@ -252,8 +252,9 @@ class AIResponseFixer {
         console.log('📝 重新生成Markdown文件...');
         
         try {
-            const { MarkdownGenerator } = require('./generate-markdown');
-            const generator = new MarkdownGenerator();
+            // 暂时跳过自动生成，手动运行
+            console.log('💡 请手动运行 npm run markdown 重新生成文档');
+            return;
             
             // 读取修复后的数据
             const chatData = JSON.parse(fs.readFileSync(this.chatDataFile, 'utf8'));
@@ -297,8 +298,8 @@ async function main() {
     }
 }
 
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
     main();
 }
 
-module.exports = AIResponseFixer; 
+export default AIResponseFixer; 

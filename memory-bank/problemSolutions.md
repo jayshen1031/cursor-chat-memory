@@ -14,6 +14,80 @@
 
 *此文件由MCP Server自动维护*
 
+## 🆕 2025-06-12 新增问题解决
+
+### 问题15: Cursor MCP设置不可见问题
+- **问题描述**: 在Cursor设置中搜索"MCP"或"Model Context Protocol"显示"no settings found"
+- **问题现象**: 用户无法找到MCP Server配置选项，无法完成MCP集成
+- **根本原因**: 
+  1. Cursor版本可能不支持MCP功能
+  2. MCP功能可能需要特定的Cursor版本或配置
+  3. 可能需要通过其他方式启用MCP支持
+- **解决方案**: 
+  ```bash
+  # 1. 检查Cursor版本
+  # 2. 确认MCP功能是否在当前版本中可用
+  # 3. 考虑使用配置文件方式而非UI配置
+  ```
+- **状态**: 待进一步调研Cursor MCP支持情况
+
+### 问题16: Web功能移除后的项目重构
+- **问题描述**: 用户要求移除网页展示历史数据的功能，需要清理相关代码和文件
+- **涉及文件**: 
+  - `serve.js` - Web服务器
+  - `cursor-chat-viewer.html` - 前端页面
+  - `web-chat-data.json` - Web数据文件
+  - `package.json` - 相关脚本命令
+- **解决方案**: 
+  ```bash
+  # 1. 删除Web相关文件
+  rm serve.js cursor-chat-viewer.html web-chat-data.json
+  
+  # 2. 更新package.json，移除web相关脚本
+  # 3. 更新README.md，移除Web功能说明
+  # 4. 清理extract-chat-data.js中的Web数据生成逻辑
+  ```
+- **效果**: 项目结构更加简洁，专注于核心的数据提取和MCP功能
+
+### 问题17: 数据导出质量下降问题
+- **问题描述**: 6/12的导出质量不如6/11，核心信息提取不足
+- **对比分析**:
+  - 6/11: 95组对话，详细的AI回复内容，丰富的技术讨论
+  - 6/12: 21组对话，AI回复多为模板化内容
+- **原因分析**:
+  1. 数据量差异：6/11有更多的历史对话积累
+  2. AI回复质量：6/12的AI回复更多是基于模板生成
+  3. 内容深度：6/11包含更深入的技术讨论
+- **改进方案**:
+  ```javascript
+  // 增强AI回复生成的智能化程度
+  const enhanceAIResponse = (prompt) => {
+      // 基于提问内容生成更有针对性的回复
+      // 而不是使用通用模板
+  };
+  ```
+
+### 问题18: SQLite依赖文件误删风险
+- **问题描述**: 用户担心本地SQLite库被误删，影响数据提取功能
+- **风险评估**: 
+  - `extract-chat-data.js`是核心数据提取文件
+  - SQLite数据库文件位于Cursor应用数据目录
+  - 误删可能导致历史数据丢失
+- **预防措施**:
+  ```bash
+  # 1. 定期备份重要文件
+  cp extract-chat-data.js extract-chat-data.js.backup
+  
+  # 2. 使用版本控制保护
+  git add . && git commit -m "backup before changes"
+  
+  # 3. 实现数据库文件检查
+  if [ ! -f "$DB_PATH" ]; then
+      echo "警告: SQLite数据库文件不存在"
+      exit 1
+  fi
+  ```
+
 ## 🔍 数据提取问题解决
 
 ### 问题1: 问答配对关联难题

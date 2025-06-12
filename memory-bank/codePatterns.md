@@ -16,6 +16,156 @@
 
 *此文件由MCP Server自动维护*
 
+## 🆕 2025-06-12 新增代码模式
+
+### 项目重构模式
+
+#### 功能移除的系统化方法
+```bash
+# 1. 识别相关文件
+find . -name "*.js" -exec grep -l "web\|serve\|html" {} \;
+
+# 2. 分析依赖关系
+grep -r "serve.js\|web-chat-data" --include="*.js" --include="*.json" .
+
+# 3. 逐步移除
+rm serve.js cursor-chat-viewer.html web-chat-data.json
+rm -rf web/
+
+# 4. 清理配置
+# 更新package.json scripts
+# 清理代码中的相关逻辑
+```
+
+#### 配置文件清理模式
+```javascript
+// package.json 脚本清理
+const cleanupScripts = (packageJson) => {
+    const webRelatedScripts = ['serve', 'web', 'dev', 'open'];
+    webRelatedScripts.forEach(script => {
+        delete packageJson.scripts[script];
+    });
+    return packageJson;
+};
+```
+
+### MCP配置管理模式
+
+#### 多重配置策略
+```javascript
+// 配置加载优先级
+const loadMCPConfig = () => {
+    const configSources = [
+        () => loadFromFile('.cursor/mcp.json'),      // 项目级配置
+        () => loadFromEnv('MCP_CONFIG'),             // 环境变量
+        () => loadFromGlobal('~/.cursor/mcp.json'), // 全局配置
+        () => getDefaultConfig()                     // 默认配置
+    ];
+    
+    for (const source of configSources) {
+        try {
+            const config = source();
+            if (config) return config;
+        } catch (error) {
+            console.warn(`配置源失败: ${error.message}`);
+        }
+    }
+    
+    throw new Error('无法加载MCP配置');
+};
+```
+
+#### 配置验证模式
+```javascript
+const validateMCPConfig = (config) => {
+    const required = ['command', 'args'];
+    const optional = ['cwd', 'env', 'timeout'];
+    
+    // 必需字段检查
+    for (const field of required) {
+        if (!config[field]) {
+            throw new Error(`缺少必需配置: ${field}`);
+        }
+    }
+    
+    // 路径存在性检查
+    if (config.cwd && !fs.existsSync(config.cwd)) {
+        throw new Error(`工作目录不存在: ${config.cwd}`);
+    }
+    
+    // 命令可执行性检查
+    try {
+        execSync(`which ${config.command}`, { stdio: 'ignore' });
+    } catch (error) {
+        throw new Error(`命令不可用: ${config.command}`);
+    }
+    
+    return true;
+};
+```
+
+### 数据质量控制模式
+
+#### 导出质量评估
+```javascript
+const assessExportQuality = (exportData) => {
+    const metrics = {
+        conversationCount: exportData.conversations.length,
+        avgPromptLength: calculateAverage(exportData.conversations.map(c => c.prompt.length)),
+        avgResponseLength: calculateAverage(exportData.conversations.map(c => c.response.length)),
+        templateResponseRatio: calculateTemplateRatio(exportData.conversations),
+        technicalContentRatio: calculateTechnicalRatio(exportData.conversations)
+    };
+    
+    // 质量评分
+    const qualityScore = calculateQualityScore(metrics);
+    
+    return {
+        metrics,
+        qualityScore,
+        recommendations: generateRecommendations(metrics)
+    };
+};
+```
+
+#### 智能回复生成增强
+```javascript
+const enhanceAIResponse = (prompt, context = {}) => {
+    // 分析提问类型
+    const questionType = classifyQuestion(prompt);
+    
+    // 提取技术关键词
+    const techKeywords = extractTechnicalTerms(prompt);
+    
+    // 基于上下文生成回复
+    const responseTemplate = selectTemplate(questionType, techKeywords);
+    
+    // 个性化内容填充
+    return fillTemplate(responseTemplate, {
+        prompt,
+        context,
+        techKeywords,
+        questionType
+    });
+};
+
+const classifyQuestion = (prompt) => {
+    const patterns = {
+        implementation: /实现|代码|函数|方法|如何做/,
+        debugging: /错误|问题|失败|不工作|报错/,
+        configuration: /配置|设置|安装|部署/,
+        explanation: /为什么|原理|机制|如何工作/,
+        optimization: /优化|性能|改进|提升/
+    };
+    
+    for (const [type, pattern] of Object.entries(patterns)) {
+        if (pattern.test(prompt)) return type;
+    }
+    
+    return 'general';
+};
+```
+
 ## 📊 数据库访问模式
 
 ### SQLite数据提取模式

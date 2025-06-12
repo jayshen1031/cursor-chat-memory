@@ -4,8 +4,8 @@
  * 📝 生成Markdown格式的Cursor聊天历史
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 class MarkdownGenerator {
     constructor() {
@@ -483,8 +483,8 @@ async function main() {
 }
 
 // 如果直接运行此脚本
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
     main();
 }
 
-module.exports = MarkdownGenerator; 
+export default MarkdownGenerator; 

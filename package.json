@@ -130,15 +130,13 @@
     "test": "node ./out/test/runTest.js",
     "vscode:prepublish": "npm run compile",
     "extract": "node extract-chat-data.js",
-    "serve": "node serve.js",
-    "start": "npm run extract && npm run serve",
+    "fix": "node fix-missing-ai-responses.js",
+    "start": "npm run extract",
     "markdown": "node generate-markdown.js",
     "summary": "node generate-summary.js",
-    "export": "npm run extract && npm run markdown && npm run summary",
-    "dev": "npm run compile && node out/start-web.js --dev",
-    "web": "node out/start-web.js",
+    "export": "npm run extract && npm run fix && npm run markdown && npm run summary",
     "build": "npm run compile",
-    "open": "open http://localhost:3000"
+    "mcp": "node src/mcp-server.js"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
