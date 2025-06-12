@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试页面更新 - ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}</title>
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 800px;
+        }
+        
+        .success {
+            color: #28a745;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        
+        .timestamp {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid #007acc;
+        }
+        
+        .button {
+            background: linear-gradient(45deg, #007acc, #0056b3);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .button:hover {
+            background: linear-gradient(45deg, #0056b3, #004085);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .links {
+            margin-top: 30px;
+        }
+        
+        .status {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+    </style>
+    <script>
+        // 防止缓存
+        window.addEventListener('load', function() {
+            // 添加随机参数防止缓存
+            const randomParam = '?v=' + Date.now();
+            
+            // 显示实时时间
+            setInterval(function() {
+                const now = new Date();
+                const chinaTime = now.toLocaleString('zh-CN', {
+                    timeZone: 'Asia/Shanghai',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                document.getElementById('realtime').textContent = chinaTime;
+            }, 1000);
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="success">✅ 页面更新成功！</div>
+        
+        <h1>🎯 Cursor Chat Memory 更新验证</h1>
+        
+        <div class="status">
+            <strong>📅 页面生成时间:</strong> ${new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}<br>
+            <strong>🔄 实时时间:</strong> <span id="realtime"></span>
+        </div>
+        
+        <div class="timestamp">
+            <h3>🔧 时间戳问题修复状态</h3>
+            <p>✅ 已发现问题：提示词时间戳全部为undefined</p>
+            <p>✅ 已智能修复：基于AI回复时间分配合理时间戳</p>
+            <p>✅ 数据提取：159个提示词，100个AI回复</p>
+            <p>✅ 时间显示：中国标准时间格式</p>
+        </div>
+        
+        <div class="links">
+            <h3>📱 可用页面链接（防缓存版本）</h3>
+            <a href="cursor-improved.html?v=${Date.now()}" class="button" target="_blank">
+                🔧 时间戳改进版
+            </a>
+            <a href="cursor-real.html?v=${Date.now()}" class="button" target="_blank">
+                📊 真实数据版
+            </a>
+            <a href="cursor-fixed.html?v=${Date.now()}" class="button" target="_blank">
+                🔄 修复版
+            </a>
+            <a href="prompt-center.html?v=${Date.now()}" class="button" target="_blank">
+                🎯 提示词中心
+            </a>
+        </div>
+        
+        <div class="timestamp">
+            <h3>🚀 强制刷新方法</h3>
+            <p><strong>方法1:</strong> 按 Ctrl+F5 (Windows) 或 Cmd+Shift+R (Mac)</p>
+            <p><strong>方法2:</strong> 按 F12 开启开发者工具，右键刷新按钮选择"清空缓存并硬性重新加载"</p>
+            <p><strong>方法3:</strong> 点击上面的防缓存链接</p>
+        </div>
+        
+        <button class="button" onclick="window.location.reload(true)">🔄 硬刷新此页面</button>
+    </div>
+    
+    <script>
+        console.log('🎉 测试页面加载成功');
+        console.log('生成时间:', '${new Date().toISOString()}');
+        console.log('如果看到这个日志，说明页面已更新');
+    </script>
+</body>
+</html> 

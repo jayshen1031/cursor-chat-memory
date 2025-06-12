@@ -1,0 +1,1345 @@
+{
+  "timestamp": "2025/6/11 02:14:30",
+  "recentPromptsCount": 158,
+  "totalPromptsCount": 158,
+  "recentGenerationsCount": 100,
+  "totalGenerationsCount": 100,
+  "recentPrompts": [
+    {
+      "text": "帮我实现，并更新历史会话检索",
+      "commandType": 4,
+      "timestamp": 1749579270500,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "实现cursor-chat-memory提示词中心模块  这个居然是25年1月14号的会话，肯定是不对的，而且我今天有好几个会话已经保存了，理论上应该有记录才是",
+      "commandType": 4,
+      "timestamp": 1749579270500,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "实现cursor-chat-memory提示词中心模块\n功能实现\n2025/1/14\ncursor-chat-memory\n还是这个时间戳啊",
+      "commandType": 4,
+      "timestamp": 1749579270500,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "实现cursor-chat-memory提示词中心模块\n功能实现\n2025/1/14\ncursor-chat-memory\n不是你页面显示的这个1月14号怎么来的",
+      "commandType": 4,
+      "timestamp": 1749579270500,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "我不知道你这个历史会话哪里来的，我今天对话的内容你一个没存",
+      "commandType": 4,
+      "timestamp": 1749579270500,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "不是我看web页面没变啊",
+      "commandType": 4,
+      "timestamp": 1749579270500,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "时间还是不对，6/11/2025, 2:04:22 AM   告诉我如何访问/Users/jay/Library/Application Support/Cursor/User/workspaceStorage/e76c6a8343ed4d7d7b8f77651bad3214/state.vscdb\n 这个是昨天的",
+      "commandType": 4,
+      "timestamp": 1749579270500,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "请用中国时间",
+      "commandType": 4,
+      "timestamp": 1749579270500,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "不对啊，怎么有24年的数据呢，25年6月份的",
+      "commandType": 4,
+      "timestamp": 1749579270500,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "memento/workbench.parts.editor\naiService.generations\naiService.prompts\nmemento/workbench.editors.files.textFileEditor\nhistory.entries\n__$__targetStorageMarker\nworkbench.view.extensions.state\nterminal.integrated.environmentVariableCollectionsV2\ncodelens/cache2\ncomposer.composerData\nworkbench.panel.composerChatViewPane.a079be78-466e-4b3f-98f2-faf7aad71266\nsrc.vs.platform.reactivestorage.browser.reactiveStorageServiceImpl.persistentStorage.workspaceUser\nworkbench.explorer.treeViewState\nworkbench.view.debug.state\nanysphere.cursor-retrieval\nworkbench.backgroundComposer.workspacePersistentData\nworkbench.explorer.views.state\nworkbench.panel.viewContainersWorkspaceState\nworkbench.zenMode.exitInfo\nworkbench.scm.views.state\nmemento/workbench.panel.markers\nterminal.integrated.layoutInfo\nscm:view:visibleRepositories\nworkbench.panel.composerChatViewPane.f41bf6be-620a-47b0-8d83-0878ed2da9df\n\n帮我看看这些在聊天记录的数据库的key是什么意思，构成规则是什么，最重要的是要找到项目、会话、内容",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "这里有个问题，用户提示词和AI回复是分开的，你怎么知道哪个问对应哪个答",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "有没有可能在落库前找到这些关系和内容",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "你帮我试试",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "好",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "那么帮我生成一个记录：项目、会话id、时间、Q、A",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "你这到129，是穷举了么，万一不止129条记录呢",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "继续",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "你给我改造一下start_web.sh",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "不是，我之前是启动一个web页面吧，你这个是shell脚本了",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "数据提取执行404",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    }
+  ],
+  "recentGenerations": [
+    {
+      "unixMs": 1749579259545,
+      "generationUUID": "4df56790-be88-46ba-a732-2c76b3774d9d",
+      "type": "apply",
+      "textDescription": "extract-real-data.js",
+      "timestamp": 1749579259545,
+      "chinaTime": "2025/06/11 02:14:19"
+    },
+    {
+      "unixMs": 1749579146291,
+      "generationUUID": "db4435d9-bd72-4e11-84b0-3a008ce6caf3",
+      "type": "composer",
+      "textDescription": "不对啊，怎么有24年的数据呢，25年6月份的",
+      "timestamp": 1749579146291,
+      "chinaTime": "2025/06/11 02:12:26"
+    },
+    {
+      "unixMs": 1749579070053,
+      "generationUUID": "5d540575-60fe-4a60-95b1-1f8694ead4cd",
+      "type": "apply",
+      "textDescription": "extract-cursor-data.js",
+      "timestamp": 1749579070053,
+      "chinaTime": "2025/06/11 02:11:10"
+    },
+    {
+      "unixMs": 1749578959439,
+      "generationUUID": "5e09b39b-e3eb-45b4-be31-3f2e6bdd9dfd",
+      "type": "apply",
+      "textDescription": "inspect-specific-db.js",
+      "timestamp": 1749578959439,
+      "chinaTime": "2025/06/11 02:09:19"
+    },
+    {
+      "unixMs": 1749578866884,
+      "generationUUID": "a9bb9653-120d-47b3-926c-e0304cc28dc5",
+      "type": "apply",
+      "textDescription": "fix-china-time.js",
+      "timestamp": 1749578866884,
+      "chinaTime": "2025/06/11 02:07:46"
+    },
+    {
+      "unixMs": 1749578765806,
+      "generationUUID": "3a6e7369-6de5-4148-85a2-4529c44a6341",
+      "type": "composer",
+      "textDescription": "请用中国时间",
+      "timestamp": 1749578765806,
+      "chinaTime": "2025/06/11 02:06:05"
+    },
+    {
+      "unixMs": 1749578746890,
+      "generationUUID": "8b078487-09ef-4feb-9998-e12066755f0c",
+      "type": "composer",
+      "textDescription": "时间还是不对，6/11/2025, 2:04:22 AM   告诉我如何访问/Users/jay/Library/Application Support/Cursor/User/workspaceStorage/e76c6a8343ed4d7d7b8f77651bad3214/state.vscdb\n 这个是昨天的",
+      "timestamp": 1749578746890,
+      "chinaTime": "2025/06/11 02:05:46"
+    },
+    {
+      "unixMs": 1749578615349,
+      "generationUUID": "7d066a37-8782-4c19-b562-85cd9d92f9e7",
+      "type": "apply",
+      "textDescription": "update-web-data.js",
+      "timestamp": 1749578615349,
+      "chinaTime": "2025/06/11 02:03:35"
+    },
+    {
+      "unixMs": 1749578546783,
+      "generationUUID": "5421fabb-35bc-4630-b0a7-81d6e22d6a72",
+      "type": "composer",
+      "textDescription": "不是我看web页面没变啊",
+      "timestamp": 1749578546783,
+      "chinaTime": "2025/06/11 02:02:26"
+    },
+    {
+      "unixMs": 1749578188396,
+      "generationUUID": "310d6419-6587-42dd-b213-daac5625fc4a",
+      "type": "apply",
+      "textDescription": "analyze-latest-data.js",
+      "timestamp": 1749578188396,
+      "chinaTime": "2025/06/11 01:56:28"
+    },
+    {
+      "unixMs": 1749578137452,
+      "generationUUID": "1a79087c-228d-4c01-b4ca-aee8e67dce3a",
+      "type": "apply",
+      "textDescription": "scan-all-workspaces.js",
+      "timestamp": 1749578137452,
+      "chinaTime": "2025/06/11 01:55:37"
+    },
+    {
+      "unixMs": 1749578085142,
+      "generationUUID": "b5340dfa-0669-40f9-8766-5575c4bfa803",
+      "type": "apply",
+      "textDescription": "scan-all-workspaces.js",
+      "timestamp": 1749578085142,
+      "chinaTime": "2025/06/11 01:54:45"
+    },
+    {
+      "unixMs": 1749578037672,
+      "generationUUID": "61ef7069-9cbf-42b4-8ec7-2fbdd7b2f0fe",
+      "type": "composer",
+      "textDescription": "我不知道你这个历史会话哪里来的，我今天对话的内容你一个没存",
+      "timestamp": 1749578037672,
+      "chinaTime": "2025/06/11 01:53:57"
+    },
+    {
+      "unixMs": 1749577886190,
+      "generationUUID": "bf9a9a2e-247b-4b72-8c5f-1867889a0b57",
+      "type": "apply",
+      "textDescription": "trace-date-origin.js",
+      "timestamp": 1749577886190,
+      "chinaTime": "2025/06/11 01:51:26"
+    },
+    {
+      "unixMs": 1749577825472,
+      "generationUUID": "0a80a21a-a804-4a6e-8ac5-bc4965b5a7e4",
+      "type": "composer",
+      "textDescription": "实现cursor-chat-memory提示词中心模块\n功能实现\n2025/1/14\ncursor-chat-memory\n不是你页面显示的这个1月14号怎么来的",
+      "timestamp": 1749577825472,
+      "chinaTime": "2025/06/11 01:50:25"
+    },
+    {
+      "unixMs": 1749576552727,
+      "generationUUID": "b7d3b0ff-d5f0-4c0e-8350-b8d794cc4445",
+      "type": "apply",
+      "textDescription": "demo-final-fixed.js",
+      "timestamp": 1749576552727,
+      "chinaTime": "2025/06/11 01:29:12"
+    },
+    {
+      "unixMs": 1749576346612,
+      "generationUUID": "5c98f44e-5607-4e51-997a-6438cf3757a0",
+      "type": "apply",
+      "textDescription": "fix-system-time-issue.js",
+      "timestamp": 1749576346612,
+      "chinaTime": "2025/06/11 01:25:46"
+    },
+    {
+      "unixMs": 1749576291632,
+      "generationUUID": "9569636d-1d08-46f7-beaf-b4b9ac7aa5ae",
+      "type": "apply",
+      "textDescription": "test-comprehensive-timestamp.js",
+      "timestamp": 1749576291632,
+      "chinaTime": "2025/06/11 01:24:51"
+    },
+    {
+      "unixMs": 1749576243086,
+      "generationUUID": "aa7a76e2-ddb1-48ab-a156-325417de8276",
+      "type": "composer",
+      "textDescription": "实现cursor-chat-memory提示词中心模块\n功能实现\n2025/1/14\ncursor-chat-memory\n还是这个时间戳啊",
+      "timestamp": 1749576243086,
+      "chinaTime": "2025/06/11 01:24:03"
+    },
+    {
+      "unixMs": 1749575947733,
+      "generationUUID": "ec3806f8-d439-46e1-9dac-59ffb91a8441",
+      "type": "apply",
+      "textDescription": "demo-prompt-center.js",
+      "timestamp": 1749575947733,
+      "chinaTime": "2025/06/11 01:19:07"
+    }
+  ],
+  "allPrompts": [
+    {
+      "text": "帮我实现，并更新历史会话检索",
+      "commandType": 4,
+      "timestamp": 1749579270500,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "实现cursor-chat-memory提示词中心模块  这个居然是25年1月14号的会话，肯定是不对的，而且我今天有好几个会话已经保存了，理论上应该有记录才是",
+      "commandType": 4,
+      "timestamp": 1749579270500,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "实现cursor-chat-memory提示词中心模块\n功能实现\n2025/1/14\ncursor-chat-memory\n还是这个时间戳啊",
+      "commandType": 4,
+      "timestamp": 1749579270500,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "实现cursor-chat-memory提示词中心模块\n功能实现\n2025/1/14\ncursor-chat-memory\n不是你页面显示的这个1月14号怎么来的",
+      "commandType": 4,
+      "timestamp": 1749579270500,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "我不知道你这个历史会话哪里来的，我今天对话的内容你一个没存",
+      "commandType": 4,
+      "timestamp": 1749579270500,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "不是我看web页面没变啊",
+      "commandType": 4,
+      "timestamp": 1749579270500,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "时间还是不对，6/11/2025, 2:04:22 AM   告诉我如何访问/Users/jay/Library/Application Support/Cursor/User/workspaceStorage/e76c6a8343ed4d7d7b8f77651bad3214/state.vscdb\n 这个是昨天的",
+      "commandType": 4,
+      "timestamp": 1749579270500,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "请用中国时间",
+      "commandType": 4,
+      "timestamp": 1749579270500,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "不对啊，怎么有24年的数据呢，25年6月份的",
+      "commandType": 4,
+      "timestamp": 1749579270500,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "memento/workbench.parts.editor\naiService.generations\naiService.prompts\nmemento/workbench.editors.files.textFileEditor\nhistory.entries\n__$__targetStorageMarker\nworkbench.view.extensions.state\nterminal.integrated.environmentVariableCollectionsV2\ncodelens/cache2\ncomposer.composerData\nworkbench.panel.composerChatViewPane.a079be78-466e-4b3f-98f2-faf7aad71266\nsrc.vs.platform.reactivestorage.browser.reactiveStorageServiceImpl.persistentStorage.workspaceUser\nworkbench.explorer.treeViewState\nworkbench.view.debug.state\nanysphere.cursor-retrieval\nworkbench.backgroundComposer.workspacePersistentData\nworkbench.explorer.views.state\nworkbench.panel.viewContainersWorkspaceState\nworkbench.zenMode.exitInfo\nworkbench.scm.views.state\nmemento/workbench.panel.markers\nterminal.integrated.layoutInfo\nscm:view:visibleRepositories\nworkbench.panel.composerChatViewPane.f41bf6be-620a-47b0-8d83-0878ed2da9df\n\n帮我看看这些在聊天记录的数据库的key是什么意思，构成规则是什么，最重要的是要找到项目、会话、内容",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "这里有个问题，用户提示词和AI回复是分开的，你怎么知道哪个问对应哪个答",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "有没有可能在落库前找到这些关系和内容",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "你帮我试试",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "好",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "那么帮我生成一个记录：项目、会话id、时间、Q、A",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "你这到129，是穷举了么，万一不止129条记录呢",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "继续",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "你给我改造一下start_web.sh",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "不是，我之前是启动一个web页面吧，你这个是shell脚本了",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "数据提取执行404",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "继续",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "这么久测试一个api的curl",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "❌ 提取失败\n错误信息: HTTP 404",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "数据概览 没有数据，数据提取在转圈没响应",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "执行不了？这么久没反应",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "测试这么慢，为什么每次api调用测试都这么慢",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "我不是要你输出excel文件，我要结果在页面展示历史会话内容和基于项目的过滤，以及整个基于项目的全部历史会话的核心内容提炼，核心内容包括操作SOP、核心功能的实现路径、软件工程等；所以页面展示要有几个，1.要有历史会话列表展示，并有基于项目的过滤；2.要有历史会话和提炼核心内容的对应关系，便于对照理解  3.要有整合后的核心内容作为全局记忆便于后续引用",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "页面打开后无法点击，历史会话也无法点击",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "帮我修改下页面布局，标题栏位占了一半的空间，核心的要展示的内容被压缩在3个窗口了，帮我设计个更合理的展示方式，原则是要尽可能的放更多的会话、知识内容",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "🧠 项目知识管理中心\n基于历史会话的智能内容提炼与知识整合  这部分可以去掉",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "🧠 项目知识管理中心  也去掉啊",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "项目知识和同级别的按钮可以放到别的地方么，放到侧边栏？或者和🧠 Cursor Chat Memory 管理中心 合并？或者有更好的想法么",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "把第一个按钮“历史会话”和相关页面删除，同样的还有提示词中心、引用生成",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "历史会话不是项目真实的会话内容",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "1. 先查询 `aiService.generations` 和 `aiService.prompts` 获取聊天内容\n2. 再查询 `workbench.panel.composerChatViewPane.*` 获取会话结构\n3. 最后查询 `composer.composerData` 等获取项目相关信息",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "**总结：在落库前找到聊天关联关系的方案**\n\n### 3. **关键发现点**\n\n- **aiService.prompts** 和 **aiService.generations** 在落库前可能有更完整的结构\n- **会话文件** workbench.panel.composerChatViewPane.* 可能包含完整对话历史\n- **JSON配置文件** 可能保存了未拆分的原始数据\n- **日志文件** 可能记录了API调用的完整上下文\n\n**💡 具体操作步骤：**\n\n1. **开启监控**: ./monitor-cursor-changes.sh\n2. **进行测试聊天**: 在Cursor中问一个问题\n3. **观察变化**: 看哪些文件被更新，特别关注：\n- SQLite数据库的更新时机\n- JSON文件的内容变化\n- 临时文件的创建/删除\n1. **分析发现**:\n- 如果在SQLite更新前有JSON文件变化，可能包含完整结构\n- 如果有临时文件，可能包含API请求/响应对\n- 日志可能记录了完整的对话流程\n\n### **🔍 核心优势：**\n\n- **时序关系**: 能看到数据存储的先后顺序\n- **原始结构**: 可能发现未拆分的完整对话数据\n- **API信息**: 可能包含请求ID、时间戳等关联信息\n- **完整上下文**: 避免了数据库中被拆分的问题\n\n这个方法比直接分析已存储的SQLite数据要有效得多！你想先试试监控脚本吗？\n\n我们成功破解了Cursor聊天数据的问答关联难题！\n\n**🏆 核心成果：**\n\n1. **📍 找到了数据源**：\n- Cursor聊天数据存储在：~/Library/Application Support/Cursor/User/workspaceStorage/{workspace-id}/state.vscdb\n- 关键表：ItemTable，关键字段：aiService.prompts 和 aiService.generations\n1. **🔗 破解了关联机制**：\n- **数组索引对应**：问题和答案通过数组索引一一对应\n- **时间戳验证**：每个AI回复都有unixMs时间戳用于验证\n- **UUID追踪**：每个生成内容都有唯一的generationUUID",
+      "commandType": 4,
+      "timestamp": 1749579270499,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "测试吧",
+      "commandType": 4,
+      "timestamp": 1749579270498,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "不对，为什么还是只有两个历史会话，我看show chat history，这里可以看到3个，一个是昨天的：”拉取最新提交的代码“ 开头的会话，今天有两个，“Generating a name for the chat\"  \"Extracting Key insights from recent conversations\"",
+      "commandType": 4,
+      "timestamp": 1749579270498,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "可以看下cursor的配置文件么，聊天文件的存储地址",
+      "commandType": 4,
+      "timestamp": 1749579270498,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "继续",
+      "commandType": 4,
+      "timestamp": 1749579270498,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "继续修复剩余的API端点",
+      "commandType": 4,
+      "timestamp": 1749579270498,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "继续",
+      "commandType": 4,
+      "timestamp": 1749579270498,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "历史会话管理有大量重复",
+      "commandType": 4,
+      "timestamp": 1749579270498,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "我看show chat history，这里可以看到3个，一个是昨天的：”拉取最新提交的代码“ 开头的会话，今天有两个，“Generating a name for the chat\"  \"Extracting Key insights from recent conversations”  你确定包含了么",
+      "commandType": 4,
+      "timestamp": 1749579270498,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "“有个问题，引用的内容，没有加上项目的标签或者全局引用的标签，无论是web的还是插件的内容引用，都需要精确定位 ”   这个是昨天的对话 ”Generate  a name for the chat\"里的  你能找到么",
+      "commandType": 4,
+      "timestamp": 1749579270498,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "http://localhost:3000/   打开历史会话页面报错",
+      "commandType": 4,
+      "timestamp": 1749579270498,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "其中“帮我看下25年，一下行业的主要客户”这个不属于这个项目，你也列出来了，另外你对Global 和Project的标签是不是有误解，我指的Global是每次我new chat都要加载的不管哪个project，而Project是指针对项目的",
+      "commandType": 4,
+      "timestamp": 1749579270498,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "帮我看下25年，一下行业的主要客户有哪些，手机、家电、汽车  这个对话内容来自于BI项目，你搞错了",
+      "commandType": 4,
+      "timestamp": 1749579270498,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "那你测试一下在Bi的项目下能看到BI的么",
+      "commandType": 4,
+      "timestamp": 1749579270498,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    },
+    {
+      "text": "那你帮我把今天的会话也加载进去到历史页面",
+      "commandType": 4,
+      "timestamp": 1749579270498,
+      "chinaTime": "2025/6/11 02:14:30",
+      "category": "general",
+      "tags": [
+        "提示词"
+      ],
+      "effectiveness": 0.8
+    }
+  ],
+  "allGenerations": [
+    {
+      "unixMs": 1749579259545,
+      "generationUUID": "4df56790-be88-46ba-a732-2c76b3774d9d",
+      "type": "apply",
+      "textDescription": "extract-real-data.js",
+      "timestamp": 1749579259545,
+      "chinaTime": "2025/06/11 02:14:19"
+    },
+    {
+      "unixMs": 1749579146291,
+      "generationUUID": "db4435d9-bd72-4e11-84b0-3a008ce6caf3",
+      "type": "composer",
+      "textDescription": "不对啊，怎么有24年的数据呢，25年6月份的",
+      "timestamp": 1749579146291,
+      "chinaTime": "2025/06/11 02:12:26"
+    },
+    {
+      "unixMs": 1749579070053,
+      "generationUUID": "5d540575-60fe-4a60-95b1-1f8694ead4cd",
+      "type": "apply",
+      "textDescription": "extract-cursor-data.js",
+      "timestamp": 1749579070053,
+      "chinaTime": "2025/06/11 02:11:10"
+    },
+    {
+      "unixMs": 1749578959439,
+      "generationUUID": "5e09b39b-e3eb-45b4-be31-3f2e6bdd9dfd",
+      "type": "apply",
+      "textDescription": "inspect-specific-db.js",
+      "timestamp": 1749578959439,
+      "chinaTime": "2025/06/11 02:09:19"
+    },
+    {
+      "unixMs": 1749578866884,
+      "generationUUID": "a9bb9653-120d-47b3-926c-e0304cc28dc5",
+      "type": "apply",
+      "textDescription": "fix-china-time.js",
+      "timestamp": 1749578866884,
+      "chinaTime": "2025/06/11 02:07:46"
+    },
+    {
+      "unixMs": 1749578765806,
+      "generationUUID": "3a6e7369-6de5-4148-85a2-4529c44a6341",
+      "type": "composer",
+      "textDescription": "请用中国时间",
+      "timestamp": 1749578765806,
+      "chinaTime": "2025/06/11 02:06:05"
+    },
+    {
+      "unixMs": 1749578746890,
+      "generationUUID": "8b078487-09ef-4feb-9998-e12066755f0c",
+      "type": "composer",
+      "textDescription": "时间还是不对，6/11/2025, 2:04:22 AM   告诉我如何访问/Users/jay/Library/Application Support/Cursor/User/workspaceStorage/e76c6a8343ed4d7d7b8f77651bad3214/state.vscdb\n 这个是昨天的",
+      "timestamp": 1749578746890,
+      "chinaTime": "2025/06/11 02:05:46"
+    },
+    {
+      "unixMs": 1749578615349,
+      "generationUUID": "7d066a37-8782-4c19-b562-85cd9d92f9e7",
+      "type": "apply",
+      "textDescription": "update-web-data.js",
+      "timestamp": 1749578615349,
+      "chinaTime": "2025/06/11 02:03:35"
+    },
+    {
+      "unixMs": 1749578546783,
+      "generationUUID": "5421fabb-35bc-4630-b0a7-81d6e22d6a72",
+      "type": "composer",
+      "textDescription": "不是我看web页面没变啊",
+      "timestamp": 1749578546783,
+      "chinaTime": "2025/06/11 02:02:26"
+    },
+    {
+      "unixMs": 1749578188396,
+      "generationUUID": "310d6419-6587-42dd-b213-daac5625fc4a",
+      "type": "apply",
+      "textDescription": "analyze-latest-data.js",
+      "timestamp": 1749578188396,
+      "chinaTime": "2025/06/11 01:56:28"
+    },
+    {
+      "unixMs": 1749578137452,
+      "generationUUID": "1a79087c-228d-4c01-b4ca-aee8e67dce3a",
+      "type": "apply",
+      "textDescription": "scan-all-workspaces.js",
+      "timestamp": 1749578137452,
+      "chinaTime": "2025/06/11 01:55:37"
+    },
+    {
+      "unixMs": 1749578085142,
+      "generationUUID": "b5340dfa-0669-40f9-8766-5575c4bfa803",
+      "type": "apply",
+      "textDescription": "scan-all-workspaces.js",
+      "timestamp": 1749578085142,
+      "chinaTime": "2025/06/11 01:54:45"
+    },
+    {
+      "unixMs": 1749578037672,
+      "generationUUID": "61ef7069-9cbf-42b4-8ec7-2fbdd7b2f0fe",
+      "type": "composer",
+      "textDescription": "我不知道你这个历史会话哪里来的，我今天对话的内容你一个没存",
+      "timestamp": 1749578037672,
+      "chinaTime": "2025/06/11 01:53:57"
+    },
+    {
+      "unixMs": 1749577886190,
+      "generationUUID": "bf9a9a2e-247b-4b72-8c5f-1867889a0b57",
+      "type": "apply",
+      "textDescription": "trace-date-origin.js",
+      "timestamp": 1749577886190,
+      "chinaTime": "2025/06/11 01:51:26"
+    },
+    {
+      "unixMs": 1749577825472,
+      "generationUUID": "0a80a21a-a804-4a6e-8ac5-bc4965b5a7e4",
+      "type": "composer",
+      "textDescription": "实现cursor-chat-memory提示词中心模块\n功能实现\n2025/1/14\ncursor-chat-memory\n不是你页面显示的这个1月14号怎么来的",
+      "timestamp": 1749577825472,
+      "chinaTime": "2025/06/11 01:50:25"
+    },
+    {
+      "unixMs": 1749576552727,
+      "generationUUID": "b7d3b0ff-d5f0-4c0e-8350-b8d794cc4445",
+      "type": "apply",
+      "textDescription": "demo-final-fixed.js",
+      "timestamp": 1749576552727,
+      "chinaTime": "2025/06/11 01:29:12"
+    },
+    {
+      "unixMs": 1749576346612,
+      "generationUUID": "5c98f44e-5607-4e51-997a-6438cf3757a0",
+      "type": "apply",
+      "textDescription": "fix-system-time-issue.js",
+      "timestamp": 1749576346612,
+      "chinaTime": "2025/06/11 01:25:46"
+    },
+    {
+      "unixMs": 1749576291632,
+      "generationUUID": "9569636d-1d08-46f7-beaf-b4b9ac7aa5ae",
+      "type": "apply",
+      "textDescription": "test-comprehensive-timestamp.js",
+      "timestamp": 1749576291632,
+      "chinaTime": "2025/06/11 01:24:51"
+    },
+    {
+      "unixMs": 1749576243086,
+      "generationUUID": "aa7a76e2-ddb1-48ab-a156-325417de8276",
+      "type": "composer",
+      "textDescription": "实现cursor-chat-memory提示词中心模块\n功能实现\n2025/1/14\ncursor-chat-memory\n还是这个时间戳啊",
+      "timestamp": 1749576243086,
+      "chinaTime": "2025/06/11 01:24:03"
+    },
+    {
+      "unixMs": 1749575947733,
+      "generationUUID": "ec3806f8-d439-46e1-9dac-59ffb91a8441",
+      "type": "apply",
+      "textDescription": "demo-prompt-center.js",
+      "timestamp": 1749575947733,
+      "chinaTime": "2025/06/11 01:19:07"
+    },
+    {
+      "unixMs": 1749575858642,
+      "generationUUID": "e3f5ee50-900d-4d75-a961-94fe427a9e62",
+      "type": "composer",
+      "textDescription": "",
+      "timestamp": 1749575858642,
+      "chinaTime": "2025/06/11 01:17:38"
+    },
+    {
+      "unixMs": 1749575806707,
+      "generationUUID": "1dc2307f-0704-4d01-82e6-bc6c935e42fc",
+      "type": "apply",
+      "textDescription": "test-timestamp-fix.js",
+      "timestamp": 1749575806707,
+      "chinaTime": "2025/06/11 01:16:46"
+    },
+    {
+      "unixMs": 1749575597758,
+      "generationUUID": "665853c9-f073-439d-b1c9-23848a6e6a99",
+      "type": "apply",
+      "textDescription": "test-prompt-center.js",
+      "timestamp": 1749575597758,
+      "chinaTime": "2025/06/11 01:13:17"
+    },
+    {
+      "unixMs": 1749575480407,
+      "generationUUID": "5e854111-2b53-482e-b853-1516b096d24b",
+      "type": "apply",
+      "textDescription": "promptCenter.ts",
+      "timestamp": 1749575480407,
+      "chinaTime": "2025/06/11 01:11:20"
+    },
+    {
+      "unixMs": 1749575415642,
+      "generationUUID": "2f004260-cc0e-443f-a666-020c4b807ff7",
+      "type": "apply",
+      "textDescription": "promptCenter.ts",
+      "timestamp": 1749575415642,
+      "chinaTime": "2025/06/11 01:10:15"
+    },
+    {
+      "unixMs": 1749575332517,
+      "generationUUID": "5f32930f-8338-40e4-a7f9-9f29d06b1a8c",
+      "type": "apply",
+      "textDescription": "promptCenter.ts",
+      "timestamp": 1749575332517,
+      "chinaTime": "2025/06/11 01:08:52"
+    },
+    {
+      "unixMs": 1749575245244,
+      "generationUUID": "50bff883-f811-4665-8cb7-ecd0f8644102",
+      "type": "apply",
+      "textDescription": "test-debug-time.js",
+      "timestamp": 1749575245244,
+      "chinaTime": "2025/06/11 01:07:25"
+    },
+    {
+      "unixMs": 1749575203077,
+      "generationUUID": "c95dfc6f-31ea-4c09-9167-d656f027e833",
+      "type": "composer",
+      "textDescription": "实现cursor-chat-memory提示词中心模块  这个居然是25年1月14号的会话，肯定是不对的，而且我今天有好几个会话已经保存了，理论上应该有记录才是",
+      "timestamp": 1749575203077,
+      "chinaTime": "2025/06/11 01:06:43"
+    },
+    {
+      "unixMs": 1749574389209,
+      "generationUUID": "5e9fdbcc-d39d-4c37-a92a-510bac729009",
+      "type": "apply",
+      "textDescription": "demo-qa-correlation.js",
+      "timestamp": 1749574389209,
+      "chinaTime": "2025/06/11 00:53:09"
+    },
+    {
+      "unixMs": 1749574356711,
+      "generationUUID": "55585b99-3588-4725-bc1d-88659d0c514c",
+      "type": "apply",
+      "textDescription": "IMPLEMENTATION_SUMMARY.md",
+      "timestamp": 1749574356711,
+      "chinaTime": "2025/06/11 00:52:36"
+    },
+    {
+      "unixMs": 1749574173786,
+      "generationUUID": "70298671-1005-42cd-943f-bd52e41bc519",
+      "type": "apply",
+      "textDescription": "test-debug-data-structure.js",
+      "timestamp": 1749574173786,
+      "chinaTime": "2025/06/11 00:49:33"
+    },
+    {
+      "unixMs": 1749574137987,
+      "generationUUID": "8d98939c-e087-4baf-9c7e-f818db1dcc29",
+      "type": "apply",
+      "textDescription": "test-debug-qa-pairs.js",
+      "timestamp": 1749574137987,
+      "chinaTime": "2025/06/11 00:48:57"
+    },
+    {
+      "unixMs": 1749574098053,
+      "generationUUID": "53a9b546-96d0-41cc-b8d5-1f6cb64a7129",
+      "type": "composer",
+      "textDescription": "",
+      "timestamp": 1749574098053,
+      "chinaTime": "2025/06/11 00:48:18"
+    },
+    {
+      "unixMs": 1749573824325,
+      "generationUUID": "08a34fe4-3158-4df6-9206-e4e04de49f62",
+      "type": "apply",
+      "textDescription": "test-debug-sessions.js",
+      "timestamp": 1749573824325,
+      "chinaTime": "2025/06/11 00:43:44"
+    },
+    {
+      "unixMs": 1749573705601,
+      "generationUUID": "ad9e5f8a-d808-408d-bc75-79290e390ea4",
+      "type": "apply",
+      "textDescription": "test-sqlite-reader.js",
+      "timestamp": 1749573705601,
+      "chinaTime": "2025/06/11 00:41:45"
+    },
+    {
+      "unixMs": 1749573640844,
+      "generationUUID": "94271fdd-4699-42b3-a03e-5976da2f4564",
+      "type": "apply",
+      "textDescription": "realtimeMonitor.ts",
+      "timestamp": 1749573640844,
+      "chinaTime": "2025/06/11 00:40:40"
+    },
+    {
+      "unixMs": 1749573545180,
+      "generationUUID": "f535ac3a-129e-4016-b79b-28fc757e5a12",
+      "type": "apply",
+      "textDescription": "sqliteChatReader.ts",
+      "timestamp": 1749573545180,
+      "chinaTime": "2025/06/11 00:39:05"
+    },
+    {
+      "unixMs": 1749573439918,
+      "generationUUID": "2ed54e86-6c19-458d-9090-1199b1a88336",
+      "type": "composer",
+      "textDescription": "帮我实现，并更新历史会话检索",
+      "timestamp": 1749573439918,
+      "chinaTime": "2025/06/11 00:37:19"
+    },
+    {
+      "unixMs": 1749573391758,
+      "generationUUID": "0563c8f0-46e5-489c-9046-c473a7924567",
+      "type": "composer",
+      "textDescription": "**总结：在落库前找到聊天关联关系的方案**\n\n### 3. **关键发现点**\n\n- **aiService.prompts** 和 **aiService.generations** 在落库前可能有更完整的结构\n- **会话文件** workbench.panel.composerChatViewPane.* 可能包含完整对话历史\n- **JSON配置文件** 可能保存了未拆分的原始数据\n- **日志文件** 可能记录了API调用的完整上下文\n\n**💡 具体操作步骤：**\n\n1. **开启监控**: ./monitor-cursor-changes.sh\n2. **进行测试聊天**: 在Cursor中问一个问题\n3. **观察变化**: 看哪些文件被更新，特别关注：\n- SQLite数据库的更新时机\n- JSON文件的内容变化\n- 临时文件的创建/删除\n1. **分析发现**:\n- 如果在SQLite更新前有JSON文件变化，可能包含完整结构\n- 如果有临时文件，可能包含API请求/响应对\n- 日志可能记录了完整的对话流程\n\n### **🔍 核心优势：**\n\n- **时序关系**: 能看到数据存储的先后顺序\n- **原始结构**: 可能发现未拆分的完整对话数据\n- **API信息**: 可能包含请求ID、时间戳等关联信息\n- **完整上下文**: 避免了数据库中被拆分的问题\n\n这个方法比直接分析已存储的SQLite数据要有效得多！你想先试试监控脚本吗？\n\n我们成功破解了Cursor聊天数据的问答关联难题！\n\n**🏆 核心成果：**\n\n1. **📍 找到了数据源**：\n- Cursor聊天数据存储在：~/Library/Application Support/Cursor/User/workspaceStorage/{workspace-id}/state.vscdb\n- 关键表：ItemTable，关键字段：aiService.prompts 和 aiService.generations\n1. **🔗 破解了关联机制**：\n- **数组索引对应**：问题和答案通过数组索引一一对应\n- **时间戳验证**：每个AI回复都有unixMs时间戳用于验证\n- **UUID追踪**：每个生成内容都有唯一的generationUUID",
+      "timestamp": 1749573391758,
+      "chinaTime": "2025/06/11 00:36:31"
+    },
+    {
+      "unixMs": 1749572235035,
+      "generationUUID": "8a2a3353-a5e1-4df8-b9cb-34a709bfaee1",
+      "type": "composer",
+      "textDescription": "1. 先查询 `aiService.generations` 和 `aiService.prompts` 获取聊天内容\n2. 再查询 `workbench.panel.composerChatViewPane.*` 获取会话结构\n3. 最后查询 `composer.composerData` 等获取项目相关信息",
+      "timestamp": 1749572235035,
+      "chinaTime": "2025/06/11 00:17:15"
+    },
+    {
+      "unixMs": 1749572175114,
+      "generationUUID": "3130a829-8f53-4629-bb7b-8d426e886b1b",
+      "type": "composer",
+      "textDescription": "历史会话不是项目真实的会话内容",
+      "timestamp": 1749572175114,
+      "chinaTime": "2025/06/11 00:16:15"
+    },
+    {
+      "unixMs": 1749571506424,
+      "generationUUID": "42b7ac13-f4b9-4a05-93bd-3d8eb0647a02",
+      "type": "apply",
+      "textDescription": "script.js",
+      "timestamp": 1749571506424,
+      "chinaTime": "2025/06/11 00:05:06"
+    },
+    {
+      "unixMs": 1749571325583,
+      "generationUUID": "062bea94-03df-44ae-9967-c2d4e6e163b6",
+      "type": "apply",
+      "textDescription": "script.js",
+      "timestamp": 1749571325583,
+      "chinaTime": "2025/06/11 00:02:05"
+    },
+    {
+      "unixMs": 1749571146342,
+      "generationUUID": "527771e4-a0d1-447d-9f40-6c24090c245a",
+      "type": "apply",
+      "textDescription": "index.html",
+      "timestamp": 1749571146342,
+      "chinaTime": "2025/06/10 23:59:06"
+    },
+    {
+      "unixMs": 1749571104358,
+      "generationUUID": "0b3dbcf9-c930-44e4-b835-bb528e450e74",
+      "type": "composer",
+      "textDescription": "把第一个按钮“历史会话”和相关页面删除，同样的还有提示词中心、引用生成",
+      "timestamp": 1749571104358,
+      "chinaTime": "2025/06/10 23:58:24"
+    },
+    {
+      "unixMs": 1749570863488,
+      "generationUUID": "04d33635-a58b-4fa8-834a-6d2889e60cee",
+      "type": "apply",
+      "textDescription": "index.html",
+      "timestamp": 1749570863488,
+      "chinaTime": "2025/06/10 23:54:23"
+    },
+    {
+      "unixMs": 1749570825489,
+      "generationUUID": "6ea13bf8-3d71-4ce3-8964-209597320707",
+      "type": "composer",
+      "textDescription": "项目知识和同级别的按钮可以放到别的地方么，放到侧边栏？或者和🧠 Cursor Chat Memory 管理中心 合并？或者有更好的想法么",
+      "timestamp": 1749570825489,
+      "chinaTime": "2025/06/10 23:53:45"
+    },
+    {
+      "unixMs": 1749570600986,
+      "generationUUID": "f780632f-80b7-4fc4-9ba7-e2eef540b113",
+      "type": "composer",
+      "textDescription": "🧠 项目知识管理中心  也去掉啊",
+      "timestamp": 1749570600986,
+      "chinaTime": "2025/06/10 23:50:00"
+    },
+    {
+      "unixMs": 1749570557882,
+      "generationUUID": "f7b97bb8-eda4-4636-a365-3b9cf13b10f3",
+      "type": "composer",
+      "textDescription": "🧠 项目知识管理中心\n基于历史会话的智能内容提炼与知识整合  这部分可以去掉",
+      "timestamp": 1749570557882,
+      "chinaTime": "2025/06/10 23:49:17"
+    },
+    {
+      "unixMs": 1749570376817,
+      "generationUUID": "1054b1c8-d0a1-41aa-bfd1-b393a518097c",
+      "type": "apply",
+      "textDescription": "style.css",
+      "timestamp": 1749570376817,
+      "chinaTime": "2025/06/10 23:46:16"
+    }
+  ]
+}

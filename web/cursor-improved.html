@@ -1,0 +1,720 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cursor Chat Memory - 时间戳改进版</title>
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .time-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #007acc;
+        }
+        
+        .stat-label {
+            color: #666;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+        
+        .content-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .section-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 2px solid #007acc;
+            padding-bottom: 10px;
+        }
+        
+        .chat-item {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            transition: all 0.2s;
+            background: #fafafa;
+        }
+        
+        .chat-item:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+            background: white;
+        }
+        
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .chat-type {
+            background: #007acc;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .chat-type.generation {
+            background: #28a745;
+        }
+        
+        .chat-time {
+            color: #666;
+            font-size: 13px;
+            font-weight: bold;
+            background: #fff;
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid #ddd;
+        }
+        
+        .chat-content {
+            margin: 12px 0;
+            line-height: 1.7;
+            color: #333;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #007acc;
+            font-size: 14px;
+        }
+        
+        .chat-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: #999;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        
+        .timestamp-indicator {
+            background: #e8f4fd;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 10px;
+            color: #007acc;
+            border: 1px solid #b3d9ff;
+        }
+        
+        .improved-indicator {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 Cursor Chat Memory - 时间戳改进版</h1>
+        <p>智能修复提示词时间戳，基于AI回复时间推断合理的对话时间</p>
+        
+        <div class="improved-indicator">
+            🔧 <strong>时间戳问题已修复！</strong> 原来所有提示词使用同一时间戳 (0 个唯一值)，现已智能分配合理时间
+        </div>
+        
+        <div class="time-info">
+            <strong>⚠️ 原始问题:</strong> 所有提示词都显示相同时间戳 undefined<br>
+            <strong>🔧 修复方法:</strong> 基于AI回复时间戳和对话顺序，为每个提示词分配合理的时间<br>
+            <strong>📅 数据更新时间:</strong> 2025/6/11 02:17:00
+        </div>
+    </div>
+    
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-number">159</div>
+            <div class="stat-label">改进的提示词</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">100</div>
+            <div class="stat-label">AI回复数</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">0</div>
+            <div class="stat-label">原始唯一时间戳</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">159</div>
+            <div class="stat-label">改进后唯一时间</div>
+        </div>
+    </div>
+    
+    <div class="content-section">
+        <h2 class="section-title">📝 改进时间戳的提示词</h2>
+        <div id="promptsList">
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:16:25</span>
+                    </div>
+                    <div class="chat-content">@https://github.com/jayshen1031/cursor-chat-memory   
+帮我拉取最新提交的代码，不管那个分支的</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749579385946.2056</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:15:11</span>
+                    </div>
+                    <div class="chat-content">最新的提交时间是？</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749579311868.6863</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:14:15</span>
+                    </div>
+                    <div class="chat-content">我应该有最新的代码提交才是</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749579255146.7195</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:11:57</span>
+                    </div>
+                    <div class="chat-content">这个项目确实有完整的 VS Code/Cursor 插件功能，请帮我看看</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749579117828.076</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:10:47</span>
+                    </div>
+                    <div class="chat-content">还有插件的功能，但是我看没有自动打开</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749579047087.6936</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:09:17</span>
+                    </div>
+                    <div class="chat-content">有个问题，我执行start ext命令，自动跳转到了TMP.O2MQ6LDOJO</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749578957337.2278</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:07:43</span>
+                    </div>
+                    <div class="chat-content">需要的</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749578863033.911</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:05:54</span>
+                    </div>
+                    <div class="chat-content">执行start ext我选择打开cursor chat memory失败了，没有反应</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749578754206.2102</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:05:21</span>
+                    </div>
+                    <div class="chat-content">我打开别的项目目录可以的，但是打开自己不行</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749578721362.9927</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:03:34</span>
+                    </div>
+                    <div class="chat-content">没有任何历史会话被统计</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749578614306.7876</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:02:23</span>
+                    </div>
+                    <div class="chat-content">. **问题**：Cursor在扩展开发模式下会创建独立的工作区，chat文件被保存在项目目录内的 ~/.cursor/chat/ 而不是全局的 ~/.cursor/chat/，但插件配置指向的是全局目录。
+
+1. 1. **问题**：Cursor在扩展开发模式下会创建独立的工作区，chat文件被保存在项目目录内的 ~/.cursor/chat/ 而不是全局的 ~/.cursor/chat/，但插件配置指向的是全局目录。</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749578543517.8618</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 01:56:15</span>
+                    </div>
+                    <div class="chat-content">可以了</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749578175923.14</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 01:55:28</span>
+                    </div>
+                    <div class="chat-content">帮我提交代码</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749578128720.486</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 01:54:17</span>
+                    </div>
+                    <div class="chat-content">jayshen1031@gmail.com  Anlen.123</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749578057259.587</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 01:53:54</span>
+                    </div>
+                    <div class="chat-content">用ssh的方式吧，我本地的ssh已经认证</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749578034791.7947</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 01:51:19</span>
+                    </div>
+                    <div class="chat-content">你帮我提交吧</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749577879093.752</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 01:50:13</span>
+                    </div>
+                    <div class="chat-content">继续开发其他功能，**您提到的问题和解决方案：**
+
+1. **问题**：Cursor在扩展开发模式下会创建独立的工作区，chat文件被保存在项目目录内的 ~/.cursor/chat/ 而不是全局的 ~/.cursor/chat/，但插件配置指向的是全局目录。
+
+1. 1. **问题**：Cursor在扩展开发模式下会创建独立的工作区，chat文件被保存在项目目录内的 ~/.cursor/chat/ 而不是全局的 ~/.cursor/chat/，但插件配置指向的是全局目录。
+2. **解决方案**：插件已经实现了智能路径检测：
+- 开发模式下优先检查 项目目录/~/.cursor/chat/
+- 如果找不到则回退到全局 ~/.cursor/chat/
+- 自动选择有chat文件的目录
+
+1. **现状**：从CLI输出 📁 检测到chat目录: /Users/jay/同步空间/projects/cursor-chat-memory/~/.cursor/chat (10个文件) 可以确认插件正确找到并使用了项目内的chat目录。
+
+1. 1. **现状**：从CLI输出 📁 检测到...</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749577813728.7302</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 01:28:43</span>
+                    </div>
+                    <div class="chat-content">1. **包含路径问题解决方案的会话存在**：`very-long-conversation.json`（13KB）包含了完整的讨论
+2. **插件能正确检测并加载**：CLI显示成功处理了相关会话
+3. **重要信息在引用中**：在 `recent` 模板中，第2项就是包含路径问题解决方案的会话
+
+这个功能呢</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749576523432.955</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 01:25:33</span>
+                    </div>
+                    <div class="chat-content">好</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749576333814.3083</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type">提示词</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 01:24:24</span>
+                    </div>
+                    <div class="chat-content">插件好像被自动禁用了</div>
+                    <div class="chat-meta">
+                        <span class="timestamp-indicator">原始: undefined</span>
+                        <span class="timestamp-indicator">改进: 1749576264940.6355</span>
+                    </div>
+                </div>
+            
+        </div>
+    </div>
+    
+    <div class="content-section">
+        <h2 class="section-title">🤖 AI回复 (原始时间戳)</h2>
+        <div id="generationsList">
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:16:49</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: fd1843ce-dbf2-47cd-b8db-c7b4d7b3362a</span>
+                        <span class="timestamp-indicator">时间戳: 1749579409013</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:15:34</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: 214d0eea-2290-45ba-a29c-50f1ece3776d</span>
+                        <span class="timestamp-indicator">时间戳: 1749579334262</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:14:19</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: 4df56790-be88-46ba-a732-2c76b3774d9d</span>
+                        <span class="timestamp-indicator">时间戳: 1749579259545</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:12:26</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: db4435d9-bd72-4e11-84b0-3a008ce6caf3</span>
+                        <span class="timestamp-indicator">时间戳: 1749579146291</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:11:10</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: 5d540575-60fe-4a60-95b1-1f8694ead4cd</span>
+                        <span class="timestamp-indicator">时间戳: 1749579070053</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:09:19</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: 5e09b39b-e3eb-45b4-be31-3f2e6bdd9dfd</span>
+                        <span class="timestamp-indicator">时间戳: 1749578959439</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:07:46</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: a9bb9653-120d-47b3-926c-e0304cc28dc5</span>
+                        <span class="timestamp-indicator">时间戳: 1749578866884</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:06:05</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: 3a6e7369-6de5-4148-85a2-4529c44a6341</span>
+                        <span class="timestamp-indicator">时间戳: 1749578765806</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:05:46</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: 8b078487-09ef-4feb-9998-e12066755f0c</span>
+                        <span class="timestamp-indicator">时间戳: 1749578746890</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:03:35</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: 7d066a37-8782-4c19-b562-85cd9d92f9e7</span>
+                        <span class="timestamp-indicator">时间戳: 1749578615349</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 02:02:26</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: 5421fabb-35bc-4630-b0a7-81d6e22d6a72</span>
+                        <span class="timestamp-indicator">时间戳: 1749578546783</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 01:56:28</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: 310d6419-6587-42dd-b213-daac5625fc4a</span>
+                        <span class="timestamp-indicator">时间戳: 1749578188396</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 01:55:37</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: 1a79087c-228d-4c01-b4ca-aee8e67dce3a</span>
+                        <span class="timestamp-indicator">时间戳: 1749578137452</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 01:54:45</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: b5340dfa-0669-40f9-8766-5575c4bfa803</span>
+                        <span class="timestamp-indicator">时间戳: 1749578085142</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 01:53:57</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: 61ef7069-9cbf-42b4-8ec7-2fbdd7b2f0fe</span>
+                        <span class="timestamp-indicator">时间戳: 1749578037672</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 01:51:26</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: bf9a9a2e-247b-4b72-8c5f-1867889a0b57</span>
+                        <span class="timestamp-indicator">时间戳: 1749577886190</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 01:50:25</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: 0a80a21a-a804-4a6e-8ac5-bc4965b5a7e4</span>
+                        <span class="timestamp-indicator">时间戳: 1749577825472</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 01:29:12</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: b7d3b0ff-d5f0-4c0e-8350-b8d794cc4445</span>
+                        <span class="timestamp-indicator">时间戳: 1749576552727</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 01:25:46</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: 5c98f44e-5607-4e51-997a-6438cf3757a0</span>
+                        <span class="timestamp-indicator">时间戳: 1749576346612</span>
+                    </div>
+                </div>
+            
+                <div class="chat-item">
+                    <div class="chat-header">
+                        <span class="chat-type generation">AI回复</span>
+                        <span class="chat-time">🇨🇳 2025/06/11 01:24:51</span>
+                    </div>
+                    <div class="chat-content"></div>
+                    <div class="chat-meta">
+                        <span>UUID: 9569636d-1d08-46f7-beaf-b4b9ac7aa5ae</span>
+                        <span class="timestamp-indicator">时间戳: 1749576291632</span>
+                    </div>
+                </div>
+            
+        </div>
+    </div>
+
+    <script>
+        console.log('✅ 时间戳改进版页面已加载');
+        console.log('原始提示词唯一时间戳数量:', 0);
+        console.log('改进后提示词数量:', 159);
+        console.log('AI回复数量:', 100);
+    </script>
+</body>
+</html>

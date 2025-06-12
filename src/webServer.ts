@@ -80,8 +80,19 @@ export class WebServer {
     switch (pathname) {
       case '/api/sessions':
         if (method === 'GET') {
-          // 🆕 优先返回项目相关的会话，而不是所有会话
-          const sessions = this.memoryService.getProjectSessions(this.projectPath);
+                    // 🆕 优先返回项目相关的会话，而不是所有会话
+          const rawSessions = this.memoryService.getProjectSessions(this.projectPath);
+          
+          // 🔧 去重处理：移除重复的会话
+          const uniqueSessions = this.deduplicateSessionsByContent(rawSessions);
+          
+          // 🔧 修复: 将lastActivity映射为timestamp以兼容前端
+          const sessions = uniqueSessions.map(session => ({
+            ...session,
+            timestamp: new Date(session.lastActivity).toISOString(),
+            project: this.detectSessionProject(session, this.projectPath)
+          }));
+          
           this.sendJSON(res, { sessions });
         }
         break;
@@ -554,6 +565,137 @@ export class WebServer {
   private sendJSON(res: http.ServerResponse, data: any) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(data));
+  }
+
+  /**
+   * 🔧 检测会话所属项目
+   */
+  private detectSessionProject(session: any, projectPath?: string): string {
+    // 优先从tags中查找项目标签
+    const projectTag = session.tags?.find((tag: any) => tag.category === 'project')?.name;
+    if (projectTag && projectTag !== '项目') {
+      return projectTag;
+    }
+    
+    // 基于内容和标题判断项目归属
+    const content = (session.title + ' ' + session.summary || '').toLowerCase();
+    
+    // cursor-chat-memory项目关键词
+    const cursorKeywords = [
+      'cursor-chat-memory', 'cursor chat memory', 'chat memory', 'memory service',
+      '聊天记忆', '提示词中心', 'prompt center', 'sqlite', 'vscode', '插件',
+      '引用生成', 'reference', '会话管理', '智能引用', '历史会话', 'web界面',
+      'webserver', '项目过滤', 'timestamp', 'lastactivity'
+    ];
+    
+    if (cursorKeywords.some(keyword => content.includes(keyword))) {
+      return 'cursor-chat-memory';
+    }
+    
+    // 如果当前在cursor-chat-memory项目目录下且内容相关，归类为项目会话
+    if (projectPath && projectPath.includes('cursor-chat-memory')) {
+      return 'cursor-chat-memory';
+    }
+    
+    // 其他项目判断
+    if (content.includes('客户') || content.includes('汽车') || content.includes('家电') || content.includes('25年')) {
+      return 'BI项目';
+    }
+    
+    return 'cursor-chat-memory'; // 默认归类到当前项目
+  }
+
+  /**
+   * 🔧 基于内容合并相同会话
+   */
+  private deduplicateSessionsByContent(sessions: any[]): any[] {
+    const sessionGroups = new Map<string, any[]>();
+    
+    // 第一步：按标题分组
+    for (const session of sessions) {
+      const titleKey = this.normalizeTitle(session.title);
+      
+      if (!sessionGroups.has(titleKey)) {
+        sessionGroups.set(titleKey, []);
+      }
+      sessionGroups.get(titleKey)!.push(session);
+    }
+    
+    // 第二步：合并每个组的会话
+    const mergedSessions: any[] = [];
+    
+    for (const [titleKey, group] of sessionGroups.entries()) {
+      if (group.length === 1) {
+        // 单个会话，直接保留
+        mergedSessions.push(group[0]);
+      } else {
+        // 多个相同标题的会话，进行合并
+        const mergedSession = this.mergeSessions(group);
+        mergedSessions.push(mergedSession);
+      }
+    }
+    
+    return mergedSessions;
+  }
+
+  /**
+   * 🔧 标准化会话标题用于分组
+   */
+  private normalizeTitle(title: string): string {
+    const normalized = (title || '').trim().toLowerCase()
+      .replace(/\d{4}-\d{2}-\d{2}/g, '') // 移除日期
+      .replace(/\d{2}:\d{2}/g, '') // 移除时间
+      .replace(/第\d+个/g, '') // 移除序号
+      .replace(/\s+/g, ' ') // 标准化空格
+      .trim();
+    
+    return normalized;
+  }
+
+  /**
+   * 🔧 合并相同标题的多个会话
+   */
+  private mergeSessions(sessions: any[]): any {
+    if (sessions.length === 1) {
+      return sessions[0];
+    }
+
+    // 按时间排序，获取最新和最早的会话
+    const sortedSessions = sessions.sort((a, b) => b.lastActivity - a.lastActivity);
+    const latestSession = sortedSessions[0];
+    const earliestSession = sortedSessions[sortedSessions.length - 1];
+
+    // 合并摘要信息
+    const summaries = sessions
+      .map(s => s.summary || '')
+      .filter(s => s.trim().length > 0)
+      .map(s => s.trim());
+    
+    // 去重并合并摘要
+    const uniqueSummaries = [...new Set(summaries)];
+    const mergedSummary = uniqueSummaries.join(' | ');
+
+    // 合并标签
+    const allTags = sessions.flatMap(s => s.tags || []);
+    const uniqueTags = allTags.filter((tag, index, self) => 
+      index === self.findIndex(t => t.name === tag.name && t.category === tag.category)
+    );
+
+    // 创建合并后的会话
+    const mergedSession = {
+      ...latestSession, // 使用最新会话作为基础
+      id: `merged-${latestSession.id}`, // 标记为合并会话
+      summary: mergedSummary.length > 500 ? mergedSummary.substring(0, 500) + '...' : mergedSummary,
+      tags: uniqueTags,
+      originalSessions: sessions.length, // 记录合并了多少个会话
+      timeSpan: {
+        earliest: new Date(earliestSession.lastActivity).toISOString(),
+        latest: new Date(latestSession.lastActivity).toISOString(),
+        duration: Math.round((latestSession.lastActivity - earliestSession.lastActivity) / (1000 * 60 * 60)) // 小时
+      }
+    };
+
+    return mergedSession;
   }
 
   public async start(): Promise<void> {

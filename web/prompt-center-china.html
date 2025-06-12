@@ -1,0 +1,205 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cursor Chat Memory - 提示词中心 (中国时间)</title>
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .time-info {
+            background: #e8f4fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #007acc;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007acc;
+        }
+        
+        .stat-label {
+            color: #666;
+            margin-top: 8px;
+        }
+        
+        .prompts-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .section-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .prompt-card {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            transition: box-shadow 0.2s;
+        }
+        
+        .prompt-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .prompt-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .prompt-category {
+            background: #007acc;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .prompt-time {
+            color: #666;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .prompt-content {
+            margin: 12px 0;
+            line-height: 1.5;
+            color: #333;
+        }
+        
+        .prompt-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .tag {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-right: 4px;
+        }
+        
+        .prompt-effectiveness {
+            font-weight: bold;
+            color: #28a745;
+        }
+        
+        .refresh-btn {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        
+        .refresh-btn:hover {
+            background: #005a9e;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🇨🇳 Cursor Chat Memory - 提示词中心 (中国时间)</h1>
+        <p>智能提示词管理和分析平台 - 使用中国标准时间显示</p>
+        <div class="time-info">
+            <strong>🕒 当前时间 (中国标准时间):</strong> <span id="currentTime"></span><br>
+            <strong>📅 数据更新时间:</strong> 2025/6/11 02:08:46
+        </div>
+        <button class="refresh-btn" onclick="location.reload()">🔄 刷新页面</button>
+    </div>
+    
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-number">0</div>
+            <div class="stat-label">今日提示词</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">0</div>
+            <div class="stat-label">总提示词数</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">0</div>
+            <div class="stat-label">显示数量</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">100%</div>
+            <div class="stat-label">时间修复</div>
+        </div>
+    </div>
+    
+    <div class="prompts-container">
+        <h2 class="section-title">📝 今日提示词 (中国时间)</h2>
+        <div id="promptsList">
+            
+        </div>
+    </div>
+
+    <script>
+        // 实时更新中国时间
+        function updateCurrentTime() {
+            const now = new Date();
+            const chinaTime = now.toLocaleString('zh-CN', {
+                timeZone: 'Asia/Shanghai',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('currentTime').textContent = chinaTime;
+        }
+        
+        // 每秒更新时间
+        updateCurrentTime();
+        setInterval(updateCurrentTime, 1000);
+        
+        console.log('✅ 中国时间修复版提示词中心已加载');
+        console.log('今日提示词数量:', 0);
+        console.log('总提示词数量:', 0);
+    </script>
+</body>
+</html>

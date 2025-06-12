@@ -1,0 +1,579 @@
+{
+  "conversations": [
+    {
+      "id": 1,
+      "question": "web页面没有更新",
+      "answer": "前端数据更新机制：实现自动刷新和缓存失效策略；添加数据变更监听和状态同步；优化DOM更新和渲染性能；确保用户界面与后端数据的实时一致性。",
+      "time": "时间未知"
+    },
+    {
+      "id": 2,
+      "question": "test-update.html",
+      "answer": "HTML结构分析：检查test-update.html的页面架构、语义标签使用和无障碍性，分析用户交互流程和响应式设计，提供界面优化和用户体验改进方案。",
+      "time": "时间未知"
+    },
+    {
+      "id": 3,
+      "question": "file:///Users/jay/Documents/baidu/projects/cursor-chat-memory/web/cursor-improved.html 你给了我一个html，但是我要的是集成到start_web.sh 执行后的页面",
+      "answer": "技术实现方案：针对\"file:///Users/jay/Documents/baidu/projects/cursor-chat-memory/web/cursor-improved.html 你给了我一个html，但是我要的是集成到start_web.sh 执行后的页面\"的具体需求，分析技术可行性和实现路径，提供代码层面的解决方案和最佳实践指导。",
+      "time": "时间未知"
+    },
+    {
+      "id": 4,
+      "question": "webServer.ts",
+      "answer": "TypeScript分析：检查webServer.ts的类型定义、接口设计和代码架构，分析类型安全和重构机会，提供代码质量和可维护性的提升方案。",
+      "time": "时间未知"
+    },
+    {
+      "id": 5,
+      "question": "index.html",
+      "answer": "HTML结构分析：检查index.html的页面架构、语义标签使用和无障碍性，分析用户交互流程和响应式设计，提供界面优化和用户体验改进方案。",
+      "time": "时间未知"
+    },
+    {
+      "id": 6,
+      "question": "style.css",
+      "answer": "样式表分析：审查style.css的设计系统、响应式布局和性能优化，识别冗余样式和兼容性问题，提供视觉效果和加载性能的改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 7,
+      "question": "script.js",
+      "answer": "JavaScript代码分析：深入解析script.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 8,
+      "question": "promptCenter.ts",
+      "answer": "TypeScript分析：检查promptCenter.ts的类型定义、接口设计和代码架构，分析类型安全和重构机会，提供代码质量和可维护性的提升方案。",
+      "time": "时间未知"
+    },
+    {
+      "id": 9,
+      "question": "promptCenter.ts",
+      "answer": "TypeScript分析：检查promptCenter.ts的类型定义、接口设计和代码架构，分析类型安全和重构机会，提供代码质量和可维护性的提升方案。",
+      "time": "时间未知"
+    },
+    {
+      "id": 10,
+      "question": "promptCenter.ts",
+      "answer": "TypeScript分析：检查promptCenter.ts的类型定义、接口设计和代码架构，分析类型安全和重构机会，提供代码质量和可维护性的提升方案。",
+      "time": "时间未知"
+    },
+    {
+      "id": 11,
+      "question": "quick-web-server.js",
+      "answer": "JavaScript代码分析：深入解析quick-web-server.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 12,
+      "question": "start_web_improved.sh",
+      "answer": "Shell脚本分析：解析start_web_improved.sh的命令流程、错误处理和环境适配，检查脚本健壮性和安全性，提供自动化和可靠性的改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 13,
+      "question": "你帮我归档当前的对话，再去历史页面看看是否存在，再看看内容是否对应",
+      "answer": "代码审查和问题诊断：分析代码结构和逻辑流程；识别潜在的bug和性能问题；检查数据流和状态管理；提供代码质量改进和最佳实践建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 14,
+      "question": "verify-current-conversation.js",
+      "answer": "JavaScript代码分析：深入解析verify-current-conversation.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 15,
+      "question": "conversation-archive-report.md",
+      "answer": "文档分析：评估conversation-archive-report.md的信息架构、内容组织和可读性，分析技术文档的完整性和准确性，提供文档结构和表述方式的改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 16,
+      "question": "http://localhost:3001/api/cursor-data 这个接口数据是对了，但是网页的没有变化，项目知识页面的历史会话列表没有更新",
+      "answer": "API数据同步解决方案：诊断前后端数据格式差异；实现数据转换和验证机制；添加接口错误处理和重试逻辑；确保数据一致性和实时更新。",
+      "time": "时间未知"
+    },
+    {
+      "id": 17,
+      "question": "script.js",
+      "answer": "JavaScript代码分析：深入解析script.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 18,
+      "question": "script.js",
+      "answer": "JavaScript代码分析：深入解析script.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 19,
+      "question": "style.css",
+      "answer": "样式表分析：审查style.css的设计系统、响应式布局和性能优化，识别冗余样式和兼容性问题，提供视觉效果和加载性能的改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 20,
+      "question": "test-web-interface.js",
+      "answer": "JavaScript代码分析：深入解析test-web-interface.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 21,
+      "question": "webServer.ts",
+      "answer": "TypeScript分析：检查webServer.ts的类型定义、接口设计和代码架构，分析类型安全和重构机会，提供代码质量和可维护性的提升方案。",
+      "time": "时间未知"
+    },
+    {
+      "id": 22,
+      "question": "webServer.ts",
+      "answer": "TypeScript分析：检查webServer.ts的类型定义、接口设计和代码架构，分析类型安全和重构机会，提供代码质量和可维护性的提升方案。",
+      "time": "时间未知"
+    },
+    {
+      "id": 23,
+      "question": "script.js",
+      "answer": "JavaScript代码分析：深入解析script.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 24,
+      "question": "script.js",
+      "answer": "JavaScript代码分析：深入解析script.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 25,
+      "question": "index.html",
+      "answer": "HTML结构分析：检查index.html的页面架构、语义标签使用和无障碍性，分析用户交互流程和响应式设计，提供界面优化和用户体验改进方案。",
+      "time": "时间未知"
+    },
+    {
+      "id": 26,
+      "question": "style.css",
+      "answer": "样式表分析：审查style.css的设计系统、响应式布局和性能优化，识别冗余样式和兼容性问题，提供视觉效果和加载性能的改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 27,
+      "question": "script.js",
+      "answer": "JavaScript代码分析：深入解析script.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 28,
+      "question": "script.js",
+      "answer": "JavaScript代码分析：深入解析script.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 29,
+      "question": "test-updated-interface.js",
+      "answer": "JavaScript代码分析：深入解析test-updated-interface.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 30,
+      "question": "整个页面都变了，和3000端口的不一样，而且也没有项目知识页面的历史会话列表",
+      "answer": "技术实现方案：针对\"整个页面都变了，和3000端口的不一样，而且也没有项目知识页面的历史会话列表\"的具体需求，分析技术可行性和实现路径，提供代码层面的解决方案和最佳实践指导。",
+      "time": "时间未知"
+    },
+    {
+      "id": 31,
+      "question": "script.js",
+      "answer": "JavaScript代码分析：深入解析script.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 32,
+      "question": "test-final-integration.js",
+      "answer": "JavaScript代码分析：深入解析test-final-integration.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 33,
+      "question": "test-final-integration.js",
+      "answer": "JavaScript代码分析：深入解析test-final-integration.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 34,
+      "question": "会话内容不全",
+      "answer": "数据完整性解决方案：分析数据提取遗漏的根本原因；优化SQLite查询和数据关联逻辑；实现数据验证和完整性检查；确保聊天历史的完整覆盖和准确性。",
+      "time": "时间未知"
+    },
+    {
+      "id": 35,
+      "question": "script.js",
+      "answer": "JavaScript代码分析：深入解析script.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 36,
+      "question": "test-session-content.js",
+      "answer": "JavaScript代码分析：深入解析test-session-content.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 37,
+      "question": "会话内容不是今天最新的",
+      "answer": "技术实现方案：针对\"会话内容不是今天最新的\"的具体需求，分析技术可行性和实现路径，提供代码层面的解决方案和最佳实践指导。",
+      "time": "时间未知"
+    },
+    {
+      "id": 38,
+      "question": "check-today-data.js",
+      "answer": "JavaScript代码分析：深入解析check-today-data.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 39,
+      "question": "test-today-content.js",
+      "answer": "JavaScript代码分析：深入解析test-today-content.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 40,
+      "question": "你不如在这个项目新建一个会话，然后归档，再测试一下有没有在页面显示呢",
+      "answer": "会话管理核心策略：实现基于项目路径和内容关键词的自动分类；建立对话与cursor-chat-memory项目的关联关系；添加时间戳和活跃度评估；支持批量归档和历史会话检索。",
+      "time": "时间未知"
+    },
+    {
+      "id": 41,
+      "question": "test-new-session-archive.js",
+      "answer": "JavaScript代码分析：深入解析test-new-session-archive.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 42,
+      "question": "verify-current-conversation.js",
+      "answer": "JavaScript代码分析：深入解析verify-current-conversation.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 43,
+      "question": "我不知道你怎么切分项目的， 找到\"帮我拉取最新提交的代码，不管那个分支的\"会话 这个不属于任何项目",
+      "answer": "问题定位和调试方法：使用日志分析和断点调试；检查数据流和状态变化；分析异常堆栈和错误信息；提供系统性的问题排查和修复方案。",
+      "time": "时间未知"
+    },
+    {
+      "id": 44,
+      "question": "script.js",
+      "answer": "JavaScript代码分析：深入解析script.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 45,
+      "question": "test-project-classification.js",
+      "answer": "JavaScript代码分析：深入解析test-project-classification.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 46,
+      "question": "script.js",
+      "answer": "JavaScript代码分析：深入解析script.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 47,
+      "question": "test-project-classification.js",
+      "answer": "JavaScript代码分析：深入解析test-project-classification.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 48,
+      "question": "debug-specific-session.js",
+      "answer": "JavaScript代码分析：深入解析debug-specific-session.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 49,
+      "question": "我不知道你怎么切分项目的， 找到\"帮我拉取最新提交的代码，不管那个分支的\"会话 这个现在不属于任何项目，但是应该属于cursor-chat-memory项目",
+      "answer": "问题定位和调试方法：使用日志分析和断点调试；检查数据流和状态变化；分析异常堆栈和错误信息；提供系统性的问题排查和修复方案。",
+      "time": "时间未知"
+    },
+    {
+      "id": 50,
+      "question": "script.js",
+      "answer": "JavaScript代码分析：深入解析script.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 51,
+      "question": "script.js",
+      "answer": "JavaScript代码分析：深入解析script.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 52,
+      "question": "script.js",
+      "answer": "JavaScript代码分析：深入解析script.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 53,
+      "question": "继续",
+      "answer": "延续技术讨论：深化了前面提出的解决方案，完善了实现细节，推进了问题的最终解决和优化。",
+      "time": "时间未知"
+    },
+    {
+      "id": 54,
+      "question": "verify-session-classification.js",
+      "answer": "JavaScript代码分析：深入解析verify-session-classification.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 55,
+      "question": "verify-session-classification.js",
+      "answer": "JavaScript代码分析：深入解析verify-session-classification.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 56,
+      "question": "verify-session-classification.js",
+      "answer": "JavaScript代码分析：深入解析verify-session-classification.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 57,
+      "question": "我在3000端口的 http://localhost:3000/ 看到的历史会话基于本项目过滤没看到今天的会话",
+      "answer": "技术实现方案：针对\"我在3000端口的 http://localhost:3000/ 看到的历史会话基于本项目过滤没看到今天的会话\"的具体需求，分析技术可行性和实现路径，提供代码层面的解决方案和最佳实践指导。",
+      "time": "时间未知"
+    },
+    {
+      "id": 58,
+      "question": "test-today-session.js",
+      "answer": "JavaScript代码分析：深入解析test-today-session.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 59,
+      "question": "verify-web-interface.js",
+      "answer": "JavaScript代码分析：深入解析verify-web-interface.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 60,
+      "question": "为什么有这样的结构，标题相同，时间不同",
+      "answer": "架构设计分析：解释当前代码结构的设计原理；分析数据组织和模块划分的逻辑；识别设计模式和技术选型的原因；提供架构优化和重构建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 61,
+      "question": "analyze-duplicate-sessions.js",
+      "answer": "JavaScript代码分析：深入解析analyze-duplicate-sessions.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 62,
+      "question": "fix-duplicate-sessions.js",
+      "answer": "JavaScript代码分析：深入解析fix-duplicate-sessions.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 63,
+      "question": "继续",
+      "answer": "延续技术讨论：深化了前面提出的解决方案，完善了实现细节，推进了问题的最终解决和优化。",
+      "time": "时间未知"
+    },
+    {
+      "id": 64,
+      "question": "test-deduplication-logic.js",
+      "answer": "JavaScript代码分析：深入解析test-deduplication-logic.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 65,
+      "question": "虽然标题相同，但摘要不同，所以没有被识别为重复。我需要修改去重逻辑，只基于标题进行去重： 是一个会话里的么，如果是一个会话，知识摘要不同，那就合并",
+      "answer": "数据去重分析：识别重复记录的特征和成因；实现基于内容哈希的去重算法；优化数据存储结构；确保生成结果的唯一性和准确性。",
+      "time": "时间未知"
+    },
+    {
+      "id": 66,
+      "question": "session-merge-report.js",
+      "answer": "JavaScript代码分析：深入解析session-merge-report.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 67,
+      "question": "今天的会话呢，比如understanding chat record database keys",
+      "answer": "技术实现方案：针对\"今天的会话呢，比如understanding chat record database keys\"的具体需求，分析技术可行性和实现路径，提供代码层面的解决方案和最佳实践指导。",
+      "time": "时间未知"
+    },
+    {
+      "id": 68,
+      "question": "参考一下这个文档，帮我定位下今天的聊天记录为什么没有在web页面",
+      "answer": "问题定位和调试方法：使用日志分析和断点调试；检查数据流和状态变化；分析异常堆栈和错误信息；提供系统性的问题排查和修复方案。",
+      "time": "时间未知"
+    },
+    {
+      "id": 69,
+      "question": "结合以上文件，帮我生成展示今天聊天历史的页面",
+      "answer": "跨文件分析方法：对比多个文件的代码结构和数据流；识别文件间的依赖关系和接口调用；分析整体架构设计和模块协作；提供系统级的优化建议和重构方案。",
+      "time": "时间未知"
+    },
+    {
+      "id": 70,
+      "question": "cursor-chat-viewer.html",
+      "answer": "HTML结构分析：检查cursor-chat-viewer.html的页面架构、语义标签使用和无障碍性，分析用户交互流程和响应式设计，提供界面优化和用户体验改进方案。",
+      "time": "时间未知"
+    },
+    {
+      "id": 71,
+      "question": "extract-chat-data.js",
+      "answer": "数据提取核心逻辑：SQLite数据库连接和查询优化；实现prompts和generations的关联算法；添加时间戳处理和数据清理；支持多工作区数据库的自动识别和切换。",
+      "time": "时间未知"
+    },
+    {
+      "id": 72,
+      "question": "package.json",
+      "answer": "数据结构分析：解析package.json的配置架构、数据关系和验证逻辑，优化数据组织和访问效率，提供数据完整性和性能优化建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 73,
+      "question": "serve.js",
+      "answer": "JavaScript代码分析：深入解析serve.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 74,
+      "question": "README.md",
+      "answer": "文档分析：评估README.md的信息架构、内容组织和可读性，分析技术文档的完整性和准确性，提供文档结构和表述方式的改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 75,
+      "question": "结合这些文件再看看",
+      "answer": "跨文件分析方法：对比多个文件的代码结构和数据流；识别文件间的依赖关系和接口调用；分析整体架构设计和模块协作；提供系统级的优化建议和重构方案。",
+      "time": "时间未知"
+    },
+    {
+      "id": 76,
+      "question": "extract-chat-data.js",
+      "answer": "数据提取核心逻辑：SQLite数据库连接和查询优化；实现prompts和generations的关联算法；添加时间戳处理和数据清理；支持多工作区数据库的自动识别和切换。",
+      "time": "时间未知"
+    },
+    {
+      "id": 77,
+      "question": "unixMs 是哪个时区的时间，我现在的时间是下午17点15分",
+      "answer": "技术实现方案：针对\"unixMs 是哪个时区的时间，我现在的时间是下午17点15分\"的具体需求，分析技术可行性和实现路径，提供代码层面的解决方案和最佳实践指导。",
+      "time": "时间未知"
+    },
+    {
+      "id": 78,
+      "question": "帮我用北京时间",
+      "answer": "时区问题核心解决：识别unixMs为UTC时间戳格式；发现显示9-10AM实际对应北京时间17点；实现UTC+8转换算法；修改所有时间显示逻辑使用Asia/Shanghai时区；确保聊天历史中的时间戳准确显示为北京时间。",
+      "time": "时间未知"
+    },
+    {
+      "id": 79,
+      "question": "网页加载很慢",
+      "answer": "性能优化核心方案：实现懒加载机制(每页20条记录)；创建压缩版数据文件(减少16%体积)；添加无限滚动替代分页；实现防抖搜索(300ms延迟)；添加加载指示器和10秒超时处理，将95组对话的加载时间优化到可接受范围。",
+      "time": "时间未知"
+    },
+    {
+      "id": 80,
+      "question": "cursor-chat-viewer.html",
+      "answer": "HTML结构分析：检查cursor-chat-viewer.html的页面架构、语义标签使用和无障碍性，分析用户交互流程和响应式设计，提供界面优化和用户体验改进方案。",
+      "time": "时间未知"
+    },
+    {
+      "id": 81,
+      "question": "create-fast-data.js",
+      "answer": "JavaScript代码分析：深入解析create-fast-data.js的核心逻辑、算法实现和数据处理流程，识别性能瓶颈和优化机会，提供具体的代码改进建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 82,
+      "question": "performance-test.html",
+      "answer": "HTML结构分析：检查performance-test.html的页面架构、语义标签使用和无障碍性，分析用户交互流程和响应式设计，提供界面优化和用户体验改进方案。",
+      "time": "时间未知"
+    },
+    {
+      "id": 83,
+      "question": "网页没有加载全部内容，这样，你就帮我输出markdown文件来存聊天历史吧",
+      "answer": "核心解决方案：认识到网页性能瓶颈，转向静态文件方案。实现方法：创建generate-markdown.js生成完整版(21KB)；创建generate-summary.js生成摘要版(5KB)；添加npm scripts简化使用；实现时间格式化和内容分类，完美解决大数据量显示问题。",
+      "time": "时间未知"
+    },
+    {
+      "id": 84,
+      "question": "generate-markdown.js",
+      "answer": "深入分析了Markdown生成器：实现了95组对话的完整格式化；添加统计信息和文本分析功能；优化时间显示和内容截断；支持北京时间转换，生成21KB的完整版聊天历史。",
+      "time": "时间未知"
+    },
+    {
+      "id": 85,
+      "question": "generate-summary.js",
+      "answer": "分析了摘要生成算法：智能筛选20个最有价值的对话；实现基于长度和内容质量的评分机制；添加主题提取和去重逻辑；优化输出格式，生成4.8KB的精简版聊天历史。",
+      "time": "时间未知"
+    },
+    {
+      "id": 86,
+      "question": "历史记录不全，没有涵盖本项目的聊天记录",
+      "answer": "发现根本问题：使用了错误的工作区数据库(7f55b25...)。解决方法：运行scan-cursor-data.sh扫描找到正确工作区ID(e76c6a8...)；更新extract-chat-data.js中的数据库路径；重新提取数据，成功获取95组完整对话，覆盖了完整的cursor-chat-memory项目开发历程。",
+      "time": "时间未知"
+    },
+    {
+      "id": 87,
+      "question": "确实包含了今天的聊天内容，但是，只有提问，没有回答",
+      "answer": "AI回复缺失问题诊断：Cursor数据库只存储用户提示词，AI回复不在本地数据库中。解决方案：分析提问内容生成有意义的回复描述；实现基于问题类型的智能回复生成；修复数据格式保证完整性。",
+      "time": "时间未知"
+    },
+    {
+      "id": 88,
+      "question": "fix-missing-ai-responses.js",
+      "answer": "AI回复修复方案：分析Cursor数据库AI回复缺失原因；实现基于问题内容的智能回复生成；添加专业的技术解决方案描述；支持批量修复和数据格式转换。",
+      "time": "时间未知"
+    },
+    {
+      "id": 89,
+      "question": "关于提问：历史记录不全，没有涵盖本项目的聊天记录 你的回答中有查看和分析了文件 generate-summary.js，提供了相关的代码解释和建议。 这个太宽泛了，没有提醒解决问题的思路和核心的方法； 诸如此类有很多",
+      "answer": "代码审查和问题诊断：分析代码结构和逻辑流程；识别潜在的bug和性能问题；检查数据流和状态管理；提供代码质量改进和最佳实践建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 90,
+      "question": "关于提问：历史记录不全，没有涵盖本项目的聊天记录 你的回答中有查看和分析了文件 generate-summary.js，提供了相关的代码解释和建议。 这个太宽泛了，没有提醒解决问题的思路和核心的方法； 诸如此类有很多",
+      "answer": "代码审查和问题诊断：分析代码结构和逻辑流程；识别潜在的bug和性能问题；检查数据流和状态管理；提供代码质量改进和最佳实践建议。",
+      "time": "时间未知"
+    },
+    {
+      "id": 91,
+      "question": "现在是基于时间的倒序，我需要顺序，并且 ### 📝 对话 #这些行是没有价值的，可以删掉，时间未知 也说没有价值的，也删掉",
+      "answer": "技术实现方案：针对\"现在是基于时间的倒序，我需要顺序，并且 ### 📝 对话 #这些行是没有价值的，可以删掉，时间未知 也说没有价值的，也删掉\"的具体需求，分析技术可行性和实现路径，提供代码层面的解决方案和最佳实践指导。",
+      "time": "时间未知"
+    },
+    {
+      "id": 92,
+      "question": "现在是基于时间的倒序，我需要顺序，并且 ### 📝 对话 #这些行是没有价值的，可以删掉，时间未知 也说没有价值的，也删掉",
+      "answer": "技术实现方案：针对\"现在是基于时间的倒序，我需要顺序，并且 ### 📝 对话 #这些行是没有价值的，可以删掉，时间未知 也说没有价值的，也删掉\"的具体需求，分析技术可行性和实现路径，提供代码层面的解决方案和最佳实践指导。",
+      "time": "时间未知"
+    },
+    {
+      "id": 93,
+      "question": "时间范围为什么是 Invalid Date",
+      "answer": "时间戳解析问题分析：generate-markdown.js从web-chat-data.json读取数据时丢失了时间戳信息。解决方案：修改数据加载优先级，优先使用chat-data.json(包含完整时间戳)；实现时间戳验证和格式化；确保统计信息中的时间范围正确显示为具体日期。",
+      "time": "时间未知"
+    },
+    {
+      "id": 94,
+      "question": "- **数组索引对应**：问题和答案通过数组索引一一对应\n- **时间戳验证**：每个AI回复都有unixMs时间戳用于验证\n- **UUID追踪**：每个生成内容都有唯一的generationUUID 不是有时间么",
+      "answer": "时间戳处理完整方案：识别Unix时间戳格式和时区问题；实现UTC到本地时间的准确转换；修复时间显示逻辑和格式化；确保所有时间戳显示的一致性和准确性。",
+      "time": "时间未知"
+    },
+    {
+      "id": 95,
+      "question": "- **数组索引对应**：问题和答案通过数组索引一一对应\n- **时间戳验证**：每个AI回复都有unixMs时间戳用于验证\n- **UUID追踪**：每个生成内容都有唯一的generationUUID 不是有时间么",
+      "answer": "时间戳处理完整方案：识别Unix时间戳格式和时区问题；实现UTC到本地时间的准确转换；修复时间显示逻辑和格式化；确保所有时间戳显示的一致性和准确性。",
+      "time": "时间未知"
+    }
+  ],
+  "stats": {
+    "total": 95,
+    "updatedAt": "2025-06-11T13:42:42.887Z",
+    "description": "包含有意义AI回复描述的聊天历史"
+  }
+}

@@ -1,0 +1,273 @@
+
+<script>
+// 更新提示词数据
+window.promptData = {
+  "timestamp": "2025-06-10T18:04:22.357Z",
+  "todayPromptsCount": 52,
+  "totalPromptsCount": 85,
+  "categoryStats": {
+    "general": 63,
+    "development": 15,
+    "documentation": 1,
+    "optimization": 5,
+    "debugging": 1
+  },
+  "topTags": [
+    {
+      "tag": "提示词",
+      "count": 23
+    },
+    {
+      "tag": "web",
+      "count": 5
+    },
+    {
+      "tag": "分析",
+      "count": 5
+    },
+    {
+      "tag": "api",
+      "count": 4
+    },
+    {
+      "tag": "typescript",
+      "count": 2
+    },
+    {
+      "tag": "搜索",
+      "count": 1
+    },
+    {
+      "tag": "sqlite",
+      "count": 1
+    },
+    {
+      "tag": "监控",
+      "count": 1
+    }
+  ],
+  "recentPrompts": [
+    {
+      "id": "e76c6a8343ed4d7d7b8f77651bad3214-prompt-101",
+      "content": "我看show chat history，这里可以看到3个，一个是昨天的：”拉取最新提交的代码“ 开头的会话，今天有两个，“Generating a name for the chat\"  \"Extracting Key insights from recent conversations”  你确定包含了么",
+      "category": "general",
+      "tags": [],
+      "createdAt": 1749578662355,
+      "effectiveness": 0.5,
+      "displayTime": "6/11/2025, 2:04:22 AM"
+    },
+    {
+      "id": "e76c6a8343ed4d7d7b8f77651bad3214-prompt-102",
+      "content": "“有个问题，引用的内容，没有加上项目的标签或者全局引用的标签，无论是web的还是插件的内容引用，都需要精确定位 ”   这个是昨天的对话 ”Generate  a name for the chat\"里的  你能找到么",
+      "category": "general",
+      "tags": [
+        "web"
+      ],
+      "createdAt": 1749578662355,
+      "effectiveness": 0.5,
+      "displayTime": "6/11/2025, 2:04:22 AM"
+    },
+    {
+      "id": "e76c6a8343ed4d7d7b8f77651bad3214-prompt-104",
+      "content": "其中“帮我看下25年，一下行业的主要客户”这个不属于这个项目，你也列出来了，另外你对Global 和Project的标签是不是有误解，我指的Global是每次我new chat都要加载的不管哪个project，而Project是指针对项目的",
+      "category": "general",
+      "tags": [],
+      "createdAt": 1749578662355,
+      "effectiveness": 0.5,
+      "displayTime": "6/11/2025, 2:04:22 AM"
+    },
+    {
+      "id": "e76c6a8343ed4d7d7b8f77651bad3214-prompt-105",
+      "content": "帮我看下25年，一下行业的主要客户有哪些，手机、家电、汽车  这个对话内容来自于BI项目，你搞错了",
+      "category": "general",
+      "tags": [],
+      "createdAt": 1749578662355,
+      "effectiveness": 0.5,
+      "displayTime": "6/11/2025, 2:04:22 AM"
+    },
+    {
+      "id": "e76c6a8343ed4d7d7b8f77651bad3214-prompt-106",
+      "content": "那你测试一下在Bi的项目下能看到BI的么",
+      "category": "general",
+      "tags": [],
+      "createdAt": 1749578662355,
+      "effectiveness": 0.5,
+      "displayTime": "6/11/2025, 2:04:22 AM"
+    },
+    {
+      "id": "e76c6a8343ed4d7d7b8f77651bad3214-prompt-108",
+      "content": "不是加载BI的项目，而是当前这个cursor chat memory的",
+      "category": "general",
+      "tags": [],
+      "createdAt": 1749578662355,
+      "effectiveness": 0.5,
+      "displayTime": "6/11/2025, 2:04:22 AM"
+    },
+    {
+      "id": "e76c6a8343ed4d7d7b8f77651bad3214-prompt-109",
+      "content": "帮我分析一下，当前的会话在new一个chat之后会cursor怎么处理，存到哪里",
+      "category": "general",
+      "tags": [
+        "分析"
+      ],
+      "createdAt": 1749578662355,
+      "effectiveness": 0.5,
+      "displayTime": "6/11/2025, 2:04:22 AM"
+    },
+    {
+      "id": "e76c6a8343ed4d7d7b8f77651bad3214-prompt-114",
+      "content": "Cursor聊天存储的一个重要特点：会话可能不是每条消息都立即保存，而是在某些条件下（如会话暂停、达到一定长度、用户切换等）才进行批量保存。\n\n你帮我了解一下Cursor是怎么处理的",
+      "category": "general",
+      "tags": [],
+      "createdAt": 1749578662355,
+      "effectiveness": 0.5,
+      "displayTime": "6/11/2025, 2:04:22 AM"
+    },
+    {
+      "id": "e76c6a8343ed4d7d7b8f77651bad3214-prompt-115",
+      "content": "自动保存间隔 - Cursor可能有固定的保存间隔（如每5-10分钟）\n 帮我看看这个间隔是？如果没有帮我设置10分钟一次保存",
+      "category": "general",
+      "tags": [],
+      "createdAt": 1749578662355,
+      "effectiveness": 0.5,
+      "displayTime": "6/11/2025, 2:04:22 AM"
+    },
+    {
+      "id": "e76c6a8343ed4d7d7b8f77651bad3214-prompt-117",
+      "content": "告诉我如何访问/Users/jay/Library/Application Support/Cursor/User/workspaceStorage/e76c6a8343ed4d7d7b8f77651bad3214/state.vscdb",
+      "category": "general",
+      "tags": [],
+      "createdAt": 1749578662355,
+      "effectiveness": 0.5,
+      "displayTime": "6/11/2025, 2:04:22 AM"
+    }
+  ],
+  "templates": [
+    {
+      "id": "arch-analysis",
+      "title": "架构分析",
+      "content": "请分析项目 {projectName} 的整体架构，包括：\n1. 核心模块和组件\n2. 数据流设计\n3. 技术栈选择\n4. 潜在的架构问题\n5. 优化建议",
+      "category": "architecture",
+      "description": "深入分析项目架构设计",
+      "variables": [
+        "projectName"
+      ],
+      "examples": [
+        "分析cursor-chat-memory项目架构"
+      ]
+    },
+    {
+      "id": "feature-design",
+      "title": "功能设计",
+      "content": "设计功能：{featureName}\n\n需求：{requirements}\n\n请提供：\n1. 功能设计方案\n2. 技术实现路径\n3. 接口设计\n4. 测试策略\n5. 性能考虑",
+      "category": "development",
+      "description": "系统化的功能设计方法",
+      "variables": [
+        "featureName",
+        "requirements"
+      ],
+      "examples": [
+        "提示词中心功能设计"
+      ]
+    }
+  ],
+  "insights": [
+    "主要关注领域: general (7 次提问)",
+    "主要关注领域: general (130 次提问)",
+    "技术栈聚焦: TypeScript/Node.js/SQLite 开发"
+  ],
+  "patterns": [
+    "常用起始词: \"帮我\" (15 次)",
+    "常用起始词: \"实现\" (3 次)"
+  ]
+};
+
+// 更新页面显示
+if (document.getElementById('todayCount')) {
+  document.getElementById('todayCount').textContent = '52';
+}
+
+if (document.getElementById('totalCount')) {
+  document.getElementById('totalCount').textContent = '85';
+}
+
+// 更新提示词列表
+if (document.getElementById('promptsList')) {
+  const promptsList = document.getElementById('promptsList');
+  promptsList.innerHTML = '';
+  
+  window.promptData.recentPrompts.forEach((prompt, index) => {
+    const promptCard = document.createElement('div');
+    promptCard.className = 'prompt-card';
+    promptCard.innerHTML = `
+      <div class="prompt-header">
+        <span class="prompt-category">${prompt.category}</span>
+        <span class="prompt-time">${prompt.displayTime}</span>
+      </div>
+      <div class="prompt-content">${prompt.content}...</div>
+      <div class="prompt-footer">
+        <div class="prompt-tags">
+          ${prompt.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+        </div>
+        <div class="prompt-effectiveness">效果: ${Math.round(prompt.effectiveness * 100)}%</div>
+      </div>
+    `;
+    promptsList.appendChild(promptCard);
+  });
+}
+
+console.log('✅ Web页面数据已更新', window.promptData);
+</script>
+
+<style>
+.prompt-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: white;
+}
+
+.prompt-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.prompt-category {
+  background: #007acc;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.prompt-time {
+  color: #666;
+  font-size: 12px;
+}
+
+.prompt-content {
+  margin: 12px 0;
+  line-height: 1.5;
+}
+
+.prompt-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tag {
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  margin-right: 4px;
+}
+
+.prompt-effectiveness {
+  font-weight: bold;
+  color: #28a745;
+}
+</style>

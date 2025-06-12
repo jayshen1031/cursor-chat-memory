@@ -610,59 +610,385 @@ class KnowledgeManager {
     }
 
     static async loadProjectSessions() {
+        this.setProcessing(true, '正在加载项目会话...');
+        
         try {
             console.log('📡 加载项目会话数据...');
             
-            // 使用模拟数据
-            const mockSessions = [
-                {
-                    id: 'session_1',
-                    title: '实现cursor-chat-memory提示词中心模块',
-                    category: 'implementation',
-                    timestamp: '2025-01-14T10:30:00',
-                    project: 'cursor-chat-memory',
-                    messages: [
-                        {
-                            role: 'user',
-                            content: '我需要实现一个提示词中心模块，能够管理和组织各种AI提示词模板',
-                            timestamp: '2025-01-14T10:30:00'
-                        },
-                        {
-                            role: 'assistant', 
-                            content: '我来帮你设计一个功能完整的提示词中心模块。这个模块需要包含以下核心功能：\n\n1. **提示词模板管理**\n   - 创建、编辑、删除提示词\n   - 分类和标签管理\n   - 版本控制\n\n2. **智能搜索和过滤**\n   - 关键词搜索\n   - 分类筛选\n   - 使用频率排序\n\n3. **模板应用**\n   - 一键应用到聊天\n   - 参数化模板支持\n   - 历史使用记录',
-                            timestamp: '2025-01-14T10:31:00'
-                        }
-                    ]
-                },
-                {
-                    id: 'session_2',
-                    title: '优化SQLite数据库查询性能',
-                    category: 'optimization',
-                    timestamp: '2025-01-14T09:15:00',
-                    project: 'cursor-chat-memory',
-                    messages: [
-                        {
-                            role: 'user',
-                            content: '我的SQLite数据库查询很慢，需要优化性能',
-                            timestamp: '2025-01-14T09:15:00'
-                        },
-                        {
-                            role: 'assistant',
-                            content: '针对SQLite性能优化，我建议从以下几个方面入手：\n\n1. **索引优化**\n   - 为经常查询的字段添加索引\n   - 使用复合索引优化多字段查询\n\n2. **查询优化**\n   - 使用EXPLAIN QUERY PLAN分析查询\n   - 避免SELECT *，只查询需要的字段\n\n3. **数据库配置**\n   - 调整cache_size\n   - 使用WAL模式\n   - 合理设置synchronous',
-                            timestamp: '2025-01-14T09:16:00'
-                        }
-                    ]
-                }
-            ];
+            let sessions = [];
+            let usedFixedData = false;
             
-            this.knowledgeState.sessions = mockSessions;
+            // 🆕 优先尝试从原始会话API获取完整数据结构
+            try {
+                console.log('🔍 尝试获取原始会话数据...');
+                const response = await APIClient.get('/api/sessions');
+                sessions = response.sessions || [];
+                
+                if (sessions.length > 0) {
+                    console.log(`✅ 获取到 ${sessions.length} 个原始会话`);
+                }
+            } catch (originalApiError) {
+                console.log('⚠️ 原始会话API不可用');
+            }
+            
+            // 🆕 尝试从修复后数据API获取补充数据
+            try {
+                console.log('🔍 尝试获取修复后的Cursor数据作为补充...');
+                const cursorDataResponse = await fetch('http://localhost:3001/api/cursor-data');
+                
+                if (cursorDataResponse.ok) {
+                    const cursorData = await cursorDataResponse.json();
+                    
+                    if (cursorData.success && cursorData.data) {
+                        console.log(`✅ 成功获取修复后数据 - 今天${cursorData.data.todayPromptsCount}个提示词, ${cursorData.data.todayGenerationsCount}个回复`);
+                        const fixedSessions = this.convertCursorDataToSessions(cursorData.data);
+                        
+                        // 合并数据：用修复后的数据补充原始数据
+                        const mergedSessions = this.mergeSessionData(sessions, fixedSessions);
+                        sessions = mergedSessions;
+                        usedFixedData = true;
+                        
+                        console.log(`📊 合并后会话数量: ${sessions.length} (包含今天${cursorData.data.todayPromptsCount}个最新对话)`);
+                    }
+                }
+            } catch (cursorApiError) {
+                console.log('⚠️ 修复后数据API不可用');
+            }
+            
+            // 如果没有任何数据，使用模拟数据
+            if (sessions.length === 0) {
+                console.log('📝 使用模拟数据');
+                sessions = [
+                    {
+                        id: 'session_1',
+                        title: '实现cursor-chat-memory提示词中心模块',
+                        category: 'implementation',
+                        timestamp: '2025-01-14T10:30:00',
+                        project: 'cursor-chat-memory',
+                        messages: [
+                            {
+                                role: 'user',
+                                content: '我需要实现一个提示词中心模块，能够管理和组织各种AI提示词模板',
+                                timestamp: '2025-01-14T10:30:00'
+                            },
+                            {
+                                role: 'assistant', 
+                                content: '我来帮你设计一个功能完整的提示词中心模块。这个模块需要包含以下核心功能：\n\n1. **提示词模板管理**\n   - 创建、编辑、删除提示词\n   - 分类和标签管理\n   - 版本控制\n\n2. **智能搜索和过滤**\n   - 关键词搜索\n   - 分类筛选\n   - 使用频率排序\n\n3. **模板应用**\n   - 一键应用到聊天\n   - 参数化模板支持\n   - 历史使用记录',
+                                timestamp: '2025-01-14T10:31:00'
+                            }
+                        ]
+                    },
+                    {
+                        id: 'session_2',
+                        title: '优化SQLite数据库查询性能',
+                        category: 'optimization',
+                        timestamp: '2025-01-14T09:15:00',
+                        project: 'cursor-chat-memory',
+                        messages: [
+                            {
+                                role: 'user',
+                                content: '我的SQLite数据库查询很慢，需要优化性能',
+                                timestamp: '2025-01-14T09:15:00'
+                            },
+                            {
+                                role: 'assistant',
+                                content: '针对SQLite性能优化，我建议从以下几个方面入手：\n\n1. **索引优化**\n   - 为经常查询的字段添加索引\n   - 使用复合索引优化多字段查询\n\n2. **查询优化**\n   - 使用EXPLAIN QUERY PLAN分析查询\n   - 避免SELECT *，只查询需要的字段\n\n3. **数据库配置**\n   - 调整cache_size\n   - 使用WAL模式\n   - 合理设置synchronous',
+                                timestamp: '2025-01-14T09:16:00'
+                            }
+                        ]
+                    }
+                ];
+            }
+            
+            this.knowledgeState.sessions = sessions;
             this.renderSessionsList();
             this.updateStats();
             
+            if (typeof NotificationManager !== 'undefined') {
+                const message = usedFixedData 
+                    ? `已加载 ${sessions.length} 个会话（包含修复后数据）` 
+                    : `已加载 ${sessions.length} 个原始会话`;
+                NotificationManager.success(message);
+            }
+            
         } catch (error) {
             console.error('❌ 加载会话数据失败:', error);
-            NotificationManager.error('加载会话数据失败');
+            this.knowledgeState.sessions = [];
+            this.renderSessionsList();
+            if (typeof NotificationManager !== 'undefined') {
+                NotificationManager.error('加载会话数据失败');
+            }
+        } finally {
+            this.setProcessing(false);
         }
+    }
+
+    // 🆕 合并原始会话数据和修复后数据
+    static mergeSessionData(originalSessions, fixedSessions) {
+        const merged = [...originalSessions];
+        const originalTitles = new Set(originalSessions.map(s => s.title));
+        
+        // 添加修复后数据中不存在于原始数据的会话
+        fixedSessions.forEach(fixedSession => {
+            if (!originalTitles.has(fixedSession.title)) {
+                merged.push(fixedSession);
+            }
+        });
+        
+        // 按时间戳降序排序
+        return merged.sort((a, b) => {
+            const timeA = new Date(a.timestamp).getTime();
+            const timeB = new Date(b.timestamp).getTime();
+            return timeB - timeA;
+        });
+    }
+
+    // 🆕 将Cursor数据转换为会话格式的辅助方法
+    static convertCursorDataToSessions(cursorData) {
+        const sessions = [];
+        const prompts = cursorData.improvedPrompts || [];
+        const todayPrompts = cursorData.todayPrompts || [];
+        
+        // 优先处理今天的提示词
+        if (todayPrompts.length > 0) {
+            console.log(`🔥 处理今天的${todayPrompts.length}个最新对话...`);
+            
+            // 按小时分组今天的对话
+            const hourGroups = new Map();
+            
+            todayPrompts.forEach((prompt, index) => {
+                const time = new Date(prompt.improvedTimestamp);
+                const hourKey = `${time.getFullYear()}-${time.getMonth()}-${time.getDate()}-${time.getHours()}`;
+                
+                if (!hourGroups.has(hourKey)) {
+                    hourGroups.set(hourKey, {
+                        hour: time.getHours(),
+                        prompts: [],
+                        timestamp: prompt.improvedTimestamp,
+                        isToday: true
+                    });
+                }
+                
+                hourGroups.get(hourKey).prompts.push(prompt);
+            });
+            
+            // 为今天的对话创建会话
+            Array.from(hourGroups.values()).forEach((group, index) => {
+                const firstPrompt = group.prompts[0];
+                const content = firstPrompt?.text || firstPrompt?.content || '';
+                const messages = this.convertPromptsToMessages(group.prompts);
+                const detectedProject = this.detectProject(content, messages);
+                
+                // 只有真正属于cursor-chat-memory项目的会话才归类到项目下
+                if (detectedProject === 'cursor-chat-memory') {
+                    sessions.push({
+                        id: `today-session-${index}`,
+                        title: this.extractSessionTitle(content),
+                        category: firstPrompt?.category || 'general',
+                        timestamp: new Date(group.timestamp).toISOString(),
+                        project: detectedProject,
+                        isToday: true,
+                        messages: messages
+                    });
+                }
+            });
+        }
+        
+        // 处理其他时间的提示词（跳过今天已处理的）
+        const otherPrompts = prompts.filter(p => !p.isToday);
+        if (otherPrompts.length > 0) {
+            // 按日期分组
+            const dateGroups = new Map();
+            
+            otherPrompts.forEach((prompt, index) => {
+                const time = new Date(prompt.improvedTimestamp);
+                const dateKey = time.toDateString();
+                
+                if (!dateGroups.has(dateKey)) {
+                    dateGroups.set(dateKey, {
+                        date: dateKey,
+                        prompts: [],
+                        timestamp: prompt.improvedTimestamp
+                    });
+                }
+                
+                dateGroups.get(dateKey).prompts.push(prompt);
+            });
+            
+            // 转换为会话格式
+            Array.from(dateGroups.values()).forEach((group, index) => {
+                const firstPrompt = group.prompts[0];
+                const content = firstPrompt?.text || firstPrompt?.content || '';
+                const messages = this.convertPromptsToMessages(group.prompts);
+                const detectedProject = this.detectProject(content, messages);
+                
+                // 只有真正属于cursor-chat-memory项目的会话才归类到项目下
+                if (detectedProject === 'cursor-chat-memory') {
+                    sessions.push({
+                        id: `cursor-session-${index}`,
+                        title: this.extractSessionTitle(content),
+                        category: firstPrompt?.category || 'general',
+                        timestamp: new Date(group.timestamp).toISOString(),
+                        project: detectedProject,
+                        messages: messages
+                    });
+                }
+            });
+        }
+        
+        return sessions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    }
+
+    // 🆕 智能检测会话所属项目
+    static detectProject(content, messages) {
+        const lowerContent = content.toLowerCase();
+        
+        // 如果有完整的消息列表，分析整个会话的主要内容
+        if (messages && messages.length > 0) {
+            // 合并所有消息内容进行分析
+            const fullContent = messages.map(msg => msg.content || msg.text || '').join(' ');
+            const lowerFullContent = fullContent.toLowerCase();
+            
+            console.log(`🔍 分析完整会话: ${messages.length} 条消息, 总长度: ${fullContent.length} 字符`);
+            
+            // 统计项目相关关键词出现次数
+            const projectKeywords = [
+                'cursor chat memory', 'cursor-chat-memory',
+                '聊天记忆', '聊天历史', '会话管理', '提示词中心',
+                '历史会话', 'chat记录', '智能引用',
+                'sqlitechatreader', 'chatmemoryservice',
+                'promptcenter', 'web管理界面',
+                '插件功能', 'vscode插件', 'extension',
+                '项目知识', '智能分析', '提示词管理',
+                'chat history', 'show chat', 'chat目录',
+                'webserver.ts', 'script.js', 'index.html',
+                'web/', 'src/', '.ts', '.js',
+                '归档', '提炼', '总结', '分析',
+                '加载会话', '显示历史', '统计分析',
+                '项目迭代', '工程知识', '内容提取',
+                '插件正常工作', '检测到项目',
+                '启动失败', '修改代码'
+            ];
+            
+            let projectKeywordCount = 0;
+            projectKeywords.forEach(keyword => {
+                const matches = (lowerFullContent.match(new RegExp(keyword, 'g')) || []).length;
+                projectKeywordCount += matches;
+            });
+            
+            // 统计通用关键词出现次数
+            const generalKeywords = [
+                '如何优化网站性能', '怎么做', '什么是',
+                '帮我看下25年', '主要客户', '售前', '评分系统',
+                '客户管理', '数据分析', 'bi项目'
+            ];
+            
+            let generalKeywordCount = 0;
+            generalKeywords.forEach(keyword => {
+                const matches = (lowerFullContent.match(new RegExp(keyword, 'g')) || []).length;
+                generalKeywordCount += matches;
+            });
+            
+            // 特殊处理：如果是GitHub拉取开头，但后续内容大量涉及项目开发
+            const startsWithGitHubPull = fullContent.includes('@https://github.com/') && 
+                                       (lowerFullContent.includes('帮我拉取') || lowerFullContent.includes('拉取最新'));
+            
+            console.log(`📊 关键词统计: 项目相关=${projectKeywordCount}, 通用=${generalKeywordCount}`);
+            
+            // 判断归属
+            if (startsWithGitHubPull && projectKeywordCount > 10) {
+                console.log('✅ GitHub拉取开头，但后续大量项目开发内容 → cursor-chat-memory');
+                return 'cursor-chat-memory';
+            } else if (projectKeywordCount > generalKeywordCount && projectKeywordCount > 5) {
+                console.log('✅ 项目相关内容占主导 → cursor-chat-memory');
+                return 'cursor-chat-memory';
+            } else if (generalKeywordCount > projectKeywordCount) {
+                console.log('❌ 通用内容占主导 → general');
+                return 'general';
+            } else if (projectKeywordCount > 0) {
+                console.log('✅ 包含项目相关内容 → cursor-chat-memory');
+                return 'cursor-chat-memory';
+            }
+            
+            console.log('❌ 未检测到明确项目归属 → general');
+            return 'general';
+        }
+        
+        // 排除：明确的通用问题（单一问题场景）
+        if (lowerContent.includes('如何优化网站性能') || 
+            lowerContent.includes('怎么做') || 
+            lowerContent.includes('什么是') ||
+            lowerContent.includes('帮我看下25年') ||
+            lowerContent.includes('主要客户')) {
+            console.log('❌ 排除通用问题:', content.substring(0, 50) + '...');
+            return 'general';
+        }
+        
+        // cursor-chat-memory项目相关关键词
+        const projectKeywords = [
+            'cursor chat memory', 'cursor-chat-memory',
+            '聊天记忆', '聊天历史', '会话管理', '提示词中心',
+            '历史会话', 'chat记录', '智能引用',
+            'sqlitechatreader', 'chatmemoryservice',
+            'promptcenter', 'web管理界面',
+            '插件功能', 'vscode插件', 'extension',
+            '项目知识', '智能分析', '提示词管理',
+            'chat history', 'show chat', 'chat目录',
+            'webserver.ts', 'script.js', 'index.html'
+        ];
+        
+        // 项目功能相关关键词
+        const featureKeywords = [
+            '归档', '提炼', '总结', '分析',
+            '加载会话', '显示历史', '统计分析',
+            '项目迭代', '工程知识', '内容提取',
+            '插件正常工作', '检测到项目',
+            '启动失败', '修改代码', 'web/', 'src/'
+        ];
+        
+        // 检查是否包含项目关键词
+        const hasProjectKeywords = projectKeywords.some(keyword => 
+            lowerContent.includes(keyword)
+        );
+        
+        // 检查是否包含功能关键词
+        const hasFeatureKeywords = featureKeywords.some(keyword => 
+            lowerContent.includes(keyword)
+        );
+        
+        // 检查是否提到具体的项目文件或组件
+        const hasProjectFiles = lowerContent.includes('webserver.ts') || 
+                               lowerContent.includes('script.js') || 
+                               lowerContent.includes('web/') ||
+                               lowerContent.includes('src/') ||
+                               lowerContent.includes('index.html') ||
+                               lowerContent.includes('chatmemoryservice') ||
+                               lowerContent.includes('promptcenter');
+        
+        // 判断是否属于cursor-chat-memory项目
+        if (hasProjectKeywords || hasFeatureKeywords || hasProjectFiles) {
+            console.log('✅ 检测到项目相关会话:', content.substring(0, 50) + '...');
+            return 'cursor-chat-memory';
+        }
+        
+        console.log('❌ 非项目相关会话:', content.substring(0, 50) + '...');
+        return 'general';
+    }
+
+    // 🆕 提取会话标题
+    static extractSessionTitle(content) {
+        const firstSentence = content.split(/[。！？\n]/)[0];
+        const title = firstSentence.substring(0, 50);
+        return title || '未命名会话';
+    }
+
+    // 🆕 将提示词转换为消息格式
+    static convertPromptsToMessages(prompts) {
+        return prompts.map(prompt => ({
+            role: 'user',
+            content: prompt.text || prompt.content || '',
+            timestamp: new Date(prompt.improvedTimestamp).toISOString()
+        }));
     }
 
     static searchSessions(query) {
