@@ -127,6 +127,24 @@ parse_arguments() {
     fi
 }
 
+# 获取源目录路径 (在改变目录之前)
+get_source_directory() {
+    # 获取脚本所在目录的绝对路径 (兼容macOS)
+    if [ -L "$0" ]; then
+        # 如果是符号链接，获取真实路径
+        SCRIPT_SOURCE_DIR="$(dirname "$(readlink "$0")")"
+        if [[ "$SCRIPT_SOURCE_DIR" != /* ]]; then
+            # 相对路径，需要转换为绝对路径
+            SCRIPT_SOURCE_DIR="$(cd "$(dirname "$0")/$(dirname "$(readlink "$0")")" && pwd)"
+        fi
+    else
+        # 获取脚本所在目录的绝对路径
+        SCRIPT_SOURCE_DIR="$(cd "$(dirname "$0")" && pwd)"
+    fi
+    
+    log_info "脚本源目录: $SCRIPT_SOURCE_DIR"
+}
+
 # 创建目标目录
 setup_target_directory() {
     log_info "设置目标目录: $TARGET_DIR"
@@ -150,21 +168,24 @@ setup_target_directory() {
 copy_core_files() {
     log_info "复制Memory Bank核心文件..."
     
-    SOURCE_DIR="$(dirname "$0")"
+    log_info "源目录: $SCRIPT_SOURCE_DIR"
+    log_info "当前目录: $(pwd)"
     
     # 复制Memory Bank目录
-    if [ -d "$SOURCE_DIR/memory-bank" ]; then
-        cp -r "$SOURCE_DIR/memory-bank" .
+    if [ -d "$SCRIPT_SOURCE_DIR/memory-bank" ]; then
+        cp -r "$SCRIPT_SOURCE_DIR/memory-bank" .
         log_success "复制Memory Bank目录"
     else
-        log_error "源目录中找不到memory-bank文件夹"
+        log_error "源目录中找不到memory-bank文件夹: $SCRIPT_SOURCE_DIR/memory-bank"
+        log_info "可用文件列表:"
+        ls -la "$SCRIPT_SOURCE_DIR/" || true
         exit 1
     fi
     
     # 创建src目录并复制MCP服务器
     mkdir -p src
-    if [ -f "$SOURCE_DIR/src/mcp-server.js" ]; then
-        cp "$SOURCE_DIR/src/mcp-server.js" src/
+    if [ -f "$SCRIPT_SOURCE_DIR/src/mcp-server.js" ]; then
+        cp "$SCRIPT_SOURCE_DIR/src/mcp-server.js" src/
         log_success "复制MCP服务器文件"
     else
         log_error "源目录中找不到src/mcp-server.js"
@@ -172,8 +193,8 @@ copy_core_files() {
     fi
     
     # 复制配置文件
-    if [ -f "$SOURCE_DIR/cursor-mcp-config.json" ]; then
-        cp "$SOURCE_DIR/cursor-mcp-config.json" .
+    if [ -f "$SCRIPT_SOURCE_DIR/cursor-mcp-config.json" ]; then
+        cp "$SCRIPT_SOURCE_DIR/cursor-mcp-config.json" .
         log_success "复制MCP配置文件"
     fi
 }
@@ -569,6 +590,7 @@ main() {
     
     parse_arguments "$@"
     check_dependencies
+    get_source_directory
     setup_target_directory
     copy_core_files
     create_package_json
