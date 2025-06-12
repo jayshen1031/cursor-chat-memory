@@ -1,8 +1,0 @@
-项目,会话ID,时间,Q,A
-cursor-chat-memory,session-001,2025-06-08 15:25:24,帮我启动一下,帮我启动一下
-cursor-chat-memory,session-002,2025-06-08 15:49:04,不对，帮我用rollback那个分支,[无AI回答]
-cursor-chat-memory,session-003,2025-06-08 15:50:54,帮我查看当前的项目分支,不对，帮我用rollback那个分支
-cursor-chat-memory,session-004,2025-06-09 10:43:11,@http://172.16.0.116/wangxin/customer-admission     帮我推到这个项目 用邮箱jay.shen@bondex.com.cn,帮我查看当前的项目分支
-cursor-chat-memory,session-005,2025-06-09 10:47:22,不能同时有两个远程仓库么,@http://172.16.0.116/wangxin/customer-admission     帮我推到这个项目 用邮箱jay.shen@bondex.com.cn
-cursor-chat-memory,session-006,2025-06-09 10:47:54,git@172.16.0.116:wangxin/customer-admission.git,不能同时有两个远程仓库么
-cursor-chat-memory,session-007,2025-06-09 10:48:51,继续,git@172.16.0.116:wangxin/customer-admission.git  
