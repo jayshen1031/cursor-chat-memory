@@ -691,6 +691,11 @@ ${Object.entries(memoryFiles).map(([name, content]) => {
     }
 }
 
-// 启动服务器
-const server = new CursorMemoryMCPServer();
-server.run().catch(console.error); 
+// 导出类
+export { CursorMemoryMCPServer };
+
+// 如果是直接运行此文件，则启动服务器
+if (import.meta.url === `file://${process.argv[1]}`) {
+    const server = new CursorMemoryMCPServer();
+    server.run().catch(console.error);
+} 
