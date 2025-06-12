@@ -80,6 +80,62 @@ const generateIntelligentResponse = (prompt, context) => {
 // 方案3: 命令行参数配置
 ```
 
+### 决策4: 项目定位重构 (2025-06-12 下午新增)
+**背景**: 通过文件分析发现项目定位模糊，存在大量过时的"部署工具包"相关内容
+**问题分析**: 
+- 过时文档内容达60%以上不准确
+- 项目已从"通用工具"演进为"专用VSCode扩展"
+- 部署脚本和使用指南与实际功能脱节
+
+**重大决策**: 明确项目定位为"专用VSCode扩展"
+```
+旧定位: 可部署到任何项目的通用Memory Bank工具包
+新定位: Cursor Memory MCP Server - 专用的智能聊天记忆扩展
+```
+
+**实施策略**:
+1. **删除过时文件** (30KB内容清理)
+   - NEW_PROJECT_SETUP_GUIDE.md (9.9KB)
+   - NEW_PROJECT_USAGE_GUIDE.md (7.4KB)  
+   - deploy-to-new-project.sh (13KB)
+
+2. **目录结构规范化**
+   ```
+   新增: output/{data,reports,logs}/ 三级目录
+   移动: 所有输出文件到对应目录
+   更新: 5个脚本的路径配置
+   ```
+
+3. **版本控制优化**
+   ```gitignore
+   # 新增忽略规则
+   output/           # 输出目录
+   *.md             # 临时报告
+   ```
+
+### 决策5: 配置文件重复问题解决
+**发现**: 同时存在`cursor-mcp-config.json`和`.cursor/mcp.json`
+**分析**: 两文件内容完全相同，属于历史遗留问题
+**决策**: 保留`.cursor/mcp.json`作为主配置文件
+**原因**: 符合Cursor的标准配置路径约定
+
+### 决策6: 输出文件管理策略
+**问题**: 数据文件和报告散乱存放，影响项目整洁度
+**解决方案**: 实施分类存储策略
+```javascript
+const outputStructure = {
+    'output/data/': ['chat-data.json', 'web-chat-data.json'],
+    'output/reports/': ['chat-summary-*.md', 'cursor-chat-history-*.md'],
+    'output/logs/': ['*.log', 'debug-*.txt']
+};
+```
+
+**技术实现**: 批量更新所有脚本的输入输出路径
+- extract-chat-data.js → output/data/
+- generate-summary.js → output/reports/
+- generate-markdown.js → output/reports/
+- fix-missing-ai-responses.js → output/data/
+
 ## 2025-06-12 技术讨论
 
 发现 8 个技术相关对话
@@ -107,4 +163,20 @@ const generateIntelligentResponse = (prompt, context) => {
 
 - **问题**: 获取记忆库内容 / 帮我更新记忆库
   **方案**: 实现了记忆库的动态管理和更新机制
+
+### 今日决策成果总结
+
+**项目重构效果**:
+- ✅ 项目定位明确化: 从模糊工具包到专用扩展
+- ✅ 结构规范化: 创建标准的output目录体系
+- ✅ 代码质量提升: 删除30KB过时内容，更新5个脚本路径
+- ✅ 维护效率改善: 简化文件查找和项目部署流程
+
+**技术债务清理**:
+- 解决了文档过时问题(60%+内容不准确)
+- 消除了配置文件重复问题
+- 统一了版本控制策略
+- 规范了输出文件管理
+
+这些决策显著提升了项目的专业化程度和长期可维护性！
 

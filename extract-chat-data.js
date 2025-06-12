@@ -16,7 +16,7 @@ import os from 'os';
 const CONFIG = {
     // Cursor数据库路径
     cursorDir: path.join(os.homedir(), 'Library/Application Support/Cursor'),
-    outputFile: './chat-data.json',
+    outputFile: './output/data/chat-data.json',
     // 工作区数据库路径（从扫描结果获取）
     workspaceDbPath: '/Users/jay/Library/Application Support/Cursor/User/workspaceStorage/e76c6a8343ed4d7d7b8f77651bad3214/state.vscdb'
 };

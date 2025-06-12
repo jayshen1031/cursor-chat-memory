@@ -45,9 +45,9 @@ class MarkdownGenerator {
      */
     loadChatData() {
         try {
-            // 优先使用包含完整时间戳的chat-data.json
-            if (fs.existsSync('./chat-data.json')) {
-                const chatData = JSON.parse(fs.readFileSync('./chat-data.json', 'utf8'));
+                    // 优先使用包含完整时间戳的chat-data.json
+        if (fs.existsSync('./output/data/chat-data.json')) {
+            const chatData = JSON.parse(fs.readFileSync('./output/data/chat-data.json', 'utf8'));
                 
                 if (chatData.conversations && Array.isArray(chatData.conversations)) {
                     console.log(`加载数据: ${chatData.conversations.length} 条记录`);
@@ -73,8 +73,8 @@ class MarkdownGenerator {
             }
             
             // 回退到web-chat-data.json
-            if (fs.existsSync('./web-chat-data.json')) {
-                const data = JSON.parse(fs.readFileSync('./web-chat-data.json', 'utf8'));
+            if (fs.existsSync('./output/data/web-chat-data.json')) {
+                const data = JSON.parse(fs.readFileSync('./output/data/web-chat-data.json', 'utf8'));
                 
                 // 检查数据格式
                 let conversations = [];
@@ -443,7 +443,7 @@ class MarkdownGenerator {
     saveMarkdownFile(content) {
         const now = new Date();
         const timestamp = now.toISOString().slice(0, 10); // YYYY-MM-DD
-        const filename = `cursor-chat-history-${timestamp}.md`;
+        const filename = `./output/reports/cursor-chat-history-${timestamp}.md`;
         
         try {
             fs.writeFileSync(filename, content, 'utf8');

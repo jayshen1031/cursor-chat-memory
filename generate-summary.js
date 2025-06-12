@@ -27,7 +27,7 @@ class SummaryGenerator {
     }
 
     loadAndFilterData() {
-        const chatData = JSON.parse(fs.readFileSync('./chat-data.json', 'utf8'));
+        const chatData = JSON.parse(fs.readFileSync('./output/data/chat-data.json', 'utf8'));
         console.log(`📖 原始数据: ${chatData.conversations.length} 条记录`);
         
         // 过滤有意义的对话
@@ -160,7 +160,7 @@ class SummaryGenerator {
     }
 
     saveSummaryFile(content) {
-        const filename = `chat-summary-${new Date().toISOString().slice(0, 10)}.md`;
+        const filename = `./output/reports/chat-summary-${new Date().toISOString().slice(0, 10)}.md`;
         
         fs.writeFileSync(filename, content, 'utf8');
         

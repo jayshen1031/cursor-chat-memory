@@ -44,3 +44,7 @@ tmp/
 temp/ 
 # Cursor Chat Memory 缓存
 .cursor-memory/
+
+# Output and generated files
+output/
+*.md

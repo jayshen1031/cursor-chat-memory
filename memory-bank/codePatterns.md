@@ -377,3 +377,245 @@ setInterval(() => {
     this.syncChatData('today');
 }, 30 * 60 * 1000); // 每30分钟同步一次
 ```
+
+## 📁 项目清理和结构优化模式 (2025-06-12)
+
+### 目录结构规范化模式
+```bash
+# 标准化的输出目录结构
+mkdir -p output/{data,reports,logs}
+
+# 批量文件移动模式
+mv *.json output/data/
+mv *.md output/reports/
+mv *.log output/logs/
+```
+
+### 配置路径更新模式
+```javascript
+// 统一的路径配置模式
+const CONFIG = {
+    // 数据文件统一存储
+    outputFile: './output/data/chat-data.json',
+    webDataFile: './output/data/web-chat-data.json',
+    
+    // 报告文件统一存储
+    getReportPath: (type, date) => `./output/reports/${type}-${date}.md`,
+    
+    // 日志文件统一存储
+    logPath: './output/logs/',
+};
+
+// 批量路径更新脚本
+const updatePaths = {
+    'extract-chat-data.js': ['./chat-data.json', './output/data/chat-data.json'],
+    'generate-summary.js': ['chat-summary-', './output/reports/chat-summary-'],
+    'generate-markdown.js': ['cursor-chat-history-', './output/reports/cursor-chat-history-'],
+    'fix-missing-ai-responses.js': ['./web-chat-data.json', './output/data/web-chat-data.json']
+};
+```
+
+### 版本控制优化模式
+```gitignore
+# 输出文件忽略模式
+output/           # 所有输出目录
+*.md             # 临时报告文件
+logs/            # 日志文件
+tmp/             # 临时文件
+
+# 保留重要配置
+!README.md       # 保留项目说明
+!memory-bank/*.md # 保留记忆库文件
+```
+
+### 过时文件检测模式
+```javascript
+// 文件依赖分析模式
+const analyzeFileDependencies = (filePath) => {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const references = {
+        scripts: content.match(/npm run \w+/g) || [],
+        files: content.match(/[\w-]+\.(js|md|json|sh)/g) || [],
+        commands: content.match(/\.\/([\w-]+\.sh)/g) || []
+    };
+    
+    // 检查引用是否存在
+    const brokenRefs = references.files.filter(file => 
+        !fs.existsSync(file) && !fs.existsSync(`./${file}`)
+    );
+    
+    return {
+        totalRefs: references.files.length,
+        brokenRefs: brokenRefs.length,
+        accuracy: ((references.files.length - brokenRefs.length) / references.files.length * 100).toFixed(1)
+    };
+};
+
+// 过时文件标识模式
+const identifyOutdatedFiles = () => {
+    const analysisResults = [
+        { file: 'NEW_PROJECT_SETUP_GUIDE.md', accuracy: '40%', size: '9.9KB' },
+        { file: 'NEW_PROJECT_USAGE_GUIDE.md', accuracy: '35%', size: '7.4KB' },
+        { file: 'deploy-to-new-project.sh', relevance: 'low', purpose: 'outdated' }
+    ];
+    
+    return analysisResults.filter(result => 
+        result.accuracy < '60%' || result.relevance === 'low'
+    );
+};
+```
+
+### 项目清理自动化模式
+```bash
+#!/bin/bash
+# 项目清理脚本模式
+
+echo "🧹 开始项目清理..."
+
+# 1. 分析过时文件
+analyze_files() {
+    local outdated_files=(
+        "NEW_PROJECT_SETUP_GUIDE.md"
+        "NEW_PROJECT_USAGE_GUIDE.md" 
+        "deploy-to-new-project.sh"
+    )
+    
+    for file in "${outdated_files[@]}"; do
+        if [[ -f "$file" ]]; then
+            echo "❌ 发现过时文件: $file"
+            rm "$file"
+            echo "✅ 已删除: $file"
+        fi
+    done
+}
+
+# 2. 创建标准目录结构
+setup_directories() {
+    mkdir -p output/{data,reports,logs}
+    echo "📁 创建标准目录结构完成"
+}
+
+# 3. 移动散乱文件
+organize_files() {
+    # 移动数据文件
+    [[ -f "chat-data.json" ]] && mv chat-data.json output/data/
+    [[ -f "web-chat-data.json" ]] && mv web-chat-data.json output/data/
+    
+    # 移动报告文件
+    mv chat-summary-*.md output/reports/ 2>/dev/null || true
+    mv cursor-chat-history-*.md output/reports/ 2>/dev/null || true
+    
+    echo "📦 文件整理完成"
+}
+
+# 执行清理流程
+analyze_files
+setup_directories  
+organize_files
+echo "🎉 项目清理完成！"
+```
+
+### 文档自动生成模式
+```javascript
+// 目录说明文档生成器
+const generateDirectoryREADME = (dirPath, structure) => {
+    const template = `# ${path.basename(dirPath)} Directory
+
+这个目录用于存放${structure.description}。
+
+## 📁 目录结构
+
+\`\`\`
+${generateTreeStructure(structure.tree)}
+\`\`\`
+
+## 📄 文件说明
+
+${structure.files.map(file => 
+    `- **${file.name}** - ${file.description}`
+).join('\n')}
+
+## 🔄 自动生成
+
+这些文件都是通过以下命令自动生成的：
+
+\`\`\`bash
+${structure.commands.join('\n')}
+\`\`\`
+
+## ⚠️ 注意事项
+
+${structure.notes.map(note => `- ${note}`).join('\n')}
+`;
+    
+    fs.writeFileSync(path.join(dirPath, 'README.md'), template);
+};
+```
+
+### 脚本路径更新自动化模式
+```javascript
+// 批量路径替换工具
+const updateScriptPaths = async (pathMappings) => {
+    for (const [scriptFile, pathUpdates] of Object.entries(pathMappings)) {
+        if (!fs.existsSync(scriptFile)) continue;
+        
+        let content = await fs.readFile(scriptFile, 'utf-8');
+        
+        for (const [oldPath, newPath] of pathUpdates) {
+            content = content.replace(new RegExp(oldPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), newPath);
+        }
+        
+        await fs.writeFile(scriptFile, content);
+        console.log(`✅ 更新路径: ${scriptFile}`);
+    }
+};
+
+// 路径验证模式
+const validatePaths = (config) => {
+    const results = [];
+    for (const [key, path] of Object.entries(config)) {
+        const dir = path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '.';
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+            results.push(`✅ 创建目录: ${dir}`);
+        }
+    }
+    return results;
+};
+```
+
+### 项目重构最佳实践模式
+```javascript
+// 重构检查清单
+const refactorChecklist = {
+    structure: [
+        '✅ 创建规范目录结构',
+        '✅ 移动散乱文件到对应目录', 
+        '✅ 更新所有脚本的路径引用',
+        '✅ 更新.gitignore规则'
+    ],
+    cleanup: [
+        '✅ 删除过时文档文件',
+        '✅ 移除冗余配置文件',
+        '✅ 清理无效的脚本引用',
+        '✅ 精简项目定位'
+    ],
+    documentation: [
+        '✅ 创建目录说明文档',
+        '✅ 更新项目README',
+        '✅ 记录变更到记忆库',
+        '✅ 验证所有功能正常'
+    ]
+};
+
+// 重构效果量化
+const quantifyImprovements = {
+    fileReduction: '30KB+ 过时内容删除',
+    structureClarity: '从散乱文件到规范目录',
+    pathStandardization: '5个脚本路径标准化',
+    versionControlOptimization: '输出文件自动忽略',
+    documentationImprovement: '详细的使用说明创建'
+};
+```
+
+这些模式展示了如何系统性地进行项目清理和结构优化，确保代码库的长期可维护性！

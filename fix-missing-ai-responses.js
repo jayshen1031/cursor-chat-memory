@@ -12,8 +12,8 @@ import path from 'path';
 
 class AIResponseFixer {
     constructor() {
-        this.chatDataFile = './chat-data.json';
-        this.webDataFile = './web-chat-data.json';
+        this.chatDataFile = './output/data/chat-data.json';
+        this.webDataFile = './output/data/web-chat-data.json';
     }
 
     /**
@@ -266,7 +266,7 @@ class AIResponseFixer {
             
             // 生成新的Markdown
             const markdown = generator.generateFromData(chatData.conversations);
-            const filename = `cursor-chat-history-fixed-${new Date().toISOString().split('T')[0]}.md`;
+            const filename = `./output/reports/cursor-chat-history-fixed-${new Date().toISOString().split('T')[0]}.md`;
             
             fs.writeFileSync(filename, markdown);
             console.log(`✅ 已生成修复版Markdown: ${filename}`);
