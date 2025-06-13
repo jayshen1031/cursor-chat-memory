@@ -9,5 +9,35 @@
         "CURSOR_WORKSPACE_ID": "e76c6a8343ed4d7d7b8f77651bad3214"
       }
     }
+  },
+  "port": 3000,
+  "host": "localhost",
+  "logLevel": "info",
+  "memoryBankPath": "./memory-bank",
+  "outputPath": "./output",
+  "logPath": "./logs",
+  "projects": {
+    "system-development": {
+      "name": "系统开发",
+      "path": "./memory-bank/system-development",
+      "type": "development"
+    },
+    "data-analysis": {
+      "name": "数据分析",
+      "path": "./memory-bank/data-analysis",
+      "type": "analysis"
+    },
+    "bi-project": {
+      "name": "BI项目",
+      "path": "./memory-bank/bi-project",
+      "type": "bi",
+      "categories": {
+        "businessInsights": "业务洞察",
+        "dataModels": "数据模型",
+        "reportTemplates": "报表模板",
+        "dashboardDesigns": "仪表盘设计",
+        "etlProcesses": "ETL流程"
+      }
+    }
   }
 }
