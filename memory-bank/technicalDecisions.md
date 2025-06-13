@@ -180,3 +180,81 @@ const outputStructure = {
 
 这些决策显著提升了项目的专业化程度和长期可维护性！
 
+## 2025-06-13 技术决策
+
+### 🛡️ 部署安全性改进
+**决策**: 修改 `deploy-to-new-project.sh` 脚本的清理逻辑
+**背景**: 原有的 `--clean` 参数会删除目标目录的所有文件，导致误删重要项目文件
+**解决方案**: 
+```bash
+# 注释掉危险的清理操作
+# rm -rf "$TARGET_DIR"/*
+echo "[跳过] 不再清理目标目录，保留所有原有文件。"
+```
+**影响**: 提高部署安全性，避免数据丢失
+
+### 🏗️ MCP Server 架构设计
+**决策**: 采用模块化的Memory Bank结构
+**技术选择**: 
+- **服务器**: Node.js + Express
+- **数据库**: SQLite (Cursor原生数据库)
+- **协议**: MCP (Model Context Protocol)
+- **端口**: 3000 (可配置)
+
+**目录结构**:
+```
+memory-bank/
+├── businessInsights/    # BI项目专用
+├── dataModels/         # 数据模型
+├── reportTemplates/    # 报表模板
+├── dashboardDesigns/   # 仪表盘设计
+└── etlProcesses/       # ETL流程
+```
+
+### 📊 数据同步策略
+**决策**: 实时同步 + 定时批处理
+**实现方式**:
+1. **实时监控**: 监听Cursor数据库变化
+2. **批量处理**: 定时提取和分析聊天数据
+3. **智能过滤**: 只处理有意义的对话内容
+
+**数据流程**:
+```
+Cursor SQLite → 数据提取 → 对话分析 → Memory Bank更新
+```
+
+### 🔧 项目类型支持
+**决策**: 支持多种项目类型的差异化配置
+**支持类型**:
+- `development`: 开发项目 (learningInsights, problemSolutions, codePatterns)
+- `analysis`: 分析项目 (businessInsights, analysisPatterns, dataModels)  
+- `bi`: BI项目 (businessInsights, dataModels, reportTemplates, dashboardDesigns, etlProcesses)
+
+**配置示例**:
+```json
+{
+  "projects": {
+    "bi-project": {
+      "name": "BI项目",
+      "path": "./memory-bank",
+      "type": "bi"
+    }
+  }
+}
+```
+
+### 🚀 部署策略优化
+**决策**: 非破坏性部署
+**原则**:
+1. **保护现有文件**: 不删除目标目录中的原有文件
+2. **增量更新**: 只添加或更新必要的文件
+3. **配置隔离**: 每个项目独立的配置文件
+
+**实施效果**: 
+- ✅ 避免误删重要文件
+- ✅ 支持多项目并存
+- ✅ 降低部署风险
+
+---
+*决策记录时间: 2025-06-13 20:23*
+

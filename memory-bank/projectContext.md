@@ -2,6 +2,58 @@
 
 > 自动分析项目的核心功能和技术架构
 
+## 2025-06-13 项目活动摘要
+
+### 核心项目：Cursor Memory MCP Server
+- **项目类型**: 开发工具集成项目
+- **主要功能**: 集成Cursor编辑器的聊天记忆功能，提供AI驱动的智能分析
+- **技术栈**: Node.js, SQLite, MCP (Model Context Protocol)
+
+### 今日主要活动
+
+#### 1. BI项目部署与配置
+- **目标路径**: `/Users/jay/Documents/baidu/projects/BI/`
+- **部署脚本**: `deploy-to-new-project.sh`
+- **项目类型**: BI (Business Intelligence)
+- **关键问题**: 初始部署时误删了原有BI文件，后续修改脚本避免清理现有文件
+
+#### 2. 脚本优化
+- **修改内容**: 更新 `deploy-to-new-project.sh` 脚本
+- **优化目标**: 防止 `--clean` 参数删除目标目录中的现有文件
+- **解决方案**: 注释掉清理逻辑，保留原有文件结构
+
+#### 3. MCP Server 集成
+- **服务端口**: 3000
+- **配置文件**: `cursor-mcp-config.json`
+- **Memory Bank路径**: `./memory-bank`
+- **支持的项目类型**: development, analysis, bi
+
+#### 4. 数据同步功能
+- **聊天数据提取**: 从Cursor SQLite数据库提取对话历史
+- **数据处理**: 今日提取53个有效对话对
+- **Memory Bank更新**: 自动分析并更新项目上下文
+
+
+
+### 技术架构特点
+1. **模块化设计**: 支持多项目类型的Memory Bank结构
+2. **自动化同步**: 定时从Cursor数据库同步聊天数据
+3. **智能分析**: AI驱动的对话模式识别和项目上下文提取
+4. **灵活部署**: 支持不同项目类型的定制化部署
+
+### 当前挑战
+1. **进程管理**: Memory Bank进程检测和管理需要优化
+2. **数据完整性**: 确保部署过程中不丢失现有项目文件
+3. **跨项目集成**: 在BI项目中正确配置和使用MCP Server
+
+### 下一步计划
+1. 完善BI项目的MCP Server集成
+2. 优化Memory Bank的进程监控机制
+3. 增强项目上下文的自动分析能力
+
+---
+*最后更新: 2025-06-13 20:21*
+
 ## 项目概述
 
 **Cursor Memory MCP Server** - 智能聊天历史分析和Memory Bank管理系统

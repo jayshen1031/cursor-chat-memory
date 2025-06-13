@@ -64,15 +64,15 @@ fi
 
 # 清理目标目录（如果指定）
 if [ "$CLEAN" = true ]; then
-    echo "Cleaning target directory..."
+    echo "[跳过] 不再清理目标目录，保留所有原有文件。"
     # 保留 .git 目录
-    if [ -d "$TARGET_DIR/.git" ]; then
-        mv "$TARGET_DIR/.git" "$TARGET_DIR/.git.bak"
-    fi
-    rm -rf "$TARGET_DIR"/*
-    if [ -d "$TARGET_DIR/.git.bak" ]; then
-        mv "$TARGET_DIR/.git.bak" "$TARGET_DIR/.git"
-    fi
+    # if [ -d "$TARGET_DIR/.git" ]; then
+    #     mv "$TARGET_DIR/.git" "$TARGET_DIR/.git.bak"
+    # fi
+    # rm -rf "$TARGET_DIR"/*
+    # if [ -d "$TARGET_DIR/.git.bak" ]; then
+    #     mv "$TARGET_DIR/.git.bak" "$TARGET_DIR/.git"
+    # fi
 fi
 
 # 创建项目结构
@@ -162,11 +162,51 @@ $PROJECT_TYPE
 EOF
 
 # 复制必要的文件
+echo "Copying project files..."
 cp package.json "$TARGET_DIR/"
 cp .gitignore "$TARGET_DIR/"
-cp -r src/* "$TARGET_DIR/src/"
-cp start-mcp-server.sh "$TARGET_DIR/"
 
-echo "Project initialized successfully in $TARGET_DIR"
-echo "Project type: $PROJECT_TYPE"
-echo "Please review the README.md file for usage instructions." 
+# 确保src目录存在并复制所有源文件
+if [ -d "src" ]; then
+    cp -r src/* "$TARGET_DIR/src/"
+    echo "✅ 源代码文件已复制"
+else
+    echo "⚠️  警告: src目录不存在"
+fi
+
+# 复制其他必要文件
+if [ -f "start-mcp-server.sh" ]; then
+    cp start-mcp-server.sh "$TARGET_DIR/"
+fi
+
+# 验证关键文件是否存在
+echo "验证部署文件..."
+if [ -f "$TARGET_DIR/src/config-validator.js" ]; then
+    echo "✅ 配置验证器已部署"
+else
+    echo "❌ 配置验证器缺失"
+fi
+
+if [ -f "$TARGET_DIR/src/mcp-server.js" ]; then
+    echo "✅ MCP服务器已部署"
+else
+    echo "❌ MCP服务器缺失"
+fi
+
+# 检查package.json中的脚本
+if grep -q "validate-config" "$TARGET_DIR/package.json"; then
+    echo "✅ 配置验证脚本已添加"
+else
+    echo "❌ 配置验证脚本缺失"
+fi
+
+echo ""
+echo "🎉 Project initialized successfully in $TARGET_DIR"
+echo "📋 Project type: $PROJECT_TYPE"
+echo "📖 Please review the README.md file for usage instructions."
+echo ""
+echo "🔧 Next steps:"
+echo "   cd $TARGET_DIR"
+echo "   npm install"
+echo "   npm run validate-config"
+echo "   npm run mcp" 

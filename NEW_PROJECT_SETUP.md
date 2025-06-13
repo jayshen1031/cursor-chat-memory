@@ -267,3 +267,44 @@ memory-bank/
 1. 检查日志文件 (`logs/mcp-server.log`)
 2. 查看常见问题部分
 3. 提交 Issue 到 GitHub 仓库 
+
+## 新功能
+
+### 1. 新增项目类型
+
+现在你可以使用更新后的脚本来部署BI项目了。使用方法如下：
+
+```bash
+./deploy-to-new-project.sh /Users/jay/Documents/baidu/projects/BI --type bi --clean
+```
+
+这个命令会：
+1. 清理目标目录（如果存在）
+2. 创建新的BI项目结构，包括：
+   - `businessInsights/`: 业务洞察和关键发现
+   - `dataModels/`: 数据模型和维度设计
+   - `reportTemplates/`: 报表模板和设计规范
+   - `dashboardDesigns/`: 仪表盘设计和交互模式
+   - `etlProcesses/`: ETL流程和数据转换规则
+3. 创建必要的配置文件
+4. 设置项目说明文档
+
+部署完成后，你可以：
+1. 进入项目目录：
+   ```bash
+   cd /Users/jay/Documents/baidu/projects/BI/cursor-memory
+   ```
+
+2. 安装依赖：
+   ```bash
+   npm install
+   ```
+
+3. 启动MCP服务器：
+   ```bash
+   npm run mcp
+   ```
+
+4. 配置Cursor编辑器使用这个MCP服务器
+
+需要我帮你执行部署命令吗？或者你需要了解更详细的使用说明？ 

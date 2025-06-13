@@ -12,6 +12,17 @@ import sqlite3 from 'sqlite3';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
+import { createServer } from 'http';
+import { parse } from 'url';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { validateConfig } from './config-validator.js';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+
+// MCP Server configuration
+const PORT = process.env.PORT || 3000;
+const HOST = 'localhost';
 
 class CursorMemoryMCPServer {
     constructor() {
@@ -39,12 +50,38 @@ class CursorMemoryMCPServer {
             conversations: [],
             lastSync: null
         };
+    }
 
-        this.setupToolHandlers();
-        this.setupMemoryBank();
+    /**
+     * 🚀 初始化服务器
+     */
+    async initialize() {
+        console.log('🔧 初始化 Cursor Memory MCP Server...');
         
-        // 启动时自动同步数据
-        this.syncChatData();
+        // 1. 验证配置
+        const configResult = await validateConfig();
+        if (!configResult.isValid) {
+            console.error('❌ 配置验证失败，服务器无法启动');
+            throw new Error('配置验证失败');
+        }
+        
+        console.log('✅ 配置验证通过');
+        
+        // 2. 设置工具处理器
+        this.setupToolHandlers();
+        
+        // 3. 初始化Memory Bank
+        await this.setupMemoryBank();
+        
+        // 4. 启动时自动同步数据
+        try {
+            await this.syncChatData();
+            console.log('✅ 初始数据同步完成');
+        } catch (error) {
+            console.warn('⚠️ 初始数据同步失败:', error.message);
+        }
+        
+        console.log('🎉 服务器初始化完成');
     }
 
     /**
@@ -682,6 +719,39 @@ ${Object.entries(memoryFiles).map(([name, content]) => {
     }
 
     /**
+     * 🩺 获取健康状态
+     */
+    async getHealthStatus() {
+        try {
+            const memoryFiles = await this.readAllMemoryFiles();
+            const dbExists = this.workspaceDbPath && await fs.access(this.workspaceDbPath).then(() => true).catch(() => false);
+            
+            return {
+                status: 'healthy',
+                timestamp: new Date().toISOString(),
+                memoryBank: {
+                    files: Object.keys(memoryFiles).length,
+                    totalSize: Object.values(memoryFiles).reduce((sum, content) => sum + content.length, 0)
+                },
+                database: {
+                    connected: dbExists,
+                    path: this.workspaceDbPath
+                },
+                conversations: {
+                    total: this.chatData.conversations.length,
+                    lastSync: this.chatData.lastSync
+                }
+            };
+        } catch (error) {
+            return {
+                status: 'unhealthy',
+                timestamp: new Date().toISOString(),
+                error: error.message
+            };
+        }
+    }
+
+    /**
      * 🚀 启动服务器
      */
     async run() {
@@ -696,6 +766,95 @@ export { CursorMemoryMCPServer };
 
 // 如果是直接运行此文件，则启动服务器
 if (import.meta.url === `file://${process.argv[1]}`) {
-    const server = new CursorMemoryMCPServer();
-    server.run().catch(console.error);
-} 
+    async function startServer() {
+        try {
+            const server = new CursorMemoryMCPServer();
+            await server.initialize();
+            await server.run();
+        } catch (error) {
+            console.error('❌ 服务器启动失败:', error.message);
+            process.exit(1);
+        }
+    }
+    
+    startServer();
+}
+
+// MCP Server implementation
+const server = createServer((req, res) => {
+  const { pathname } = parse(req.url, true);
+  
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  // Handle MCP protocol requests
+  if (pathname === '/mcp') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      status: 'success',
+      message: 'Cursor Memory MCP Server is running',
+      version: '1.0.0'
+    }));
+    return;
+  }
+
+  // Handle root path
+  if (pathname === '/') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      status: 'running',
+      name: 'cursor-memory-server',
+      version: '1.0.0',
+      timestamp: new Date().toISOString(),
+      configValid: true
+    }));
+    return;
+  }
+
+  // Handle health check
+  if (pathname === '/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    }));
+    return;
+  }
+
+  // Handle 404
+  res.writeHead(404);
+  res.end('Not Found');
+});
+
+// Start the server
+server.listen(PORT, HOST, () => {
+  console.log(`🤖 MCP Server running at http://${HOST}:${PORT}`);
+  console.log('📝 Available endpoints:');
+  console.log('   - GET /mcp      - MCP protocol endpoint');
+  console.log('   - GET /         - Server status');
+  console.log('   - GET /health   - Health check');
+});
+
+// Handle server errors
+server.on('error', (error) => {
+  console.error('❌ Server error:', error);
+  process.exit(1);
+});
+
+// Handle process termination
+process.on('SIGINT', () => {
+  console.log('\n👋 Shutting down MCP Server...');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
+}); 

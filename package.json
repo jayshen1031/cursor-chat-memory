@@ -131,12 +131,14 @@
     "vscode:prepublish": "npm run compile",
     "extract": "node extract-chat-data.js",
     "fix": "node fix-missing-ai-responses.js",
-    "start": "npm run extract",
+    "start": "node src/mcp-server.js",
     "markdown": "node generate-markdown.js",
     "summary": "node generate-summary.js",
     "export": "npm run extract && npm run fix && npm run markdown && npm run summary",
     "build": "npm run compile",
-    "mcp": "node src/mcp-server.js"
+    "mcp": "node src/mcp-server.js",
+    "validate-config": "node src/config-validator.js",
+    "health-check": "echo '🔍 检查MCP服务器健康状态...' && curl -s http://localhost:3000/health && echo -e '\\n✅ 服务器正在运行且健康' || echo '❌ 服务器未运行或无法访问'"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",

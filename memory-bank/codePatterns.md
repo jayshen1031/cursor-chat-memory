@@ -2,6 +2,99 @@
 
 > 识别的代码模式和最佳实践
 
+## 2025-06-13 新增配置验证模式
+
+### 🔧 启动时配置验证模式
+**实现**: 创建独立的配置验证器模块
+```javascript
+class ConfigValidator {
+    constructor() {
+        this.errors = [];
+        this.warnings = [];
+        this.requiredFields = ['port', 'host', 'memoryBankPath', 'outputPath', 'logPath'];
+    }
+
+    async validate() {
+        // 1. 检查配置文件存在性
+        await this.checkConfigFileExists();
+        
+        // 2. 验证必需字段
+        this.validateRequiredFields(config);
+        
+        // 3. 验证字段类型和值
+        this.validateFieldTypes(config);
+        
+        // 4. 检查路径存在性并自动创建
+        await this.validatePaths(config);
+        
+        // 5. 验证端口可用性
+        await this.validatePort(config.port);
+        
+        // 6. 检查运行环境
+        this.validateNodeVersion();
+        
+        return { isValid: this.errors.length === 0, errors: this.errors, warnings: this.warnings };
+    }
+}
+```
+
+**优势**:
+- ✅ 启动前发现配置问题
+- ✅ 自动创建缺失目录
+- ✅ 提供详细的错误信息和修复建议
+- ✅ 支持独立运行和集成调用
+
+### 🚀 服务器初始化模式
+**实现**: 分离初始化逻辑和启动逻辑
+```javascript
+class CursorMemoryMCPServer {
+    async initialize() {
+        // 1. 验证配置
+        const configResult = await validateConfig();
+        if (!configResult.isValid) {
+            throw new Error('配置验证失败');
+        }
+        
+        // 2. 设置工具处理器
+        this.setupToolHandlers();
+        
+        // 3. 初始化Memory Bank
+        await this.setupMemoryBank();
+        
+        // 4. 同步初始数据
+        await this.syncChatData();
+    }
+}
+```
+
+**优势**:
+- ✅ 清晰的启动流程
+- ✅ 错误早期发现
+- ✅ 更好的错误处理
+
+### 🩺 健康检查模式
+**实现**: 添加健康状态监控端点
+```javascript
+async getHealthStatus() {
+    try {
+        const memoryFiles = await this.readAllMemoryFiles();
+        const dbExists = await fs.access(this.workspaceDbPath).then(() => true).catch(() => false);
+        
+        return {
+            status: 'healthy',
+            memoryBank: { files: Object.keys(memoryFiles).length },
+            database: { connected: dbExists },
+            conversations: { total: this.chatData.conversations.length }
+        };
+    } catch (error) {
+        return { status: 'unhealthy', error: error.message };
+    }
+}
+```
+
+**端点**: `GET /health`
+**用途**: 监控服务状态、调试问题、自动化检查
+
 ## MCP工具模式
 
 - 使用统一的错误处理机制
