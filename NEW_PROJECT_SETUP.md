@@ -6,6 +6,7 @@
 
 - Node.js 18+ 已安装
 - Git 已安装
+- Cursor 编辑器已安装
 - 目标项目目录已创建
 
 ## 部署步骤
@@ -34,6 +35,34 @@
    cd /path/to/your/project/cursor-memory
    ./start-mcp-server.sh
    ```
+
+## Cursor 配置
+
+1. **打开 Cursor 设置**
+   - 使用快捷键 `Cmd + ,`（Mac）或 `Ctrl + ,`（Windows/Linux）
+   - 或点击左下角的齿轮图标
+
+2. **配置 MCP 服务器**
+   - 在设置搜索框中输入 "MCP"
+   - 如果搜索不到，点击 "Open Settings (JSON)"
+   - 在 JSON 配置中添加以下内容：
+   ```json
+   {
+     "mcp.servers": [
+       {
+         "name": "Cursor Memory",
+         "url": "http://localhost:3000",
+         "enabled": true
+       }
+     ]
+   }
+   ```
+
+3. **验证配置**
+   - 保存设置文件
+   - 重启 Cursor 编辑器
+   - 在命令面板（`Cmd/Ctrl + Shift + P`）中输入 "MCP"
+   - 应该能看到 "Cursor Memory" 服务器选项
 
 ## 目录结构
 
@@ -80,6 +109,16 @@ MCP Server 的配置文件为 `cursor-mcp-config.json`，默认配置如下：
    - 修改 `cursor-mcp-config.json` 中的 `port` 配置
    - 确保没有其他服务占用该端口
 
+4. **Cursor 中找不到 MCP 设置**
+   - 确保使用最新版本的 Cursor
+   - 尝试手动编辑 settings.json
+   - 重启 Cursor 编辑器
+
+5. **MCP 服务器连接失败**
+   - 确保 MCP Server 正在运行
+   - 检查端口号是否匹配
+   - 检查防火墙设置
+
 ## 维护说明
 
 1. **更新项目**
@@ -105,6 +144,7 @@ MCP Server 的配置文件为 `cursor-mcp-config.json`，默认配置如下：
 2. 建议定期备份 `memory-bank` 目录
 3. 不要修改 `src` 目录下的核心文件
 4. 保持 Node.js 版本在 18 或以上
+5. 确保 Cursor 编辑器版本支持 MCP 功能
 
 ## 技术支持
 
