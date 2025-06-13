@@ -43,6 +43,7 @@
    - 方法二：点击左下角的齿轮图标（⚙️）
 
 2. **打开 JSON 设置文件**
+   - 在设置界面中，选择 "User Settings"（用户设置）
    - 方法一：在设置界面右上角找到 "Open Settings (JSON)" 按钮
    - 方法二：使用快捷键 `Cmd/Ctrl + Shift + P` 打开命令面板，输入 "settings json"
    - 方法三：在设置界面右上角的 "..." 或 "More" 菜单中查找
@@ -61,6 +62,7 @@
    }
    ```
    - 注意：如果文件中已有其他配置，请确保正确添加逗号分隔
+   - 重要：使用 User Settings 而不是 Workspace Settings，因为这是一个全局配置
 
 4. **验证配置**
    - 保存 JSON 文件（`Cmd/Ctrl + S`）
