@@ -100,6 +100,115 @@ MCP Server 的配置文件为 `cursor-mcp-config.json`，默认配置如下：
 }
 ```
 
+## 多项目记忆管理
+
+### 1. 项目类型区分
+
+在 `memory-bank` 目录下，按项目类型创建子目录：
+
+```
+memory-bank/
+├── system-development/     # 系统开发项目记忆
+│   ├── learningInsights/  # 技术洞察
+│   ├── problemSolutions/  # 问题解决方案
+│   └── codePatterns/      # 代码模式
+├── data-analysis/         # 大数据分析项目记忆
+│   ├── businessInsights/  # 业务洞察
+│   ├── analysisPatterns/  # 分析模式
+│   └── dataModels/        # 数据模型
+└── shared/                # 共享知识
+    ├── bestPractices/     # 最佳实践
+    └── commonPatterns/    # 通用模式
+```
+
+### 2. 配置多项目支持
+
+修改 `cursor-mcp-config.json` 配置：
+
+```json
+{
+    "port": 3000,
+    "host": "localhost",
+    "logLevel": "info",
+    "memoryBankPath": "./memory-bank",
+    "outputPath": "./output",
+    "logPath": "./logs",
+    "projects": {
+        "system-development": {
+            "name": "系统开发",
+            "path": "./memory-bank/system-development",
+            "type": "development"
+        },
+        "data-analysis": {
+            "name": "数据分析",
+            "path": "./memory-bank/data-analysis",
+            "type": "analysis"
+        }
+    }
+}
+```
+
+### 3. 项目切换
+
+1. **通过命令行切换**
+   ```bash
+   # 切换到系统开发项目
+   ./switch-project.sh system-development
+
+   # 切换到数据分析项目
+   ./switch-project.sh data-analysis
+   ```
+
+2. **通过环境变量切换**
+   ```bash
+   # 设置当前项目
+   export CURSOR_MEMORY_PROJECT=system-development
+   ```
+
+### 4. 记忆分类规则
+
+1. **系统开发项目**
+   - 技术架构决策
+   - 代码设计模式
+   - 性能优化方案
+   - 安全最佳实践
+   - 开发工具使用
+
+2. **数据分析项目**
+   - 业务分析模型
+   - 数据处理流程
+   - 可视化方案
+   - 统计分析方法
+   - 数据质量规则
+
+3. **共享知识**
+   - 项目管理经验
+   - 团队协作模式
+   - 通用工具使用
+   - 跨项目最佳实践
+
+### 5. 使用建议
+
+1. **项目初始化**
+   - 为每个新项目创建对应的记忆库目录
+   - 设置适当的分类结构
+   - 配置项目特定的规则
+
+2. **内容管理**
+   - 定期整理和更新记忆库
+   - 及时归档过时的内容
+   - 保持分类结构的一致性
+
+3. **知识共享**
+   - 将通用经验放入共享目录
+   - 定期同步跨项目的知识
+   - 建立知识索引和检索机制
+
+4. **维护建议**
+   - 每周检查记忆库结构
+   - 每月整理和优化内容
+   - 每季度评估知识价值
+
 ## 常见问题
 
 1. **启动失败：MCP Server 文件不存在**
