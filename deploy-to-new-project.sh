@@ -65,41 +65,48 @@ fi
 # 清理目标目录（如果指定）
 if [ "$CLEAN" = true ]; then
     echo "Cleaning target directory..."
+    # 保留 .git 目录
+    if [ -d "$TARGET_DIR/.git" ]; then
+        mv "$TARGET_DIR/.git" "$TARGET_DIR/.git.bak"
+    fi
     rm -rf "$TARGET_DIR"/*
+    if [ -d "$TARGET_DIR/.git.bak" ]; then
+        mv "$TARGET_DIR/.git.bak" "$TARGET_DIR/.git"
+    fi
 fi
 
 # 创建项目结构
 echo "Creating project structure for type: $PROJECT_TYPE"
 
 # 创建基本目录结构
-mkdir -p "$TARGET_DIR/cursor-memory"
-mkdir -p "$TARGET_DIR/cursor-memory/memory-bank"
-mkdir -p "$TARGET_DIR/cursor-memory/output"
-mkdir -p "$TARGET_DIR/cursor-memory/logs"
+mkdir -p "$TARGET_DIR/memory-bank"
+mkdir -p "$TARGET_DIR/output"
+mkdir -p "$TARGET_DIR/logs"
+mkdir -p "$TARGET_DIR/src"
 
 # 根据项目类型创建特定的目录结构
 case $PROJECT_TYPE in
     "development")
-        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/learningInsights"
-        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/problemSolutions"
-        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/codePatterns"
+        mkdir -p "$TARGET_DIR/memory-bank/learningInsights"
+        mkdir -p "$TARGET_DIR/memory-bank/problemSolutions"
+        mkdir -p "$TARGET_DIR/memory-bank/codePatterns"
         ;;
     "analysis")
-        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/businessInsights"
-        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/analysisPatterns"
-        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/dataModels"
+        mkdir -p "$TARGET_DIR/memory-bank/businessInsights"
+        mkdir -p "$TARGET_DIR/memory-bank/analysisPatterns"
+        mkdir -p "$TARGET_DIR/memory-bank/dataModels"
         ;;
     "bi")
-        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/businessInsights"
-        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/dataModels"
-        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/reportTemplates"
-        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/dashboardDesigns"
-        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/etlProcesses"
+        mkdir -p "$TARGET_DIR/memory-bank/businessInsights"
+        mkdir -p "$TARGET_DIR/memory-bank/dataModels"
+        mkdir -p "$TARGET_DIR/memory-bank/reportTemplates"
+        mkdir -p "$TARGET_DIR/memory-bank/dashboardDesigns"
+        mkdir -p "$TARGET_DIR/memory-bank/etlProcesses"
         ;;
 esac
 
 # 创建配置文件
-cat > "$TARGET_DIR/cursor-memory/cursor-mcp-config.json" << EOF
+cat > "$TARGET_DIR/cursor-mcp-config.json" << EOF
 {
     "port": 3000,
     "host": "localhost",
@@ -118,7 +125,7 @@ cat > "$TARGET_DIR/cursor-memory/cursor-mcp-config.json" << EOF
 EOF
 
 # 创建项目说明文件
-cat > "$TARGET_DIR/cursor-memory/README.md" << EOF
+cat > "$TARGET_DIR/README.md" << EOF
 # Cursor Memory Project
 
 ## 项目类型
@@ -128,6 +135,7 @@ $PROJECT_TYPE
 - \`memory-bank/\`: 记忆库目录
 - \`output/\`: 输出文件目录
 - \`logs/\`: 日志文件目录
+- \`src/\`: 源代码目录
 
 ## 使用说明
 1. 安装依赖：
@@ -154,8 +162,10 @@ $PROJECT_TYPE
 EOF
 
 # 复制必要的文件
-cp package.json "$TARGET_DIR/cursor-memory/"
-cp .gitignore "$TARGET_DIR/cursor-memory/"
+cp package.json "$TARGET_DIR/"
+cp .gitignore "$TARGET_DIR/"
+cp -r src/* "$TARGET_DIR/src/"
+cp start-mcp-server.sh "$TARGET_DIR/"
 
 echo "Project initialized successfully in $TARGET_DIR"
 echo "Project type: $PROJECT_TYPE"
