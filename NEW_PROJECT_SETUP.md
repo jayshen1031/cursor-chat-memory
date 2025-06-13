@@ -39,13 +39,16 @@
 ## Cursor 配置
 
 1. **打开 Cursor 设置**
-   - 使用快捷键 `Cmd + ,`（Mac）或 `Ctrl + ,`（Windows/Linux）
-   - 或点击左下角的齿轮图标
+   - 方法一：使用快捷键 `Cmd + ,`（Mac）或 `Ctrl + ,`（Windows/Linux）
+   - 方法二：点击左下角的齿轮图标（⚙️）
 
-2. **配置 MCP 服务器**
-   - 在设置搜索框中输入 "MCP"
-   - 如果搜索不到，点击 "Open Settings (JSON)"
-   - 在 JSON 配置中添加以下内容：
+2. **打开 JSON 设置文件**
+   - 方法一：在设置界面右上角找到 "Open Settings (JSON)" 按钮
+   - 方法二：使用快捷键 `Cmd/Ctrl + Shift + P` 打开命令面板，输入 "settings json"
+   - 方法三：在设置界面右上角的 "..." 或 "More" 菜单中查找
+
+3. **配置 MCP 服务器**
+   - 在打开的 JSON 文件中，添加或修改以下配置：
    ```json
    {
      "mcp.servers": [
@@ -57,9 +60,10 @@
      ]
    }
    ```
+   - 注意：如果文件中已有其他配置，请确保正确添加逗号分隔
 
-3. **验证配置**
-   - 保存设置文件
+4. **验证配置**
+   - 保存 JSON 文件（`Cmd/Ctrl + S`）
    - 重启 Cursor 编辑器
    - 在命令面板（`Cmd/Ctrl + Shift + P`）中输入 "MCP"
    - 应该能看到 "Cursor Memory" 服务器选项
