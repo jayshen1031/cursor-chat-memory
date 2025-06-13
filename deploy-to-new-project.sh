@@ -6,119 +6,157 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# 显示帮助信息
-show_help() {
-    echo "用法: $0 <目标目录> [选项]"
-    echo "选项:"
-    echo "  --clean    清理目标目录（如果存在）"
-    echo "  --help     显示此帮助信息"
+# 显示使用说明
+show_usage() {
+    echo "Usage: $0 <target_directory> [options]"
+    echo "Options:"
+    echo "  --clean        Clean target directory before deployment"
+    echo "  --type TYPE    Project type (development|analysis|bi)"
+    echo "  --help         Show this help message"
     echo ""
-    echo "示例:"
-    echo "  $0 /path/to/new/project"
-    echo "  $0 /path/to/new/project --clean"
+    echo "Example:"
+    echo "  $0 /path/to/project --type bi --clean"
 }
 
 # 检查参数
-if [ "$1" == "--help" ] || [ -z "$1" ]; then
-    show_help
-    exit 0
+if [ $# -lt 1 ] || [ "$1" == "--help" ]; then
+    show_usage
+    exit 1
 fi
 
-TARGET_DIR="$1/cursor-memory"
-CLEAN_MODE=false
+TARGET_DIR=$1
+shift
 
-# 检查是否使用清理模式
-if [ "$2" == "--clean" ]; then
-    CLEAN_MODE=true
+# 默认项目类型
+PROJECT_TYPE="development"
+
+# 解析其他参数
+CLEAN=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --clean)
+            CLEAN=true
+            shift
+            ;;
+        --type)
+            PROJECT_TYPE="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            show_usage
+            exit 1
+            ;;
+    esac
+done
+
+# 验证项目类型
+if [[ ! "$PROJECT_TYPE" =~ ^(development|analysis|bi)$ ]]; then
+    echo "Error: Invalid project type. Must be one of: development, analysis, bi"
+    exit 1
 fi
 
 # 检查目标目录
-if [ -d "$TARGET_DIR" ]; then
-    if [ "$CLEAN_MODE" = true ]; then
-        echo -e "${YELLOW}清理目标目录: $TARGET_DIR${NC}"
-        rm -rf "$TARGET_DIR"/*
-    else
-        echo -e "${RED}错误: 目标目录已存在。使用 --clean 选项来清理目录。${NC}"
-        exit 1
-    fi
+if [ ! -d "$TARGET_DIR" ]; then
+    echo "Creating target directory: $TARGET_DIR"
+    mkdir -p "$TARGET_DIR"
 fi
 
-# 创建目标目录
-echo -e "${GREEN}创建目标目录: $TARGET_DIR${NC}"
-mkdir -p "$TARGET_DIR"
+# 清理目标目录（如果指定）
+if [ "$CLEAN" = true ]; then
+    echo "Cleaning target directory..."
+    rm -rf "$TARGET_DIR"/*
+fi
 
-# 复制项目文件
-echo -e "${GREEN}复制项目文件...${NC}"
+# 创建项目结构
+echo "Creating project structure for type: $PROJECT_TYPE"
 
-# 首先复制目录
-for dir in src memory-bank .cursor .vscode scripts; do
-    if [ -d "$dir" ]; then
-        echo -e "${GREEN}复制目录: $dir${NC}"
-        cp -r "$dir" "$TARGET_DIR/"
-    else
-        echo -e "${RED}警告: 目录 $dir 不存在${NC}"
-    fi
-done
+# 创建基本目录结构
+mkdir -p "$TARGET_DIR/cursor-memory"
+mkdir -p "$TARGET_DIR/cursor-memory/memory-bank"
+mkdir -p "$TARGET_DIR/cursor-memory/output"
+mkdir -p "$TARGET_DIR/cursor-memory/logs"
 
-# 然后复制文件
-for file in package.json package-lock.json cursor-mcp-config.json start-mcp-server.sh monitor-cursor-changes.sh scan-cursor-data.sh README.md LICENSE.txt; do
-    if [ -f "$file" ]; then
-        echo -e "${GREEN}复制文件: $file${NC}"
-        cp "$file" "$TARGET_DIR/"
-    else
-        echo -e "${RED}警告: 文件 $file 不存在${NC}"
-    fi
-done
+# 根据项目类型创建特定的目录结构
+case $PROJECT_TYPE in
+    "development")
+        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/learningInsights"
+        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/problemSolutions"
+        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/codePatterns"
+        ;;
+    "analysis")
+        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/businessInsights"
+        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/analysisPatterns"
+        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/dataModels"
+        ;;
+    "bi")
+        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/businessInsights"
+        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/dataModels"
+        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/reportTemplates"
+        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/dashboardDesigns"
+        mkdir -p "$TARGET_DIR/cursor-memory/memory-bank/etlProcesses"
+        ;;
+esac
 
-# 创建必要的目录
-echo -e "${GREEN}创建必要的目录...${NC}"
-mkdir -p "$TARGET_DIR/output"
-mkdir -p "$TARGET_DIR/logs"
+# 创建配置文件
+cat > "$TARGET_DIR/cursor-memory/cursor-mcp-config.json" << EOF
+{
+    "port": 3000,
+    "host": "localhost",
+    "logLevel": "info",
+    "memoryBankPath": "./memory-bank",
+    "outputPath": "./output",
+    "logPath": "./logs",
+    "projects": {
+        "$(basename "$TARGET_DIR")": {
+            "name": "$(basename "$TARGET_DIR")",
+            "path": "./memory-bank",
+            "type": "$PROJECT_TYPE"
+        }
+    }
+}
+EOF
 
-# 设置文件权限
-echo -e "${GREEN}设置文件权限...${NC}"
-chmod +x "$TARGET_DIR/start-mcp-server.sh"
-chmod +x "$TARGET_DIR/monitor-cursor-changes.sh"
-chmod +x "$TARGET_DIR/scan-cursor-data.sh"
+# 创建项目说明文件
+cat > "$TARGET_DIR/cursor-memory/README.md" << EOF
+# Cursor Memory Project
 
-# 安装依赖
-echo -e "${GREEN}安装项目依赖...${NC}"
-cd "$TARGET_DIR"
-npm install
+## 项目类型
+$PROJECT_TYPE
 
-# 创建 .gitignore
-echo -e "${GREEN}创建 .gitignore 文件...${NC}"
-cat > "$TARGET_DIR/.gitignore" << EOL
-# Dependencies
-node_modules/
+## 目录结构
+- \`memory-bank/\`: 记忆库目录
+- \`output/\`: 输出文件目录
+- \`logs/\`: 日志文件目录
 
-# Output files
-output/
-logs/
+## 使用说明
+1. 安装依赖：
+   \`\`\`bash
+   npm install
+   \`\`\`
 
-# Environment
-.env
-.env.local
-.env.*.local
+2. 启动服务：
+   \`\`\`bash
+   npm run mcp
+   \`\`\`
 
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
+3. 配置 Cursor：
+   - 打开 Cursor 设置
+   - 添加 MCP 服务器配置
+   - 重启 Cursor
 
-# OS
-.DS_Store
-Thumbs.db
-EOL
+## 维护说明
+- 定期备份记忆库
+- 检查日志文件
+- 更新配置文件
 
-# 清理主目录中的文件
-echo -e "${GREEN}清理主目录中的文件...${NC}"
-cd "$1"
-rm -rf .cursor .vscode LICENSE.txt README.md cursor-mcp-config.json logs memory-bank monitor-cursor-changes.sh node_modules output package-lock.json package.json scan-cursor-data.sh src mcp-server.log
+最后更新: $(date +%Y-%m-%d)
+EOF
 
-echo -e "${GREEN}部署完成！${NC}"
-echo -e "新项目位置: ${YELLOW}$TARGET_DIR${NC}"
-echo -e "使用以下命令启动项目："
-echo -e "  cd ${YELLOW}$TARGET_DIR${NC}"
-echo -e "  ./start-mcp-server.sh" 
+# 复制必要的文件
+cp package.json "$TARGET_DIR/cursor-memory/"
+cp .gitignore "$TARGET_DIR/cursor-memory/"
+
+echo "Project initialized successfully in $TARGET_DIR"
+echo "Project type: $PROJECT_TYPE"
+echo "Please review the README.md file for usage instructions." 
