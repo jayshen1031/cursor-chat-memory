@@ -842,10 +842,17 @@ case $PROJECT_TYPE in
         create_analysis_memory_bank "$TARGET_DIR"
         ;;
     "bi")
-        # BI项目
+        # BI项目 - 创建BI专用Memory Bank内容
         create_bi_memory_bank "$TARGET_DIR"
         ;;
 esac
+
+# 显示Memory Bank统计信息
+if [ -d "$TARGET_DIR/memory-bank" ]; then
+    file_count=$(find "$TARGET_DIR/memory-bank" -name "*.md" | wc -l)
+    total_size=$(du -sh "$TARGET_DIR/memory-bank" | cut -f1)
+    echo "📊 Memory Bank统计: $file_count 个文件, 总大小 $total_size"
+fi
 
 # 创建配置文件
 cat > "$TARGET_DIR/cursor-mcp-config.json" << EOF
