@@ -48,3 +48,17 @@ temp/
 # Output and generated files
 output/
 *.md
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Documentation
+!NEW_PROJECT_SETUP.md
